@@ -1,8 +1,8 @@
 #include <stdio.h>
 
 #include "alloc.h"
-#include "lexer.h"
-#include "parser.h"
+#include "sel/parser.h"
+#include "sel/typecheck.h"
 
 int main(void)
 {
@@ -23,10 +23,27 @@ int main(void)
     //    }
     //}
     
+    Type t;
     Lexer l;
     Expr *e;
-    l = lexer_begin("sin(2*PI*time())");
+    //l = lexer_begin("sin(2*PI*time())");
+    l = lexer_begin("time()");
     e = parse_expr(&l);
+    l = lexer_begin("time(2)");
+    e = parse_expr(&l);
+    l = lexer_begin("time(2+3)");
+    e = parse_expr(&l);
+    l = lexer_begin("time(2*2+3)");
+    e = parse_expr(&l);
+    l = lexer_begin("time(2+3*2)");
+    e = parse_expr(&l);
+    l = lexer_begin("time(2,2,3)");
+    e = parse_expr(&l);
+    t = typecheck(e);
+    //l = lexer_begin("1.2+3.14*2.23");
+    //e = parse_expr(&l);
+    //t = typecheck(e);
+    printf("type = %d\n", t);
     print_expr(e);
     printf("\n");
     print_expr_tree(e);

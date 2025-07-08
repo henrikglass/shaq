@@ -1,6 +1,6 @@
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include "lexer.h"
+#include "sel/lexer.h"
 
 #define HGL_STRING_IMPLEMENTATION
 #include "hgl_string.h"
@@ -65,14 +65,14 @@ Token lexer_peek(Lexer *l)
     switch (c) {
         case '\0': return (Token) {.kind = EOF_TOKEN_}; break;
         case '\n': return (Token) {.kind = EOF_TOKEN_}; break;
-        case '(':  return (Token) {.kind = LPAREN,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case ')':  return (Token) {.kind = RPAREN,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case '+':  return (Token) {.kind = PLUS,    .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case '-':  return (Token) {.kind = MINUS,   .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case '*':  return (Token) {.kind = STAR,    .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case '/':  return (Token) {.kind = FSLASH,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case '%':  return (Token) {.kind = PERCENT, .text = hgl_sv_substr(l->buf, 0, 1)}; break;
-        case ',':  return (Token) {.kind = COMMA,   .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case '(':  return (Token) {.kind = TOK_LPAREN,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case ')':  return (Token) {.kind = TOK_RPAREN,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case '+':  return (Token) {.kind = TOK_PLUS,    .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case '-':  return (Token) {.kind = TOK_MINUS,   .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case '*':  return (Token) {.kind = TOK_STAR,    .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case '/':  return (Token) {.kind = TOK_FSLASH,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case '%':  return (Token) {.kind = TOK_PERCENT, .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+        case ',':  return (Token) {.kind = TOK_COMMA,   .text = hgl_sv_substr(l->buf, 0, 1)}; break;
 
         case 'a' ... 'z': case 'A' ... 'Z': case '_': {
             size_t i = 1;
@@ -82,7 +82,7 @@ Token lexer_peek(Lexer *l)
             }
 
             return (Token) {
-                .kind = IDENTIFIER, 
+                .kind = TOK_IDENTIFIER, 
                 .text = hgl_sv_substr(l->buf, 0, i),
             };
         } break;
@@ -98,7 +98,7 @@ Token lexer_peek(Lexer *l)
             if (c != '.') {
                 if (i != l->buf.length) LEXER_ASSERT(!is_identifier_char(c));
                 return (Token) {
-                    .kind = INT_LITERAL,
+                    .kind = TOK_INT_LITERAL,
                     .text = hgl_sv_substr(l->buf, 0, i),
                 };
             }
@@ -112,7 +112,7 @@ Token lexer_peek(Lexer *l)
 
             if (i != l->buf.length) LEXER_ASSERT(!is_identifier_char(c));
             return (Token) {
-                .kind = FLOAT_LITERAL,
+                .kind = TOK_FLOAT_LITERAL,
                 .text = hgl_sv_substr(l->buf, 0, i),
             };
 

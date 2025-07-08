@@ -1,9 +1,10 @@
-#ifndef PARSER_H
-#define PARSER_H
+
+#ifndef AST_H
+#define AST_H
 
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include "lexer.h"
+#include "sel/lexer.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -11,18 +12,41 @@
 
 typedef enum
 {
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    REM,
-    NEG,
-    PAREN,
-    FUNC,
-    ARGLIST,
-    LIT,
-    CONST,
+    EXPR_ADD,
+    EXPR_SUB,
+    EXPR_MUL,
+    EXPR_DIV,
+    EXPR_REM,
+    EXPR_NEG,
+    EXPR_PAREN,
+    EXPR_FUNC,
+    EXPR_ARGLIST,
+    EXPR_LIT,
+    EXPR_CONST,
 } ExprKind;
+
+typedef enum
+{
+    TYPE_NIL = 0,
+    TYPE_BOOL,
+    TYPE_INT,
+    TYPE_FLOAT,
+    TYPE_BVEC2,
+    TYPE_BVEC3,
+    TYPE_BVEC4,
+    TYPE_VEC2,
+    TYPE_VEC3,
+    TYPE_VEC4,
+    TYPE_IVEC2,
+    TYPE_IVEC3,
+    TYPE_IVEC4,
+    TYPE_MAT2,
+    TYPE_MAT3,
+    TYPE_MAT4,
+    TYPE_IMAGE,
+    TYPECHECKER_ERROR,
+    NAMECHECKER_ERROR,
+} Type;
 
 /**
  * An expression may be either binary, and have two children `lhs` and `rhs`, unary, 
@@ -35,6 +59,7 @@ typedef enum
 typedef struct Expr
 {
     ExprKind kind;
+    Type type;
     Token token;
     union {
         struct Expr *child;
@@ -47,9 +72,5 @@ typedef struct Expr
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-Expr *parse_expr(Lexer *l);
-void print_expr(Expr *e);
-void print_expr_tree(Expr *e);
-
-#endif /* PARSER_H */
+#endif /* AST_H */
 

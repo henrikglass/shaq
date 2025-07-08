@@ -105,8 +105,7 @@
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
-#define HGL_SV_LIT(literal) (hgl_sv_from(literal, sizeof(literal) - 1))
-
+#define HGL_SV_LIT(literal) (HglStringView){ .start = literal, .length = sizeof(literal) - 1}
 #define HGL_SV_FMT "%.*s"
 #define HGL_SV_ARG(sv) (int) (sv).length, (sv).start
 
