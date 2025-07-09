@@ -3,6 +3,7 @@
 #include "alloc.h"
 #include "sel/parser.h"
 #include "sel/typecheck.h"
+#include "sel/codegen.h"
 
 int main(void)
 {
@@ -26,19 +27,20 @@ int main(void)
     Type t;
     Lexer l;
     Expr *e;
+    EExpr ee;
     //l = lexer_begin("sin(2*PI*time())");
-    l = lexer_begin("sin(4.0 * time())");
+    //l = lexer_begin("sin(4.0 * time())");
+    l = lexer_begin("4.0*5.0+40.0+9.0*PI");
     e = parse_expr(&l);
     t = typecheck(e);
+    ee = compile(e);
+    (void) ee;
     printf("TYPE IS `%s`\n", TYPE_TO_STR[t]);
-    //l = lexer_begin("1.2+3.14*2.23");
-    //e = parse_expr(&l);
-    //t = typecheck(e);
-    printf("type = %d\n", t);
+
+
     print_expr(e);
     printf("\n");
     print_expr_tree(e);
-    print_usage(temp_allocator);
 
     //l = lexer_begin("1+2+3-4-5+6 ");
     //e = parse_expr(&l);

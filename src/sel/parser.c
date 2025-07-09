@@ -26,6 +26,8 @@ static void print_expr_tree_helper(Expr *e, int indent);
 
 /*--- Private variables -----------------------------------------------------------------*/
 
+static HglArena temp_allocator = HGL_ARENA_INITIALIZER(1024*1024);
+
 /*--- Public functions ------------------------------------------------------------------*/
 
 Expr *parse_expr(Lexer *l)
@@ -102,7 +104,7 @@ void print_expr_tree(Expr *e)
 
 static Expr *alloc_binary_expr(ExprKind kind, Token token, Expr *lhs, Expr *rhs)
 {
-    Expr *e = alloc(temp_allocator, sizeof(Expr));
+    Expr *e = arena_alloc(&temp_allocator, sizeof(Expr));
     e->kind = kind;
     e->token = token;
     e->lhs = lhs;
@@ -112,7 +114,7 @@ static Expr *alloc_binary_expr(ExprKind kind, Token token, Expr *lhs, Expr *rhs)
 
 static Expr *alloc_unary_expr(ExprKind kind, Token token, Expr *child)
 {
-    Expr *e = alloc(temp_allocator, sizeof(Expr));
+    Expr *e = arena_alloc(&temp_allocator, sizeof(Expr));
     e->kind = kind;
     e->token = token;
     e->child = child;
@@ -121,7 +123,7 @@ static Expr *alloc_unary_expr(ExprKind kind, Token token, Expr *child)
 
 static Expr *alloc_atom_expr(ExprKind kind, Token token)
 {
-    Expr *e = alloc(temp_allocator, sizeof(Expr));
+    Expr *e = arena_alloc(&temp_allocator, sizeof(Expr));
     e->kind = kind;
     e->token = token;
     return e;

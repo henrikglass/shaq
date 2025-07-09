@@ -18,6 +18,7 @@ SOURCES := src/main.c 	       \
 		   src/sel/parser.c    \
 		   src/sel/typecheck.c \
 		   src/sel/builtins.c  \
+		   src/sel/codegen.c   \
 
 all:
 	$(CC) $(C_FLAGS) $(SOURCES) -o $(TARGET)

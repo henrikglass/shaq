@@ -83,6 +83,7 @@ typedef struct Expr
 {
     ExprKind kind;
     Token token;
+    Type type;
     union {
         struct Expr *child;
         struct Expr *lhs;

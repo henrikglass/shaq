@@ -58,7 +58,7 @@ Type typecheck(Expr *e)
             t1 = typecheck(e->rhs); 
             TYPECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
                              "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
-            return t0;
+            e->type = t0; 
         } break;
         
         case EXPR_REM: {
@@ -66,18 +66,19 @@ Type typecheck(Expr *e)
             t1 = typecheck(e->rhs); 
             TYPECHECK_ASSERT(t0 == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
             TYPECHECK_ASSERT(t1 == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
-            return t0;
+            e->type = t0; 
         } break;
         
         case EXPR_NEG: {
             // TODO better rule
             t0 = typecheck(e->child);
             TYPECHECK_ASSERT(t0 == TYPE_INT || t0 == TYPE_FLOAT , "Operand to unary minus operator must be of type INT or FLOAT");
-            return t0;
+            e->type = t0; 
         } break;
         
         case EXPR_PAREN: {
-            return typecheck(e->child);
+            t0 = typecheck(e->child);
+            e->type = t0;
         } break;
         
         case EXPR_FUNC: {
@@ -87,7 +88,8 @@ Type typecheck(Expr *e)
                     TYPECHECK_ASSERT(t0 == TYPE_NIL, 
                                      "Arguments to built-in function `" HGL_SV_FMT "(..)` "
                                      "does not match its signature.", HGL_SV_ARG(e->token.text));
-                    return BUILTIN_FUNCTIONS[i].type;
+                    e->type = BUILTIN_FUNCTIONS[i].type;
+                    return e->type;
                 } 
             }
             NAMECHECK_ERROR("No such function: `" HGL_SV_FMT "(..)`", HGL_SV_ARG(e->token.text));
@@ -99,9 +101,9 @@ Type typecheck(Expr *e)
         
         case EXPR_LIT: {
             if (e->token.kind == TOK_FLOAT_LITERAL) {
-                return TYPE_FLOAT;
+                e->type = TYPE_FLOAT;
             } else if (e->token.kind == TOK_INT_LITERAL) {
-                return TYPE_INT;
+                e->type = TYPE_INT;
             } else {
                 return TYPE_ERROR_;
             }
@@ -110,6 +112,7 @@ Type typecheck(Expr *e)
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
+                    e->type = TYPE_FLOAT;
                     return TYPE_FLOAT;
                 } 
             }
@@ -117,7 +120,7 @@ Type typecheck(Expr *e)
         } break;
     }
 
-    return TYPE_ERROR_;
+    return e->type;
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
