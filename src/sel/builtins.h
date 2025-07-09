@@ -20,7 +20,6 @@ typedef struct
 {
     HglStringView id;
     Type type;
-    int n_args;
     Type argtypes[17];
 } Function;
 
@@ -37,10 +36,10 @@ static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUI
 
 static const Function BUILTIN_FUNCTIONS[] = 
 {
-    {.id = HGL_SV_LIT("time"),  .type = TYPE_FLOAT, .n_args = 0, .argtypes = {TYPE_NIL}},
-    {.id = HGL_SV_LIT("sin"),   .type = TYPE_FLOAT, .n_args = 1, .argtypes = {TYPE_FLOAT, TYPE_NIL}},
-    {.id = HGL_SV_LIT("int"),   .type = TYPE_INT,   .n_args = 1, .argtypes = {TYPE_FLOAT, TYPE_NIL}},
-    {.id = HGL_SV_LIT("float"), .type = TYPE_FLOAT, .n_args = 1, .argtypes = {TYPE_INT, TYPE_NIL}},
+    {.id = HGL_SV_LIT("time"),  .type = TYPE_FLOAT, .argtypes = {TYPE_NIL}},
+    {.id = HGL_SV_LIT("sin"),   .type = TYPE_FLOAT, .argtypes = {TYPE_FLOAT, TYPE_NIL}},
+    {.id = HGL_SV_LIT("int"),   .type = TYPE_INT,   .argtypes = {TYPE_FLOAT, TYPE_NIL}},
+    {.id = HGL_SV_LIT("float"), .type = TYPE_FLOAT, .argtypes = {TYPE_INT, TYPE_NIL}},
 };
 static const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 

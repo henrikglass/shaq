@@ -27,19 +27,10 @@ int main(void)
     Lexer l;
     Expr *e;
     //l = lexer_begin("sin(2*PI*time())");
-    l = lexer_begin("time()");
-    e = parse_expr(&l);
-    l = lexer_begin("time(2)");
-    e = parse_expr(&l);
-    l = lexer_begin("time(2+3)");
-    e = parse_expr(&l);
-    l = lexer_begin("time(2*2+3)");
-    e = parse_expr(&l);
-    l = lexer_begin("time(2+3*2)");
-    e = parse_expr(&l);
-    l = lexer_begin("time(2,2,3)");
+    l = lexer_begin("sin(4.0 * time())");
     e = parse_expr(&l);
     t = typecheck(e);
+    printf("TYPE IS `%s`\n", TYPE_TO_STR[t]);
     //l = lexer_begin("1.2+3.14*2.23");
     //e = parse_expr(&l);
     //t = typecheck(e);
@@ -69,3 +60,8 @@ int main(void)
     //print_expr(e);
     //printf("\n");
 }
+
+
+// TODO SEL: Compile (flattened prefix expressions?)
+// TODO Remove alloc.h/.c once the program structure is more coherent
+// TODO SEL: Better error handling & error messages

@@ -44,9 +44,32 @@ typedef enum
     TYPE_MAT3,
     TYPE_MAT4,
     TYPE_IMAGE,
-    TYPECHECKER_ERROR,
-    NAMECHECKER_ERROR,
+    TYPE_ERROR_,
+    NAME_ERROR_,
 } Type;
+
+static const char *const TYPE_TO_STR[] =
+{
+    [TYPE_NIL]    = "nil",
+    [TYPE_BOOL]   = "bool",
+    [TYPE_INT]    = "int",
+    [TYPE_FLOAT]  = "float",
+    [TYPE_BVEC2]  = "bvec2",
+    [TYPE_BVEC3]  = "bvec3",
+    [TYPE_BVEC4]  = "bvec4",
+    [TYPE_VEC2]   = "vec2",
+    [TYPE_VEC3]   = "vec3",
+    [TYPE_VEC4]   = "vec4",
+    [TYPE_IVEC2]  = "ivec2",
+    [TYPE_IVEC3]  = "ivec3",
+    [TYPE_IVEC4]  = "ivec4",
+    [TYPE_MAT2]   = "mat2",
+    [TYPE_MAT3]   = "mat3",
+    [TYPE_MAT4]   = "mat4",
+    [TYPE_IMAGE]  = "image",
+    [TYPE_ERROR_] = "type error",
+    [NAME_ERROR_] = "name error",
+};
 
 /**
  * An expression may be either binary, and have two children `lhs` and `rhs`, unary, 
@@ -59,7 +82,6 @@ typedef enum
 typedef struct Expr
 {
     ExprKind kind;
-    Type type;
     Token token;
     union {
         struct Expr *child;

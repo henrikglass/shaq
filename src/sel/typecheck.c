@@ -7,16 +7,32 @@
 
 /*--- Private macros --------------------------------------------------------------------*/
 
+#define NAMECHECK_ERROR(...)                              \
+    do {                                                  \
+        fprintf(stderr, "Namecheck error: " __VA_ARGS__); \
+        fprintf(stderr, "\n");                            \
+        return NAME_ERROR_;                               \
+    } while (0)
+
+#define TYPECHECK_ERROR(...)                              \
+    do {                                                  \
+        fprintf(stderr, "Typecheck error: " __VA_ARGS__); \
+        fprintf(stderr, "\n");                            \
+        return TYPE_ERROR_;                               \
+    } while (0)
+
 #define TYPECHECK_ASSERT(cond, ...)                       \
     if (!(cond)) {                                        \
-        fprintf(stderr, "Typecheck error. " __VA_ARGS__); \
+        fprintf(stderr, "Typecheck error: " __VA_ARGS__); \
         fprintf(stderr, "\n");                            \
-        return TYPECHECKER_ERROR;                         \
+        return TYPE_ERROR_;                               \
     }
 
 /*--- Private type definitions ----------------------------------------------------------*/
 
 /*--- Private function prototypes -------------------------------------------------------*/
+
+static Type typecheck_argslist(Expr *e, const HglStringView *func_id, const Type *argtypes);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -26,6 +42,8 @@
 
 Type typecheck(Expr *e)
 {
+    Type t0, t1;
+
     if (e == NULL) {
         return TYPE_NIL;
     }
@@ -36,24 +54,26 @@ Type typecheck(Expr *e)
         case EXPR_SUB:
         case EXPR_MUL:
         case EXPR_DIV: {
-            Type t0 = typecheck(e->lhs); 
-            Type t1 = typecheck(e->rhs); 
-            TYPECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types.");
+            t0 = typecheck(e->lhs); 
+            t1 = typecheck(e->rhs); 
+            TYPECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
+                             "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
             return t0;
         } break;
         
         case EXPR_REM: {
-            Type t0 = typecheck(e->lhs); 
-            Type t1 = typecheck(e->rhs); 
+            t0 = typecheck(e->lhs); 
+            t1 = typecheck(e->rhs); 
             TYPECHECK_ASSERT(t0 == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
             TYPECHECK_ASSERT(t1 == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
-            return TYPE_INT;
+            return t0;
         } break;
         
         case EXPR_NEG: {
             // TODO better rule
-            Type t0 = typecheck(e->child);
+            t0 = typecheck(e->child);
             TYPECHECK_ASSERT(t0 == TYPE_INT || t0 == TYPE_FLOAT , "Operand to unary minus operator must be of type INT or FLOAT");
+            return t0;
         } break;
         
         case EXPR_PAREN: {
@@ -63,15 +83,18 @@ Type typecheck(Expr *e)
         case EXPR_FUNC: {
             for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
-                    // TODO typecheck argslist
+                    t0 = typecheck_argslist(e->child, &e->token.text, BUILTIN_FUNCTIONS[i].argtypes);
+                    TYPECHECK_ASSERT(t0 == TYPE_NIL, 
+                                     "Arguments to built-in function `" HGL_SV_FMT "(..)` "
+                                     "does not match its signature.", HGL_SV_ARG(e->token.text));
                     return BUILTIN_FUNCTIONS[i].type;
                 } 
             }
-            return NAMECHECKER_ERROR;
+            NAMECHECK_ERROR("No such function: `" HGL_SV_FMT "(..)`", HGL_SV_ARG(e->token.text));
         } break;
         
         case EXPR_ARGLIST: {
-            TYPECHECK_ASSERT(false, "You should not see this.");
+            TYPECHECK_ASSERT(false, "You should not see this #1");
         } break;
         
         case EXPR_LIT: {
@@ -80,7 +103,7 @@ Type typecheck(Expr *e)
             } else if (e->token.kind == TOK_INT_LITERAL) {
                 return TYPE_INT;
             } else {
-                return TYPECHECKER_ERROR;
+                return TYPE_ERROR_;
             }
         } break;
         
@@ -90,12 +113,45 @@ Type typecheck(Expr *e)
                     return TYPE_FLOAT;
                 } 
             }
-            return NAMECHECKER_ERROR;
+            NAMECHECK_ERROR("No such constant: `" HGL_SV_FMT "`", HGL_SV_ARG(e->token.text));
         } break;
     }
 
-    return TYPECHECKER_ERROR;
+    return TYPE_ERROR_;
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
+
+static Type typecheck_argslist(Expr *e, const HglStringView *func_id, const Type *argtypes)
+{
+    /* no more actual arguments? */
+    if (e == NULL) {
+        TYPECHECK_ASSERT(*argtypes == TYPE_NIL, 
+                         "Too few arguments to built-in function: `"
+                          HGL_SV_FMT "(..)`", HGL_SV_ARG(*func_id));
+        return TYPE_NIL;
+    }
+
+    /* no more arguments expected? */
+    if (*argtypes == TYPE_NIL) {
+        TYPECHECK_ERROR("Too many arguments to built-in function: `"
+                         HGL_SV_FMT "(..)`", HGL_SV_ARG(*func_id));
+        return TYPE_NIL;
+    }
+
+    /* Typecheck left-hand-side expression (head of argslist)*/
+    TYPECHECK_ASSERT(e->kind == EXPR_ARGLIST, "You should not see this #2");
+    Type t = typecheck(e->lhs);
+    TYPECHECK_ASSERT(t == *argtypes, 
+                     "Type mismatch in arguments to built-in function: `"
+                      HGL_SV_FMT "(..)`. Expected `%s`, got `%s`", 
+                      HGL_SV_ARG(*func_id), TYPE_TO_STR[*argtypes],
+                      TYPE_TO_STR[t]);
+
+    /* Typecheck right-hand-side expression (tail of argslist)*/
+    return typecheck_argslist(e->rhs, func_id, ++argtypes);
+
+}
+
+
 
