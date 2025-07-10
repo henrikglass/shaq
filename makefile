@@ -9,7 +9,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
 			  -Wno-error=cpp 
 C_INCLUDES := -Isrc -Iinclude
-C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 
+C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -fno-strict-aliasing
 
 
 SOURCES := src/main.c 	       \
@@ -19,6 +19,7 @@ SOURCES := src/main.c 	       \
 		   src/sel/typecheck.c \
 		   src/sel/builtins.c  \
 		   src/sel/codegen.c   \
+		   src/sel/eval.c      \
 
 all:
 	gcc $(C_FLAGS) $(SOURCES) -o $(TARGET)

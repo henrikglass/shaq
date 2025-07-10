@@ -3,7 +3,7 @@
 
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include "ast.h"
+#include "sel/ast.h"
 
 #include "hgl_int.h"
 #include "hgl_float.h"
@@ -38,8 +38,9 @@ static_assert(sizeof(Op) == 4, "");
 typedef struct
 {
     u8 *code;
-    u32 count;
+    u32 size;
     u32 capacity;
+    Type type;
 } EExpr;
 
 /*--- Public variables ------------------------------------------------------------------*/

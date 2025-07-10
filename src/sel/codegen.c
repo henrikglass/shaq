@@ -30,7 +30,9 @@ static HglArena eexpr_allocator = HGL_ARENA_INITIALIZER(1024*1024);
 
 EExpr codegen(const Expr *e)
 {
-    EExpr exe = {0};
+    EExpr exe = {
+        .type = e->type,
+    };
 
     codegen_expr(&exe, e);
 
@@ -156,19 +158,19 @@ void push_f32(EExpr *exe, f32 v)
 void push(EExpr *exe, const void *val, u32 size)
 {
     if (exe->code == NULL) {
-        exe->count = 0;
+        exe->size = 0;
         exe->capacity = 64;
-        exe->code = hgl_stack_alloc(&eexpr_allocator, exe->capacity * sizeof(*exe->code));
+        exe->code = stack_alloc(&eexpr_allocator, exe->capacity * sizeof(*exe->code));
     } 
-    if (exe->capacity < exe->count + size) {
-        while (exe->capacity < exe->count + size) {
+    if (exe->capacity < exe->size + size) {
+        while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
-        exe->code = hgl_stack_realloc(&eexpr_allocator, exe->code, exe->capacity * sizeof(*exe->code));
+        exe->code = stack_realloc(&eexpr_allocator, exe->code, exe->capacity * sizeof(*exe->code));
     }
     assert(exe->code != NULL && "eexe_allocator alloc failed");
-    memcpy(&exe->code[exe->count], val, size);
-    exe->count += size;
+    memcpy(&exe->code[exe->size], val, size);
+    exe->size += size;
 }
 
 

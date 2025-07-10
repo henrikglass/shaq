@@ -6,6 +6,9 @@
 
 #include "sel/lexer.h"
 
+#include "hgl_int.h"
+#include "hgl_float.h"
+
 #include <assert.h>
 
 /*--- Public macros ---------------------------------------------------------------------*/
@@ -77,6 +80,26 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_IMAGE]  = "image",
     [TYPE_ERROR_] = "type error",
     [NAME_ERROR_] = "name error",
+};
+
+static const u32 TYPE_TO_SIZE[] = 
+{
+    [TYPE_NIL]    = 0,
+    [TYPE_BOOL]   = sizeof(bool),
+    [TYPE_INT]    = sizeof(i32),
+    [TYPE_FLOAT]  = sizeof(f32),
+    [TYPE_BVEC2]  = 2,
+    [TYPE_BVEC3]  = 3,
+    [TYPE_BVEC4]  = 4,
+    [TYPE_VEC2]   = 8,
+    [TYPE_VEC3]   = 12,
+    [TYPE_VEC4]   = 16,
+    [TYPE_IVEC2]  = 8,
+    [TYPE_IVEC3]  = 12,
+    [TYPE_IVEC4]  = 16,
+    [TYPE_MAT2]   = 16,
+    [TYPE_MAT3]   = 36,
+    [TYPE_MAT4]   = 64,
 };
 
 /**

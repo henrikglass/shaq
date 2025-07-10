@@ -4,6 +4,7 @@
 #include "sel/parser.h"
 #include "sel/typecheck.h"
 #include "sel/codegen.h"
+#include "sel/eval.h"
 
 int main(void)
 {
@@ -28,14 +29,17 @@ int main(void)
     Lexer l;
     Expr *e;
     EExpr ee;
+    ExeCtx ectx;
     //l = lexer_begin("sin(2*PI*time())");
     //l = lexer_begin("sin(4.0 * time())");
-    l = lexer_begin("4.0*5.0+4.0+9.0*PI");
+    l = lexer_begin("4.0*5.0+40.+9.0");
     e = parse_expr(&l);
     t = typecheck(e);
     ee = codegen(e);
-    (void) ee;
+    ectx = make_execution_context(&ee);
+    f32 *res = (f32 *)eval(&ectx); 
     printf("TYPE IS `%s`\n", TYPE_TO_STR[t]);
+    printf("result: %f\n", (f64) *res);
 
 
     print_expr(e);
@@ -64,6 +68,7 @@ int main(void)
 }
 
 
+// TODO packa ihop SEL + funktioner
 // TODO SEL: Compile (flattened prefix expressions?)
 // TODO Remove alloc.h/.c once the program structure is more coherent
 // TODO SEL: Better error handling & error messages
