@@ -30,10 +30,10 @@ int main(void)
     EExpr ee;
     //l = lexer_begin("sin(2*PI*time())");
     //l = lexer_begin("sin(4.0 * time())");
-    l = lexer_begin("4.0*5.0+40.0+9.0*PI");
+    l = lexer_begin("4.0*5.0+4.0+9.0*PI");
     e = parse_expr(&l);
     t = typecheck(e);
-    ee = compile(e);
+    ee = codegen(e);
     (void) ee;
     printf("TYPE IS `%s`\n", TYPE_TO_STR[t]);
 

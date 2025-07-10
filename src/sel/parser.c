@@ -89,6 +89,7 @@ void print_expr(Expr *e)
         case EXPR_ARGLIST:
         case EXPR_LIT:
         case EXPR_CONST:
+        case N_EXPR_KINDS:
         default: assert(false); 
     }
     print_expr(e->rhs);
@@ -302,6 +303,7 @@ static void print_expr_tree_helper(Expr *e, int indent)
                            token_print(&e->token); 
                            printf("\n"); 
                            break;
+        case N_EXPR_KINDS: assert(false);
     }
 }
 

@@ -118,6 +118,10 @@ Type typecheck(Expr *e)
             }
             NAMECHECK_ERROR("No such constant: `" HGL_SV_FMT "`", HGL_SV_ARG(e->token.text));
         } break;
+
+        case N_EXPR_KINDS: {
+            assert(false && "-");
+        } break;
     }
 
     return e->type;

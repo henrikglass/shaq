@@ -21,7 +21,7 @@ SOURCES := src/main.c 	       \
 		   src/sel/codegen.c   \
 
 all:
-	$(CC) $(C_FLAGS) $(SOURCES) -o $(TARGET)
+	gcc $(C_FLAGS) $(SOURCES) -o $(TARGET)
 
 clean:
 	-rm $(TARGET)

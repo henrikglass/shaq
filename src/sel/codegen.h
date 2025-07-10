@@ -15,6 +15,7 @@
 
 typedef enum
 {
+    OP_PUSH,
     OP_ADD,
     OP_SUB,
     OP_MUL,
@@ -26,36 +27,26 @@ typedef enum
 
 typedef struct
 {
-    OpKind kind;
-    Type type;
+    u8 kind;
+    u8 type;
+    u8 argsize;
+    u8 pad[1];
 } Op;
-
-typedef struct
-{
-    Op *arr;
-    u32 count;
-    u32 capacity;
-} Ops;
-
-typedef struct
-{
-    u8 *arr;
-    u32 count;
-    u32 capacity;
-} Values;
+static_assert(sizeof(Op) == 4, "");
 
 /* "executable" expression */
 typedef struct
 {
-    Ops ops;
-    Values vals;
+    u8 *code;
+    u32 count;
+    u32 capacity;
 } EExpr;
 
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-EExpr compile(const Expr *e);
+EExpr codegen(const Expr *e);
 
 #endif /* CODEGEN_H */
 

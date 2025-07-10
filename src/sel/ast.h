@@ -6,6 +6,8 @@
 
 #include "sel/lexer.h"
 
+#include <assert.h>
+
 /*--- Public macros ---------------------------------------------------------------------*/
 
 /*--- Public type definitions -----------------------------------------------------------*/
@@ -23,7 +25,10 @@ typedef enum
     EXPR_ARGLIST,
     EXPR_LIT,
     EXPR_CONST,
+    N_EXPR_KINDS,
 } ExprKind;
+
+static_assert(N_EXPR_KINDS <= 256, "");
 
 typedef enum
 {
@@ -46,7 +51,10 @@ typedef enum
     TYPE_IMAGE,
     TYPE_ERROR_,
     NAME_ERROR_,
+    N_TYPES,
 } Type;
+
+static_assert(N_EXPR_KINDS <= 256, "");
 
 static const char *const TYPE_TO_STR[] =
 {
