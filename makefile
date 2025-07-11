@@ -8,21 +8,17 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
 			  -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
 			  -Wno-error=cpp 
-C_INCLUDES := -Isrc -Iinclude
+C_INCLUDES := -Iinclude
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -fno-strict-aliasing
+L_FLAGS    := -lm
 
 
 SOURCES := src/main.c 	       \
 		   src/alloc.c 	       \
-		   src/sel/lexer.c     \
-		   src/sel/parser.c    \
-		   src/sel/typecheck.c \
-		   src/sel/builtins.c  \
-		   src/sel/codegen.c   \
-		   src/sel/eval.c      \
+		   src/sel.c           \
 
 all:
-	gcc $(C_FLAGS) $(SOURCES) -o $(TARGET)
+	gcc $(C_FLAGS) $(SOURCES) -o $(TARGET) $(L_FLAGS)
 
 clean:
 	-rm $(TARGET)
