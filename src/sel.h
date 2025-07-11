@@ -1,13 +1,10 @@
-#ifndef CODEGEN_H
-#define CODEGEN_H
+#ifndef SEL_H
+#define SEL_H
 
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include "sel/ast.h"
-
 #include "hgl_int.h"
 #include "hgl_float.h"
-#include "hgl_da.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -15,24 +12,36 @@
 
 typedef enum
 {
-    OP_PUSH,
-    OP_ADD,
-    OP_SUB,
-    OP_MUL,
-    OP_DIV,
-    OP_REM,
-    OP_NEG,
-    OP_FUNC,
-} OpKind;
+    TYPE_NIL = 0,
+    TYPE_BOOL,
+    TYPE_INT,
+    TYPE_FLOAT,
+    TYPE_BVEC2,
+    TYPE_BVEC3,
+    TYPE_BVEC4,
+    TYPE_VEC2,
+    TYPE_VEC3,
+    TYPE_VEC4,
+    TYPE_IVEC2,
+    TYPE_IVEC3,
+    TYPE_IVEC4,
+    TYPE_MAT2,
+    TYPE_MAT3,
+    TYPE_MAT4,
+    TYPE_IMAGE,
+    TYPE_ERROR_,
+    NAME_ERROR_,
+    N_TYPES,
+} Type;
 
-typedef struct
+static_assert(N_TYPES <= 256, "");
+typedef union
 {
-    u8 kind;
-    u8 type;
-    u8 argsize;
-    u8 pad[1];
-} Op;
-static_assert(sizeof(Op) == 4, "");
+    bool val_bool; 
+    i32 val_i32; 
+    f32 val_f32; 
+    /* todo ... */
+} SelValue;
 
 /* "executable" expression */
 typedef struct
@@ -41,13 +50,14 @@ typedef struct
     u32 size;
     u32 capacity;
     Type type;
-} EExpr;
+} ExeExpr;
 
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-EExpr codegen(const Expr *e);
+ExeExpr *sel_compile(const char *src);
+SelValue sel_run(ExeExpr *exe);
 
-#endif /* CODEGEN_H */
+#endif /* SEL_H */
 

@@ -1,1 +1,0 @@
-# Simple Expression Language (SEL)
