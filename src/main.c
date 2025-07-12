@@ -32,7 +32,5 @@ int main(void)
     }
 }
 
-
-// TODO packa ihop SEL + funktioner
-// TODO Remove alloc.h/.c once the program structure is more coherent
 // TODO SEL: Better error handling & error messages
+// TODO Remove alloc.h/.c once the program structure is more coherent
