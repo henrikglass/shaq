@@ -1,5 +1,5 @@
 
-TARGET := shaq
+.PHONY: shaq sel clean
 
 C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
@@ -17,9 +17,15 @@ SOURCES := src/main.c 	       \
 		   src/alloc.c 	       \
 		   src/sel.c           \
 
-all:
-	gcc $(C_FLAGS) $(SOURCES) -o $(TARGET) $(L_FLAGS)
+all: shaq sel
+
+shaq:
+	gcc $(C_FLAGS) $(SOURCES) -o shaq $(L_FLAGS)
+
+sel:
+	gcc $(C_FLAGS) -Isrc test/test_sel.c src/sel.c src/alloc.c -o sel $(L_FLAGS)
 
 clean:
-	-rm $(TARGET)
+	-rm shaq
+	-rm sel
 
