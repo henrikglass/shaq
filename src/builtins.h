@@ -7,6 +7,9 @@
 
 #include "hglm.h"
 
+#include <stdlib.h>
+#include <time.h>
+
 /*--- Public macros ---------------------------------------------------------------------*/
 
 #define BUILTIN_MAX_N_ARGS 16
@@ -18,7 +21,7 @@ typedef struct
 {
     HglStringView id;
     //Type type;
-    float value;
+    f32 value;
 } Constant;
 
 typedef struct
@@ -49,6 +52,20 @@ static inline SelValue builtin_maxi_(void *args)
     return (SelValue) {.val_i32 = (args_i32[0] > args_i32[1]) ? args_i32[0] : args_i32[1]}; 
 }
 
+static inline SelValue builtin_randi_(void *args)
+{
+    static bool first_call = true;
+    if (first_call) {
+        srand(time(NULL)); // NOTE: duplicated in builtin_rand_. TODO add this to shaq_core.c
+        first_call = false;
+    }
+
+    i32 *args_i32 = (i32 *) args;
+    i32 min = args_i32[0];
+    i32 max = args_i32[1];
+    return (SelValue) {.val_i32 = rand() % (max + 1 - min) + min}; 
+}
+
 static inline SelValue builtin_iota_(void *args)
 {
     (void) args;
@@ -67,13 +84,28 @@ static inline SelValue builtin_float_(void *args)
 static inline SelValue builtin_time_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_f32 = 13.37f};  // TODO
+    return (SelValue) {.val_f32 = 13.37f};  // TODO shaq_core.c
 }
 
 static inline SelValue builtin_deltatime_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_f32 = 69.420};  // TODO
+    return (SelValue) {.val_f32 = 69.420};  // TODO shaq_core.c
+}
+
+static inline SelValue builtin_rand_(void *args)
+{
+    static bool first_call = true;
+    if (first_call) {
+        srand(time(NULL)); // NOTE: duplicated in builtin_rand_. TODO add this to shaq_core.c
+        first_call = false;
+    }
+
+    f32 *args_f32 = (f32 *) args;
+    f32 min = args_f32[0];
+    f32 max = args_f32[1];
+    f32 range = max - min;
+    return (SelValue) {.val_f32 = ((f32)rand()/(f32)RAND_MAX)*range + min}; 
 }
 
 static inline SelValue builtin_sqrt_(void *args)
@@ -248,11 +280,13 @@ static const Function BUILTIN_FUNCTIONS[] =
     { .id = HGL_SV_LIT("int"),        .type = TYPE_INT,   .impl = builtin_int_,        .argtypes = {TYPE_FLOAT, TYPE_NIL}},         // typecast float to int
     { .id = HGL_SV_LIT("mini"),       .type = TYPE_INT,   .impl = builtin_mini_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL}},
     { .id = HGL_SV_LIT("maxi"),       .type = TYPE_INT,   .impl = builtin_maxi_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL}},
+    { .id = HGL_SV_LIT("randi"),      .type = TYPE_INT,   .impl = builtin_randi_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL}},
     { .id = HGL_SV_LIT("iota"),       .type = TYPE_INT,   .impl = builtin_iota_,       .argtypes = {TYPE_NIL}},                     // Returns the number of times it's been called . See the `iota` identfier in golang .
 
     { .id = HGL_SV_LIT("float"),      .type = TYPE_FLOAT, .impl = builtin_float_,      .argtypes = {TYPE_INT, TYPE_NIL}},           // typecast int to float
     { .id = HGL_SV_LIT("time"),       .type = TYPE_FLOAT, .impl = builtin_time_,       .argtypes = {TYPE_NIL}},                     // returns the program runtime in seconds
     { .id = HGL_SV_LIT("deltatime"),  .type = TYPE_FLOAT, .impl = builtin_deltatime_,  .argtypes = {TYPE_NIL}},                     // returns the frame delta time in seconds
+    { .id = HGL_SV_LIT("rand"),       .type = TYPE_FLOAT, .impl = builtin_rand_,       .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}},
     { .id = HGL_SV_LIT("sqrt"),       .type = TYPE_FLOAT, .impl = builtin_sqrt_,       .argtypes = {TYPE_FLOAT, TYPE_NIL}},
     { .id = HGL_SV_LIT("pow"),        .type = TYPE_FLOAT, .impl = builtin_pow_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}},
     { .id = HGL_SV_LIT("exp"),        .type = TYPE_FLOAT, .impl = builtin_exp_,        .argtypes = {TYPE_FLOAT, TYPE_NIL}},

@@ -72,33 +72,52 @@
 #define HGL_ARENA_ALIGNMENT 16
 #endif
 
+
 #define HGL_ARENA_INITIALIZER(s)     \
     {                                \
         .memory = (uint8_t[(s)]){0}, \
         .head = 0,                   \
         .size = (s),                 \
+        .backend = HGL_ARENA_STATIC, \
+        .last_alloc = 0,             \
     }
 
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
-#include <string.h> // memset
 
 /*--- Public type definitions -----------------------------------------------------------*/
+
+static_assert(HGL_ARENA_ALIGNMENT % 2 == 0);
+
+typedef enum
+{
+    HGL_ARENA_MALLOC,
+    HGL_ARENA_MMAP,
+    HGL_ARENA_STATIC,
+} HglArenaBackend;
 
 typedef struct
 {
     uint8_t *memory;
     size_t head;
     size_t size;
+    HglArenaBackend backend;
+    void *last_alloc;
 } HglArena;
 
 /**
  * Create an arena of size `arena_size`.
  */
 HglArena hgl_arena_make(size_t arena_size);
+
+#ifdef _DEFAULT_SOURCE
+/**
+ * Create an arena of size `arena_size` using an anonymous private mmap-mapping.
+ */
+HglArena hgl_arena_make_mmap(size_t arena_size);
+#endif
 
 /**
  * Create an arena of `buf_size` from a preallocated buffer `buf`.
@@ -109,6 +128,15 @@ HglArena hgl_arena_make_from_buffer(void *buf, size_t buf_size);
  * Allocate a chunk of `alloc_size` bytes from `arena`.
  */
 void *hgl_arena_alloc(HglArena *arena, size_t alloc_size);
+
+/**
+ * Reallocate `ptr` in the arena. `ptr` MUST be the result of the last 
+ * call to `hgl_arena_alloc()`, otherwise the program aborts. 
+ *
+ * This is really only here in case you have a single dynamic array living
+ * inside an arena and you wish to grow it.
+ */
+void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size);
 
 /**
  * Free all allocations in `arena`.
@@ -137,17 +165,40 @@ void hgl_arena_destroy(HglArena *arena);
 #  include <stdio.h>
 #endif
 
+#include <stdlib.h>
+#include <sys/mman.h>
+
 HglArena hgl_arena_make(size_t arena_size)
 {
-    static_assert(HGL_ARENA_ALIGNMENT % 2 == 0);
     void *mem = aligned_alloc(HGL_ARENA_ALIGNMENT, arena_size);
-    memset(mem, 0, arena_size); // why not
     return (HglArena) {
         .memory = mem,
         .head = 0,
         .size = (mem == NULL) ? 0 : arena_size,
+        .backend = HGL_ARENA_MALLOC,
+        .last_alloc = 0,
     };
 }
+
+#ifdef _DEFAULT_SOURCE
+HglArena hgl_arena_make_mmap(size_t arena_size)
+{
+    void *mem = mmap(NULL, arena_size, 
+                     PROT_READ | PROT_WRITE, 
+                     MAP_PRIVATE | MAP_ANONYMOUS,
+                     -1, 0);
+    if (mem == MAP_FAILED) {
+        mem = NULL;
+    }
+    return (HglArena) {
+        .memory = mem,
+        .head = 0,
+        .size = (mem == NULL) ? 0 : arena_size,
+        .backend = HGL_ARENA_MMAP,
+        .last_alloc = 0,
+    };
+}
+#endif
 
 HglArena hgl_arena_make_from_buffer(void *buf, size_t buf_size)
 {
@@ -176,10 +227,28 @@ void *hgl_arena_alloc(HglArena *arena, size_t alloc_size)
         return NULL;
     }
 
+    /* save this as the last allocation */
+    arena->last_alloc = ptr;
+
     /* Move head to nearest multiple of alignment after `head` + `alloc_size` */
     arena->head += (alloc_size + HGL_ARENA_ALIGNMENT - 1) &
                   ~(HGL_ARENA_ALIGNMENT - 1);
     return ptr;
+}
+
+void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size)
+{
+    /* check pointer */
+    if (ptr != arena->last_alloc) {
+        fprintf(stderr, "hgl_arena_realloc(): invalid pointer.\n");
+        abort();
+    }
+
+    /* restore old head */
+    arena->head = (uint8_t *)ptr - arena->memory;
+
+    /* allocate anew */
+    return hgl_arena_alloc(arena, alloc_size);
 }
 
 void hgl_arena_free_all(HglArena *arena)
@@ -196,7 +265,11 @@ void hgl_arena_print_usage(HglArena *arena)
 
 void hgl_arena_destroy(HglArena *arena)
 {
-    (free)(arena->memory);
+    switch (arena->backend) {
+        case HGL_ARENA_MALLOC: free(arena->memory); break;
+        case HGL_ARENA_MMAP:   munmap(arena->memory, arena->size); break;
+        case HGL_ARENA_STATIC: break;
+    }
 }
 
 #endif /* HGL_ARENA_ALLOC_IMPLEMENTATION */

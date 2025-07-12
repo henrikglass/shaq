@@ -3,14 +3,15 @@
 
 #include <stddef.h>
 #include "hgl_arena_alloc.h"
-#include "hgl_stack_alloc.h"
+//#include "hgl_stack_alloc.h"
 
 #define arena_alloc hgl_arena_alloc
 #define arena_free_all hgl_arena_free_all
 #define arena_print_usage hgl_arena_print_usage
-#define stack_alloc hgl_stack_alloc
-#define stack_realloc hgl_stack_realloc
-#define stack_free hgl_stack_free
+#define arena_realloc hgl_arena_realloc
+//#define stack_alloc hgl_stack_alloc
+//#define stack_realloc hgl_stack_realloc
+//#define stack_free hgl_stack_free
 
 #endif /* ALLOC_H */
 

@@ -187,6 +187,7 @@ static inline f32 negf(f32 *val);
 static void token_print(Token *t);
 static bool is_identifier_char(int c);
 static bool is_decimal_char(int c);
+static bool is_hexadecimal_char(int c);
 static inline void print_expr(ExprTree *e);
 static inline void print_expr_tree(ExprTree *e);
 static inline void print_expr_tree_helper(ExprTree *e, int indent);
@@ -344,9 +345,19 @@ static Token lexer_peek(Lexer *l)
 
         case '0' ... '9': {
             size_t i = 1;
-            for (; i < l->buf.length; i++) {
-                c = l->buf.start[i];
-                if (!is_decimal_char(c)) break;
+
+            /* hexadecimal int literal? */
+            if (c == '0' && l->buf.start[i] == 'x') {
+                i++;
+                for (; i < l->buf.length; i++) {
+                    c = l->buf.start[i];
+                    if (!is_hexadecimal_char(c)) break;
+                }
+            } else {
+                for (; i < l->buf.length; i++) {
+                    c = l->buf.start[i];
+                    if (!is_decimal_char(c)) break;
+                }
             }
 
             /* int literal */
@@ -653,7 +664,7 @@ static Type typecheck_argslist(ExprTree *e, const HglStringView *func_id, const 
 
 static ExeExpr *codegen(const ExprTree *e)
 {
-    ExeExpr *exe = stack_alloc(&eexpr_allocator, sizeof(ExeExpr));
+    ExeExpr *exe = arena_alloc(&eexpr_allocator, sizeof(ExeExpr));
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
     codegen_expr(exe, e);
@@ -795,13 +806,13 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size)
     if (exe->code == NULL) {
         exe->size = 0;
         exe->capacity = 64;
-        exe->code = stack_alloc(&eexpr_allocator, exe->capacity * sizeof(*exe->code));
+        exe->code = arena_alloc(&eexpr_allocator, exe->capacity * sizeof(*exe->code));
     } 
     if (exe->capacity < exe->size + size) {
         while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
-        exe->code = stack_realloc(&eexpr_allocator, exe->code, exe->capacity * sizeof(*exe->code));
+        exe->code = arena_realloc(&eexpr_allocator, exe->code, exe->capacity * sizeof(*exe->code));
     }
     assert(exe->code != NULL && "eexe_allocator alloc failed");
     memcpy(&exe->code[exe->size], val, size);
@@ -881,7 +892,7 @@ static void svm_run()
                 void *val = svm_stack_pop(tsize);
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = negi(val); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {i32 tmp = negf(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_FLOAT: {f32 tmp = negf(val); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -977,6 +988,14 @@ static bool is_identifier_char(int c)
 static bool is_decimal_char(int c)
 {
     return (c >= '0' && c <= '9') ||
+           (c == '_');
+}
+
+static bool is_hexadecimal_char(int c)
+{
+    return (c >= '0' && c <= '9') ||
+           (c >= 'a' && c <= 'f') ||
+           (c >= 'A' && c <= 'F') ||
            (c == '_');
 }
 
