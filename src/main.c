@@ -12,9 +12,9 @@ int main(void)
         case TYPE_INT:   printf("result = %d\n", r.val_i32); break;
         case TYPE_FLOAT: printf("result = %f\n", (double)r.val_f32); break;
         case TYPE_NIL:   // TODO
-        case TYPE_BVEC2: // TODO
-        case TYPE_BVEC3: // TODO
-        case TYPE_BVEC4: // TODO
+        //case TYPE_BVEC2: // TODO
+        //case TYPE_BVEC3: // TODO
+        //case TYPE_BVEC4: // TODO
         case TYPE_VEC2:  // TODO
         case TYPE_VEC3:  // TODO
         case TYPE_VEC4:  // TODO
@@ -25,8 +25,7 @@ int main(void)
         case TYPE_MAT3:  // TODO
         case TYPE_MAT4:  // TODO
         case TYPE_IMAGE: // TODO
-        case TYPE_ERROR_:
-        case NAME_ERROR_:
+        case TYPE_AND_NAMECHECKER_ERROR_:
         case N_TYPES:
             assert(false);
     }

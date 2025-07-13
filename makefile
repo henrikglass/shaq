@@ -1,3 +1,4 @@
+MAKEFLAGS += "-j $(shell nproc)"
 
 .PHONY: shaq sel clean
 

@@ -11,32 +11,47 @@
 
 /*--- Private macros --------------------------------------------------------------------*/
 
-#define LEXER_ASSERT(cond, ...)                           \
-    do {                                                  \
-        if (!(cond)) {                                    \
-            return (Token) {.kind = LEXER_ERROR_};        \
-        }                                                 \
-    } while(0)
-
-#define NAMECHECK_ERROR(...)                              \
-    do {                                                  \
-        fprintf(stderr, "Namecheck error: " __VA_ARGS__); \
-        fprintf(stderr, "\n");                            \
-        return NAME_ERROR_;                               \
+#define TRY(expr_)                                                    \
+    do {                                                              \
+        int err_ = (int) (expr_);                                     \
+        if (err_ != 0) {                                              \
+            return err_;                                              \
+        }                                                             \
     } while (0)
 
-#define TYPECHECK_ERROR(...)                              \
-    do {                                                  \
-        fprintf(stderr, "Typecheck error: " __VA_ARGS__); \
-        fprintf(stderr, "\n");                            \
-        return TYPE_ERROR_;                               \
+#define LEXER_ASSERT(cond_, ...)                                      \
+    if (!(cond_)) {                                                   \
+        fprintf(stderr, "[SEL] Lexer error: " __VA_ARGS__);           \
+        fprintf(stderr, "\n");                                        \
+        return (Token) {.kind = LEXER_ERROR_};                        \
+    }                                                                 \
+
+#define PARSER_ERROR(...)                                             \
+    do {                                                              \
+        fprintf(stderr, "[SEL] Parser error: " __VA_ARGS__);          \
+        fprintf(stderr, "\n");                                        \
+        return -1;                                                    \
+    } while (0)                                                       \
+
+#define PARSER_ASSERT(cond_, ...)                                     \
+    if (!(cond_)) {                                                   \
+        fprintf(stderr, "[SEL] Parser error: " __VA_ARGS__);          \
+        fprintf(stderr, "\n");                                        \
+        return -1;                                                    \
+    }                                                                 \
+
+#define TYPE_AND_NAMECHECK_ERROR(...)                                 \
+    do {                                                              \
+        fprintf(stderr, "[SEL] Type-/namecheck error: " __VA_ARGS__); \
+        fprintf(stderr, "\n");                                        \
+        return TYPE_AND_NAMECHECKER_ERROR_;                           \
     } while (0)
 
-#define TYPECHECK_ASSERT(cond, ...)                       \
-    if (!(cond)) {                                        \
-        fprintf(stderr, "Typecheck error: " __VA_ARGS__); \
-        fprintf(stderr, "\n");                            \
-        return TYPE_ERROR_;                               \
+#define TYPE_AND_NAMECHECK_ASSERT(cond_, ...)                         \
+    if (!(cond_)) {                                                   \
+        fprintf(stderr, "[SEL] Type-/namecheck error: " __VA_ARGS__); \
+        fprintf(stderr, "\n");                                        \
+        return TYPE_AND_NAMECHECKER_ERROR_;                           \
     }
 
 #define SVM_STACK_SIZE (16*1024)
@@ -53,12 +68,12 @@ typedef enum
     TOK_FSLASH,
     TOK_PERCENT,
     TOK_COMMA,
+    TOK_BOOL_LITERAL,
     TOK_INT_LITERAL,
     TOK_FLOAT_LITERAL,
     TOK_IDENTIFIER,
     EOF_TOKEN_,
     LEXER_ERROR_,
-    NO_TOKEN_,
     N_TOKENS_,
 } TokenKind;
 
@@ -138,7 +153,6 @@ static_assert(sizeof(Op) == 4, "");
 static Lexer lexer_begin(const char *str);
 static Token lexer_next(Lexer *l);
 static void lexer_eat(Lexer *l);
-static void lexer_expect(Lexer *l, TokenKind kind);
 static Token lexer_peek(Lexer *l);
 static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, ExprTree *rhs);
 static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child);
@@ -146,19 +160,21 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token);
 
 /* parser */
 static ExprTree *parse_expr(const char *str);
-static ExprTree *parse_add_expr(Lexer *l);
-static ExprTree *parse_mul_expr(Lexer *l);
-static ExprTree *parse_unary_or_atom_expr(Lexer *l);
-static ExprTree *parse_arglist_expr(Lexer *l);
+static int parse_add_expr(ExprTree **e, Lexer *l);
+static int parse_mul_expr(ExprTree **e, Lexer *l);
+static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l);
+static int parse_arglist_expr(ExprTree **e, Lexer *l);
 
 /* Type-/namechecker */
-static Type typecheck(ExprTree *e);
-static Type typecheck_argslist(ExprTree *e, const HglStringView *func_id, const Type *argtypes);
+static Type type_and_namecheck(ExprTree *e);
+static Type type_and_namecheck_function(ExprTree *e, const Function *f, const Type *argtypes);
 
 /* codegen */
 static ExeExpr *codegen(const ExprTree *e);
 static void codegen_expr(ExeExpr *exe, const ExprTree *e);
 static void exe_append_op(ExeExpr *exe, Op op);
+static void exe_append_bool(ExeExpr *exe, bool v);
+static void exe_append_i32(ExeExpr *exe, i32 v);
 static void exe_append_i32(ExeExpr *exe, i32 v);
 static void exe_append_f32(ExeExpr *exe, f32 v);
 static void exe_append(ExeExpr *exe, const void *val, u32 size);
@@ -203,9 +219,9 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_BOOL]   = "bool",
     [TYPE_INT]    = "int",
     [TYPE_FLOAT]  = "float",
-    [TYPE_BVEC2]  = "bvec2",
-    [TYPE_BVEC3]  = "bvec3",
-    [TYPE_BVEC4]  = "bvec4",
+    //[TYPE_BVEC2]  = "bvec2",
+    //[TYPE_BVEC3]  = "bvec3",
+    //[TYPE_BVEC4]  = "bvec4",
     [TYPE_VEC2]   = "vec2",
     [TYPE_VEC3]   = "vec3",
     [TYPE_VEC4]   = "vec4",
@@ -216,8 +232,7 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_MAT3]   = "mat3",
     [TYPE_MAT4]   = "mat4",
     [TYPE_IMAGE]  = "image",
-    [TYPE_ERROR_] = "type error",
-    [NAME_ERROR_] = "name error",
+    [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
 };
 
 static const u32 TYPE_TO_SIZE[] = 
@@ -226,9 +241,9 @@ static const u32 TYPE_TO_SIZE[] =
     [TYPE_BOOL]   = sizeof(bool),
     [TYPE_INT]    = sizeof(i32),
     [TYPE_FLOAT]  = sizeof(f32),
-    [TYPE_BVEC2]  = 2,
-    [TYPE_BVEC3]  = 3,
-    [TYPE_BVEC4]  = 4,
+    //[TYPE_BVEC2]  = 2,
+    //[TYPE_BVEC3]  = 3,
+    //[TYPE_BVEC4]  = 4,
     [TYPE_VEC2]   = 8,
     [TYPE_VEC3]   = 12,
     [TYPE_VEC4]   = 16,
@@ -238,6 +253,24 @@ static const u32 TYPE_TO_SIZE[] =
     [TYPE_MAT2]   = 16,
     [TYPE_MAT3]   = 36,
     [TYPE_MAT4]   = 64,
+};
+
+static const char *const TOKEN_TO_STR[] =
+{
+    [TOK_LPAREN]        = "(",
+    [TOK_RPAREN]        = ")",
+    [TOK_PLUS]          = "+",
+    [TOK_MINUS]         = "-",
+    [TOK_STAR]          = "*",
+    [TOK_FSLASH]        = "/",
+    [TOK_PERCENT]       = "%",
+    [TOK_COMMA]         = ",",
+    [TOK_BOOL_LITERAL]  = "<bool-literal>",
+    [TOK_INT_LITERAL]   = "<int-literal>",
+    [TOK_FLOAT_LITERAL] = "<float-literal>",
+    [TOK_IDENTIFIER]    = "<identifier>",
+    [EOF_TOKEN_]        = "<EOF>",
+    [LEXER_ERROR_]      = "<LEXER-ERROR>",
 };
 
 /* Simple Expression Language Virtual Machine */
@@ -255,9 +288,23 @@ static HglArena eexpr_allocator = HGL_ARENA_INITIALIZER(1024*1024);
 
 ExeExpr *sel_compile(const char *src)
 {
+    /* lexer + parser step */
     ExprTree *e = parse_expr(src);
-    typecheck(e);
+    if (e == NULL) {
+        return NULL;
+    }
+
+    /* type + namecheck step */
+    Type type = type_and_namecheck(e);
+    assert(type != TYPE_NIL); // should not be possible
+    if (type == TYPE_AND_NAMECHECKER_ERROR_) {
+        return NULL;
+    }
+
+    /* codegen step. *Should* never fail if the previous steps succeed */
     ExeExpr *exe = codegen(e);
+
+    arena_free_all(&temp_allocator);
     return exe;
 }
 
@@ -304,13 +351,10 @@ static void lexer_eat(Lexer *l)
     (void) lexer_next(l);
 }
 
-static void lexer_expect(Lexer *l, TokenKind kind)
-{
-    assert(lexer_next(l).kind == kind);
-}
-
 static Token lexer_peek(Lexer *l)
 {
+    // TODO anneal this brittle crap
+
     l->buf = hgl_sv_ltrim(l->buf);
 
     if (l->buf.length == 0) {
@@ -337,9 +381,20 @@ static Token lexer_peek(Lexer *l)
                 if (!is_identifier_char(c)) break;
             }
 
+            HglStringView s = hgl_sv_substr(l->buf, 0, i);
+
+            /* boolean literal? */
+            if (hgl_sv_equals(s, HGL_SV_LIT("true")) ||
+                hgl_sv_equals(s, HGL_SV_LIT("false"))) {
+                return (Token) {
+                    .kind = TOK_BOOL_LITERAL, 
+                    .text = s,
+                };
+            }
+
             return (Token) {
                 .kind = TOK_IDENTIFIER, 
-                .text = hgl_sv_substr(l->buf, 0, i),
+                .text = s,
             };
         } break;
 
@@ -360,9 +415,12 @@ static Token lexer_peek(Lexer *l)
                 }
             }
 
-            /* int literal */
+            /* decimal or octal int literal */
             if (c != '.') {
-                if (i != l->buf.length) LEXER_ASSERT(!is_identifier_char(c));
+                // Not the job of the lexer to check this honestly
+                if (i != l->buf.length) {
+                    LEXER_ASSERT(!is_identifier_char(c));
+                }
                 return (Token) {
                     .kind = TOK_INT_LITERAL,
                     .text = hgl_sv_substr(l->buf, 0, i),
@@ -376,7 +434,10 @@ static Token lexer_peek(Lexer *l)
                 if (!is_decimal_char(c)) break;
             }
 
-            if (i != l->buf.length) LEXER_ASSERT(!is_identifier_char(c));
+            // Not the job of the lexer to check this honestly
+            if (i != l->buf.length) {
+                LEXER_ASSERT(!is_identifier_char(c));
+            }
             return (Token) {
                 .kind = TOK_FLOAT_LITERAL,
                 .text = hgl_sv_substr(l->buf, 0, i),
@@ -385,8 +446,8 @@ static Token lexer_peek(Lexer *l)
         } break;
     }
 
-    LEXER_ASSERT(!is_identifier_char(c));
-    return (Token) {.kind = EOF_TOKEN_};
+    //LEXER_ASSERT(!is_identifier_char(c));
+    return (Token) {.kind = LEXER_ERROR_, .text = l->buf};
 }
 
 
@@ -395,82 +456,94 @@ static Token lexer_peek(Lexer *l)
 static ExprTree *parse_expr(const char *str)
 {
     Lexer l = lexer_begin(str);
-    return parse_add_expr(&l);
+    ExprTree *e = NULL;
+    int err = parse_add_expr(&e, &l);
+    if (err != 0) {
+        return NULL;
+    }
+    return e;
 }
 
-static ExprTree *parse_add_expr(Lexer *l)
+static int parse_add_expr(ExprTree **e, Lexer *l)
 {
-    ExprTree *a, *b;
+    ExprTree *tmp;
+    Token t;
 
-    a = parse_mul_expr(l);
+    TRY(parse_mul_expr(e, l));
     while (true) {
-        Token t = lexer_peek(l);
+        t = lexer_peek(l);
         if (t.kind != TOK_PLUS && t.kind != TOK_MINUS) {
             break;
         }
         lexer_eat(l);
-        b = parse_mul_expr(l);
-        a = (t.kind == TOK_PLUS) ? new_binary_expr(EXPR_ADD, t, a, b) : 
-                                   new_binary_expr(EXPR_SUB, t, a, b);
+        TRY(parse_mul_expr(&tmp, l));
+        *e = (t.kind == TOK_PLUS) ? new_binary_expr(EXPR_ADD, t, *e, tmp) : 
+                                    new_binary_expr(EXPR_SUB, t, *e, tmp);
     }
 
-    return a;
+    return 0;
 }
 
-static ExprTree *parse_mul_expr(Lexer *l)
+static int parse_mul_expr(ExprTree **e, Lexer *l)
 {
-    ExprTree *a, *b;
+    ExprTree *tmp;
 
-    a = parse_unary_or_atom_expr(l);
+    TRY(parse_unary_or_atom_expr(e, l));
     while (true) {
         Token t = lexer_peek(l);
         if (t.kind != TOK_STAR && t.kind != TOK_FSLASH && t.kind != TOK_PERCENT) {
             break;
         }
         lexer_eat(l);
-        b = parse_unary_or_atom_expr(l);
-        a = (t.kind == TOK_STAR)   ? new_binary_expr(EXPR_MUL, t, a, b) : 
-            (t.kind == TOK_FSLASH) ? new_binary_expr(EXPR_DIV, t, a, b) : 
-                                     new_binary_expr(EXPR_REM, t, a, b);
+        TRY(parse_unary_or_atom_expr(&tmp, l));
+        *e = (t.kind == TOK_STAR)   ? new_binary_expr(EXPR_MUL, t, *e, tmp) : 
+             (t.kind == TOK_FSLASH) ? new_binary_expr(EXPR_DIV, t, *e, tmp) : 
+                                      new_binary_expr(EXPR_REM, t, *e, tmp);
     }
 
-    return a;
+    return 0;
 }
 
-static ExprTree *parse_unary_or_atom_expr(Lexer *l)
+static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
 {
-    ExprTree *e;
+    ExprTree *tmp;
     Token t;
 
+    // TODO fix this behavior
     if (lexer_peek(l).kind == TOK_RPAREN) {
-        return NULL;
+        *e = NULL;
+        return -1;
     }
 
     t = lexer_next(l);
     switch (t.kind) {
         case TOK_LPAREN: {
-            // TODO PARSER_ASSERT(lexer_peek(l).kind != RPAREN);
-            e = new_unary_expr(EXPR_PAREN, t, parse_add_expr(l));
-            lexer_expect(l, TOK_RPAREN);
+            PARSER_ASSERT(lexer_peek(l).kind != TOK_RPAREN, "Expected expression after opening '('.");
+            TRY(parse_add_expr(&tmp, l));
+            *e = new_unary_expr(EXPR_PAREN, t, tmp);
+            PARSER_ASSERT(lexer_next(l).kind == TOK_RPAREN, "Expected closing ')'.");
         } break;
 
         case TOK_MINUS: {
-            e = new_unary_expr(EXPR_NEG, t, parse_unary_or_atom_expr(l));
+            TRY(parse_unary_or_atom_expr(&tmp, l));
+            *e = new_unary_expr(EXPR_NEG, t, tmp);
         } break;
 
         case TOK_IDENTIFIER: {
             if (lexer_peek(l).kind == TOK_LPAREN) {
                 lexer_eat(l);
-                e = new_unary_expr(EXPR_FUNC, t, parse_arglist_expr(l));
-                lexer_expect(l, TOK_RPAREN);
+                TRY(parse_arglist_expr(&tmp, l));
+                *e = new_unary_expr(EXPR_FUNC, t, tmp);
+                PARSER_ASSERT(lexer_next(l).kind == TOK_RPAREN, "Expected closing ')'.");
             } else {
-                e = new_atom_expr(EXPR_CONST, t);            
+                *e = new_atom_expr(EXPR_CONST, t);            
             }
         } break;
 
+        case TOK_BOOL_LITERAL: 
         case TOK_INT_LITERAL: 
         case TOK_FLOAT_LITERAL: {
-            e = new_atom_expr(EXPR_LIT, t);            
+            *e = new_atom_expr(EXPR_LIT, t);            
         } break;
 
         case TOK_RPAREN:
@@ -478,37 +551,49 @@ static ExprTree *parse_unary_or_atom_expr(Lexer *l)
         case TOK_STAR:
         case TOK_FSLASH:
         case TOK_PERCENT:
-        case TOK_COMMA:
-        case EOF_TOKEN_:
-        case LEXER_ERROR_:
-        case NO_TOKEN_:
+        case TOK_COMMA: {
+            PARSER_ERROR("Unexpected token: `%s`.", TOKEN_TO_STR[t.kind]);
+        } break;
+
+        case LEXER_ERROR_: {
+            PARSER_ERROR("Failed to tokenize: `" HGL_SV_FMT "`.", HGL_SV_ARG(t.text));
+        } break;
+
+        case EOF_TOKEN_: {
+            PARSER_ERROR("Reached the end of the token stream with an incomplete parse tree.");
+        } break;
+
         case N_TOKENS_:
         default: 
-            assert(false);
+            PARSER_ERROR("Something extremely silly is going on.");
+            return -1;
     }
 
-    return e;
+    return 0;
 }
 
-static ExprTree *parse_arglist_expr(Lexer *l)
+static int parse_arglist_expr(ExprTree **e, Lexer *l)
 {
-    ExprTree *a;
+    ExprTree *tmp;
 
     Token t = lexer_peek(l);
     if (t.kind == TOK_RPAREN) {
-        return NULL;
+        *e = NULL;
+        return 0;
     }
-    a = new_binary_expr(EXPR_ARGLIST, t, parse_add_expr(l), NULL);
+    TRY(parse_add_expr(&tmp, l));
+    *e = new_binary_expr(EXPR_ARGLIST, t, tmp, NULL);
     while (true) {
         t = lexer_peek(l);
         if (t.kind != TOK_COMMA) {
             break;
         }
         lexer_eat(l);
-        a->rhs = parse_arglist_expr(l);
+        TRY(parse_arglist_expr(&tmp, l));
+        (*e)->rhs = tmp;
     }
 
-    return a;
+    return 0;
 }
 
 static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, ExprTree *rhs)
@@ -541,7 +626,7 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token)
 
 /*--- TYPE-/NAMECHECKER -----------------------------------------------------------------*/
 
-static Type typecheck(ExprTree *e)
+static Type type_and_namecheck(ExprTree *e)
 {
     Type t0, t1;
 
@@ -555,58 +640,58 @@ static Type typecheck(ExprTree *e)
         case EXPR_SUB:
         case EXPR_MUL:
         case EXPR_DIV: {
-            t0 = typecheck(e->lhs); 
-            t1 = typecheck(e->rhs); 
-            TYPECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
-                             "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
+            t0 = type_and_namecheck(e->lhs); 
+            t1 = type_and_namecheck(e->rhs); 
+            TYPE_AND_NAMECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
+                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
             e->type = t0; 
         } break;
         
         case EXPR_REM: {
-            t0 = typecheck(e->lhs); 
-            t1 = typecheck(e->rhs); 
-            TYPECHECK_ASSERT(t0 == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
-            TYPECHECK_ASSERT(t1 == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
+            t0 = type_and_namecheck(e->lhs); 
+            t1 = type_and_namecheck(e->rhs); 
+            TYPE_AND_NAMECHECK_ASSERT(t0 == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
+            TYPE_AND_NAMECHECK_ASSERT(t1 == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
             e->type = t0; 
         } break;
         
         case EXPR_NEG: {
             // TODO better rule
-            t0 = typecheck(e->child);
-            TYPECHECK_ASSERT(t0 == TYPE_INT || t0 == TYPE_FLOAT , "Operand to unary minus operator must be of type INT or FLOAT");
+            t0 = type_and_namecheck(e->child);
+            TYPE_AND_NAMECHECK_ASSERT(t0 == TYPE_INT || t0 == TYPE_FLOAT , 
+                                      "Operand to unary minus operator must be of type INT or FLOAT.");
             e->type = t0; 
         } break;
         
         case EXPR_PAREN: {
-            t0 = typecheck(e->child);
+            t0 = type_and_namecheck(e->child);
             e->type = t0;
         } break;
         
         case EXPR_FUNC: {
             for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
-                    t0 = typecheck_argslist(e->child, &e->token.text, BUILTIN_FUNCTIONS[i].argtypes);
-                    TYPECHECK_ASSERT(t0 == TYPE_NIL, 
-                                     "Arguments to built-in function `" HGL_SV_FMT "(..)` "
-                                     "does not match its signature.", HGL_SV_ARG(e->token.text));
-                    e->type = BUILTIN_FUNCTIONS[i].type;
+                    t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes);
+                    e->type = t0;
                     return e->type;
                 } 
             }
-            NAMECHECK_ERROR("No such function: `" HGL_SV_FMT "(..)`", HGL_SV_ARG(e->token.text));
+            TYPE_AND_NAMECHECK_ERROR("No such function: `" HGL_SV_FMT "(..)`.", HGL_SV_ARG(e->token.text));
         } break;
         
         case EXPR_ARGLIST: {
-            TYPECHECK_ASSERT(false, "You should not see this #1");
+            TYPE_AND_NAMECHECK_ASSERT(false, "You should not see this #1"); // TODO
         } break;
         
         case EXPR_LIT: {
-            if (e->token.kind == TOK_FLOAT_LITERAL) {
-                e->type = TYPE_FLOAT;
+            if (e->token.kind == TOK_BOOL_LITERAL) {
+                e->type = TYPE_BOOL;
             } else if (e->token.kind == TOK_INT_LITERAL) {
                 e->type = TYPE_INT;
+            } else if (e->token.kind == TOK_FLOAT_LITERAL) {
+                e->type = TYPE_FLOAT;
             } else {
-                return TYPE_ERROR_;
+                TYPE_AND_NAMECHECK_ASSERT(false, "You should not see this #2"); // TODO
             }
         } break;
         
@@ -617,45 +702,39 @@ static Type typecheck(ExprTree *e)
                     return TYPE_FLOAT;
                 } 
             }
-            NAMECHECK_ERROR("No such constant: `" HGL_SV_FMT "`", HGL_SV_ARG(e->token.text));
+            TYPE_AND_NAMECHECK_ERROR("No such constant: `" HGL_SV_FMT "`.", HGL_SV_ARG(e->token.text));
         } break;
 
         case N_EXPR_KINDS: {
-            assert(false && "-");
+            TYPE_AND_NAMECHECK_ASSERT(false, "You should not see this #3"); // TODO
         } break;
     }
 
     return e->type;
 }
 
-static Type typecheck_argslist(ExprTree *e, const HglStringView *func_id, const Type *argtypes)
+static Type type_and_namecheck_function(ExprTree *e, const Function *f, const Type *argtypes)
 {
     /* no more actual arguments? */
     if (e == NULL) {
-        TYPECHECK_ASSERT(*argtypes == TYPE_NIL, 
-                         "Too few arguments to built-in function: `"
-                          HGL_SV_FMT "(..)`", HGL_SV_ARG(*func_id));
-        return TYPE_NIL;
+        TYPE_AND_NAMECHECK_ASSERT(*argtypes == TYPE_NIL, "Too few arguments to built-in function: `%s`.", f->synopsis);
+        return f->type;
     }
 
     /* no more arguments expected? */
     if (*argtypes == TYPE_NIL) {
-        TYPECHECK_ERROR("Too many arguments to built-in function: `"
-                         HGL_SV_FMT "(..)`", HGL_SV_ARG(*func_id));
-        return TYPE_NIL;
+        TYPE_AND_NAMECHECK_ERROR("Too many arguments to built-in function: `%s`.", f->synopsis);
+        return f->type;
     }
 
     /* Typecheck left-hand-side expression (head of argslist)*/
-    TYPECHECK_ASSERT(e->kind == EXPR_ARGLIST, "You should not see this #2");
-    Type t = typecheck(e->lhs);
-    TYPECHECK_ASSERT(t == *argtypes, 
-                     "Type mismatch in arguments to built-in function: `"
-                      HGL_SV_FMT "(..)`. Expected `%s`, got `%s`", 
-                      HGL_SV_ARG(*func_id), TYPE_TO_STR[*argtypes],
-                      TYPE_TO_STR[t]);
+    TYPE_AND_NAMECHECK_ASSERT(e->kind == EXPR_ARGLIST, "You should not see this #4");
+    Type t = type_and_namecheck(e->lhs);
+    TYPE_AND_NAMECHECK_ASSERT(t == *argtypes, "Type mismatch in arguments to built-in function: `%s`. Expected `%s` - Got `%s`.",
+                              f->synopsis, TYPE_TO_STR[*argtypes], TYPE_TO_STR[t]);
 
     /* Typecheck right-hand-side expression (tail of argslist)*/
-    return typecheck_argslist(e->rhs, func_id, ++argtypes);
+    return type_and_namecheck_function(e->rhs, f, ++argtypes);
 
 }
 
@@ -699,7 +778,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .kind = expr_to_op[e->kind], 
                 .type = e->type,
             });
-            printf("ARITH: %d\n", expr_to_op[e->kind]);
+            //printf("ARITH: %d\n", expr_to_op[e->kind]);
         } break;
 
         case EXPR_NEG: {
@@ -708,7 +787,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .kind = OP_NEG, 
                 .type = e->type,
             });
-            printf("NEG: %d\n", expr_to_op[e->kind]);
+            //printf("NEG: %d\n", expr_to_op[e->kind]);
         } break;
 
         case EXPR_PAREN: {
@@ -729,7 +808,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .argsize = sizeof(i32),
             });
             exe_append_i32(exe, i);
-            printf("FUNC: " HGL_SV_FMT "\n", HGL_SV_ARG(e->token.text));
+            //printf("FUNC: " HGL_SV_FMT "\n", HGL_SV_ARG(e->token.text));
         } break;
 
         case EXPR_ARGLIST: {
@@ -738,14 +817,22 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
         } break;
 
         case EXPR_LIT: {
-            if (e->type == TYPE_INT) {
+            if (e->type == TYPE_BOOL) {
+                bool val = hgl_sv_equals(e->token.text, HGL_SV_LIT("true"));
+                exe_append_op(exe, (Op){
+                    .kind    = OP_PUSH,
+                    .type    = e->type,
+                    .argsize = sizeof(bool),
+                });
+                exe_append_bool(exe, val);
+            } else if (e->type == TYPE_INT) {
                 i32 val = (i32) hgl_sv_to_i64(e->token.text);
                 exe_append_op(exe, (Op){
                     .kind    = OP_PUSH,
                     .type    = e->type,
                     .argsize = sizeof(i32),
                 });
-                printf("PUSH: %d\n", val);
+                //printf("PUSH: %d\n", val);
                 exe_append_i32(exe, val);
             } else if (e->type == TYPE_FLOAT) {
                 f32 val = (f32) hgl_sv_to_f64(e->token.text);
@@ -754,10 +841,10 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                     .type    = e->type,
                     .argsize = sizeof(f32),
                 });
-                printf("PUSH: %f\n", (f64)val);
+                //printf("PUSH: %f\n", (f64)val);
                 exe_append_f32(exe, val);
             } else {
-                assert(false && "wallaho");
+                assert(false && "Logic error in previous compiler steps... #1");
             }
         } break;
 
@@ -770,7 +857,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                         .type    = e->type,
                         .argsize = sizeof(f32),
                     });
-                    printf("PUSH: %f\n", (f64)val);
+                    //printf("PUSH: %f\n", (f64)val);
                     exe_append_f32(exe, val);
                     break; 
                 } 
@@ -778,7 +865,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
         } break;
 
         case N_EXPR_KINDS: {
-            assert(false && "-");
+            assert(false && "Logic error in previous compiler steps... #2");
         } break;
 
     } 
@@ -789,6 +876,11 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
 static void exe_append_op(ExeExpr *exe, Op op)
 {
     exe_append(exe, &op, sizeof(op));
+}
+
+static void exe_append_bool(ExeExpr *exe, bool v)
+{
+    exe_append(exe, &v, sizeof(v));
 }
 
 static void exe_append_i32(ExeExpr *exe, i32 v)

@@ -16,9 +16,9 @@ typedef enum
     TYPE_BOOL,
     TYPE_INT,
     TYPE_FLOAT,
-    TYPE_BVEC2,
-    TYPE_BVEC3,
-    TYPE_BVEC4,
+    //TYPE_BVEC2, // Absolutely useless types
+    //TYPE_BVEC3,
+    //TYPE_BVEC4,
     TYPE_VEC2,
     TYPE_VEC3,
     TYPE_VEC4,
@@ -29,8 +29,7 @@ typedef enum
     TYPE_MAT3,
     TYPE_MAT4,
     TYPE_IMAGE,
-    TYPE_ERROR_,
-    NAME_ERROR_,
+    TYPE_AND_NAMECHECKER_ERROR_,
     N_TYPES,
 } Type;
 
