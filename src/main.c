@@ -24,7 +24,7 @@ int main(void)
         case TYPE_MAT2:  // TODO
         case TYPE_MAT3:  // TODO
         case TYPE_MAT4:  // TODO
-        case TYPE_IMAGE: // TODO
+        //case TYPE_IMAGE: // TODO
         case TYPE_AND_NAMECHECKER_ERROR_:
         case N_TYPES:
             assert(false);

@@ -142,6 +142,7 @@ typedef struct
 {
     u8 kind;
     u8 type;
+    // Todo LHS/RHS types? Union?
     u8 argsize;
     u8 pad[1];
 } Op;
@@ -189,12 +190,24 @@ static inline void svm_stack_push_selvalue(SelValue v, Type t);
 static inline void *svm_stack_pop(u32 size);
 static inline i32 addi(i32 *lhs, i32 *rhs);
 static inline f32 addf(f32 *lhs, f32 *rhs);
+static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 subi(i32 *lhs, i32 *rhs);
 static inline f32 subf(f32 *lhs, f32 *rhs);
+static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 muli(i32 *lhs, i32 *rhs);
 static inline f32 mulf(f32 *lhs, f32 *rhs);
+static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 divi(i32 *lhs, i32 *rhs);
 static inline f32 divf(f32 *lhs, f32 *rhs);
+static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 remi(i32 *lhs, i32 *rhs);
 static inline i32 negi(i32 *val);
 static inline f32 negf(f32 *val);
@@ -231,7 +244,7 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_MAT2]   = "mat2",
     [TYPE_MAT3]   = "mat3",
     [TYPE_MAT4]   = "mat4",
-    [TYPE_IMAGE]  = "image",
+    //[TYPE_IMAGE]  = "image",
     [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
 };
 
@@ -510,10 +523,10 @@ static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
     Token t;
 
     // TODO fix this behavior
-    if (lexer_peek(l).kind == TOK_RPAREN) {
-        *e = NULL;
-        return -1;
-    }
+    //if (lexer_peek(l).kind == TOK_RPAREN) {
+    //    *e = NULL;
+    //    return -1;
+    //}
 
     t = lexer_next(l);
     switch (t.kind) {
@@ -637,14 +650,26 @@ static Type type_and_namecheck(ExprTree *e)
     switch (e->kind) {
         
         case EXPR_ADD:
-        case EXPR_SUB:
+        case EXPR_SUB: {
+            t0 = type_and_namecheck(e->lhs); 
+            t1 = type_and_namecheck(e->rhs); 
+            TYPE_AND_NAMECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
+                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
+            // TODO support implicit type conversions Add lhs + rhs types to Op?
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
+        } break;
+
         case EXPR_MUL:
         case EXPR_DIV: {
             t0 = type_and_namecheck(e->lhs); 
             t1 = type_and_namecheck(e->rhs); 
             TYPE_AND_NAMECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
                                       "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
-            e->type = t0; 
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly multiplied. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly multiplied. Use built-in functions instead.");
         } break;
         
         case EXPR_REM: {
@@ -652,7 +677,6 @@ static Type type_and_namecheck(ExprTree *e)
             t1 = type_and_namecheck(e->rhs); 
             TYPE_AND_NAMECHECK_ASSERT(t0 == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
             TYPE_AND_NAMECHECK_ASSERT(t1 == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
-            e->type = t0; 
         } break;
         
         case EXPR_NEG: {
@@ -660,20 +684,17 @@ static Type type_and_namecheck(ExprTree *e)
             t0 = type_and_namecheck(e->child);
             TYPE_AND_NAMECHECK_ASSERT(t0 == TYPE_INT || t0 == TYPE_FLOAT , 
                                       "Operand to unary minus operator must be of type INT or FLOAT.");
-            e->type = t0; 
         } break;
         
         case EXPR_PAREN: {
             t0 = type_and_namecheck(e->child);
-            e->type = t0;
         } break;
         
         case EXPR_FUNC: {
             for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
                     t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes);
-                    e->type = t0;
-                    return e->type;
+                    goto out;
                 } 
             }
             TYPE_AND_NAMECHECK_ERROR("No such function: `" HGL_SV_FMT "(..)`.", HGL_SV_ARG(e->token.text));
@@ -685,11 +706,11 @@ static Type type_and_namecheck(ExprTree *e)
         
         case EXPR_LIT: {
             if (e->token.kind == TOK_BOOL_LITERAL) {
-                e->type = TYPE_BOOL;
+                t0 = TYPE_BOOL;
             } else if (e->token.kind == TOK_INT_LITERAL) {
-                e->type = TYPE_INT;
+                t0 = TYPE_INT;
             } else if (e->token.kind == TOK_FLOAT_LITERAL) {
-                e->type = TYPE_FLOAT;
+                t0 = TYPE_FLOAT;
             } else {
                 TYPE_AND_NAMECHECK_ASSERT(false, "You should not see this #2"); // TODO
             }
@@ -698,8 +719,8 @@ static Type type_and_namecheck(ExprTree *e)
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
-                    e->type = TYPE_FLOAT;
-                    return TYPE_FLOAT;
+                    t0 = TYPE_FLOAT;
+                    goto out;
                 } 
             }
             TYPE_AND_NAMECHECK_ERROR("No such constant: `" HGL_SV_FMT "`.", HGL_SV_ARG(e->token.text));
@@ -710,6 +731,8 @@ static Type type_and_namecheck(ExprTree *e)
         } break;
     }
 
+out:
+    e->type = t0;
     return e->type;
 }
 
@@ -730,6 +753,9 @@ static Type type_and_namecheck_function(ExprTree *e, const Function *f, const Ty
     /* Typecheck left-hand-side expression (head of argslist)*/
     TYPE_AND_NAMECHECK_ASSERT(e->kind == EXPR_ARGLIST, "You should not see this #4");
     Type t = type_and_namecheck(e->lhs);
+    if (t == TYPE_AND_NAMECHECKER_ERROR_) {
+        return t;
+    }
     TYPE_AND_NAMECHECK_ASSERT(t == *argtypes, "Type mismatch in arguments to built-in function: `%s`. Expected `%s` - Got `%s`.",
                               f->synopsis, TYPE_TO_STR[*argtypes], TYPE_TO_STR[t]);
 
@@ -937,6 +963,9 @@ static void svm_run()
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = addv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -947,6 +976,9 @@ static void svm_run()
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = subv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -957,6 +989,9 @@ static void svm_run()
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = mulv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -967,6 +1002,9 @@ static void svm_run()
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = divv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -1052,12 +1090,28 @@ static inline void *svm_stack_pop(u32 size)
 
 static inline i32 addi(i32 *lhs, i32 *rhs) { return (*lhs) + (*rhs); }
 static inline f32 addf(f32 *lhs, f32 *rhs) { return (*lhs) + (*rhs); }
+static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs) {return vec2_add(*lhs, *rhs);}
+static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs) {return vec3_add(*lhs, *rhs);}
+static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs) {return vec4_add(*lhs, *rhs);}
+
 static inline i32 subi(i32 *lhs, i32 *rhs) { return (*lhs) - (*rhs); }
 static inline f32 subf(f32 *lhs, f32 *rhs) { return (*lhs) - (*rhs); }
+static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) {return vec2_sub(*lhs, *rhs);}
+static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) {return vec3_sub(*lhs, *rhs);}
+static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) {return vec4_sub(*lhs, *rhs);}
+
 static inline i32 muli(i32 *lhs, i32 *rhs) { return (*lhs) * (*rhs); }
 static inline f32 mulf(f32 *lhs, f32 *rhs) { return (*lhs) * (*rhs); }
+static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, *rhs);}
+static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, *rhs);}
+static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, *rhs);}
+
 static inline i32 divi(i32 *lhs, i32 *rhs) { return (*lhs) / (*rhs); }
 static inline f32 divf(f32 *lhs, f32 *rhs) { return (*lhs) / (*rhs); }
+static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, vec2_recip(*rhs));}
+static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, vec3_recip(*rhs));}
+static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, vec4_recip(*rhs));}
+
 static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
 static inline i32 negi(i32 *val) { return -(*val); }
 static inline f32 negf(f32 *val) { return -(*val); }

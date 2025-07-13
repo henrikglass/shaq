@@ -266,6 +266,79 @@ static inline SelValue builtin_radians_(void *args)
     return (SelValue) {.val_f32 = (f32)((2.0*HGLM_PI/360.0)) * a0}; 
 }
 
+
+static inline SelValue builtin_vec2_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_make(args_f32[0], args_f32[1])};
+}
+
+static inline SelValue builtin_vec3_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_make(args_f32[0], args_f32[1], args_f32[2])};
+}
+
+static inline SelValue builtin_vec4_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec4 = hglm_vec4_make(args_f32[0], args_f32[1], args_f32[2], args_f32[3])};
+}
+
+static inline SelValue builtin_ivec2_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_ivec2 = hglm_ivec2_make(args_i32[0], args_i32[1])};
+}
+
+static inline SelValue builtin_ivec3_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_ivec3 = hglm_ivec3_make(args_i32[0], args_i32[1], args_i32[2])};
+}
+
+static inline SelValue builtin_ivec4_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_ivec4 = hglm_ivec4_make(args_i32[0], args_i32[1], args_i32[2], args_i32[3])};
+}
+
+static inline SelValue builtin_mat2_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_mat2 = hglm_mat2_make(args_v2[0], args_v2[1])};
+}
+
+static inline SelValue builtin_mat3_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_mat3 = hglm_mat3_make(args_v3[0], args_v3[1], args_v3[2])};
+}
+
+static inline SelValue builtin_mat4_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_make(args_v4[0], args_v4[1], args_v4[2], args_v4[3])};
+}
+
+static inline SelValue builtin_mat2_id_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_mat2 = HGLM_MAT2_IDENTITY};
+}
+
+static inline SelValue builtin_mat3_id_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_mat3 = HGLM_MAT3_IDENTITY};
+}
+
+static inline SelValue builtin_mat4_id_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_mat4 = HGLM_MAT4_IDENTITY};
+}
+
 /*--- Built-in tables -------------------------------------------------------------------*/
 
 static const Constant BUILTIN_CONSTANTS[] = 
@@ -315,6 +388,23 @@ static const Function BUILTIN_FUNCTIONS[] =
     { .id = HGL_SV_LIT("lerpsmooth"), .type = TYPE_FLOAT, .impl = builtin_lerpsmooth_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},             .synopsis = "float lerpsmooth(float a, float b, float dt, float omega)", .desc = "See Freya Holmér's talks :-)" , },
     { .id = HGL_SV_LIT("smoothstep"), .type = TYPE_FLOAT, .impl = builtin_smoothstep_, .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float smoothstep(float t)", .desc = "Steps, smoothly. :3", },
     { .id = HGL_SV_LIT("radians"),    .type = TYPE_FLOAT, .impl = builtin_radians_,    .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float radians(float degrees)", .desc = "Converts degrees into radians", },
+
+    { .id = HGL_SV_LIT("vec2"),       .type = TYPE_VEC2,  .impl = builtin_vec2_,       .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "vec2 vec2(float x, float y)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec3"),       .type = TYPE_VEC3,  .impl = builtin_vec3_,       .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "vec3 vec3(float x, float y, float z)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4"),       .type = TYPE_VEC4,  .impl = builtin_vec4_,       .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},             .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("ivec2"),      .type = TYPE_IVEC2, .impl = builtin_ivec2_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "ivec2 ivec2(int x, int y)", .desc = NULL, },
+    { .id = HGL_SV_LIT("ivec3"),      .type = TYPE_IVEC3, .impl = builtin_ivec3_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL},                               .synopsis = "ivec3 ivec3(int x, int y, int z)", .desc = NULL, },
+    { .id = HGL_SV_LIT("ivec4"),      .type = TYPE_IVEC4, .impl = builtin_ivec4_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL},                     .synopsis = "ivec4 ivec4(int x, int y, int z, int w)", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("mat2"),       .type = TYPE_MAT2,  .impl = builtin_mat2_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},                                       .synopsis = "mat2 mat2(vec2 c0, vec2 c1)", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat3"),       .type = TYPE_MAT3,  .impl = builtin_mat3_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL},                            .synopsis = "mat3 mat3(vec3 c0, vec3 c1, vec3 c2)", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4"),       .type = TYPE_MAT4,  .impl = builtin_mat4_,       .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                 .synopsis = "mat4 mat4(vec4 c0, vec4 c1, vec4 c2, vec4 c3)", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("mat2_id"),    .type = TYPE_MAT2,  .impl = builtin_mat2_id_,    .argtypes = {TYPE_NIL},                                                             .synopsis = "mat2 mat2_id()", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat3_id"),    .type = TYPE_MAT3,  .impl = builtin_mat3_id_,    .argtypes = {TYPE_NIL},                                                             .synopsis = "mat3 mat3_id()", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_id"),    .type = TYPE_MAT4,  .impl = builtin_mat4_id_,    .argtypes = {TYPE_NIL},                                                             .synopsis = "mat4 mat4_id()", .desc = NULL, },
+
 };
 static const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 

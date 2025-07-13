@@ -92,6 +92,10 @@
 #   include <immintrin.h>
 #endif
 
+#define HGLM_MAT2_IDENTITY ((HglmMat2) {   \
+    .m00 = 1.0f, .m01 = 0.0f,              \
+    .m10 = 0.0f, .m11 = 1.0f,})
+
 #define HGLM_MAT3_IDENTITY ((HglmMat3) {   \
     .m00 = 1.0f, .m01 = 0.0f, .m02 = 0.0f, \
     .m10 = 0.0f, .m11 = 1.0f, .m12 = 0.0f, \
@@ -111,6 +115,21 @@ typedef struct
 
 typedef struct
 {
+    int x;
+    int y;
+    int z;
+} HglmIVec3;
+
+typedef struct
+{
+    int x;
+    int y;
+    int z;
+    int w;
+} HglmIVec4;
+
+typedef struct
+{
     float x;
     float y;
 } HglmVec2;
@@ -126,6 +145,23 @@ typedef struct
     };
     float z;
 } HglmVec3;
+
+typedef struct __attribute__ ((aligned(16)))
+{
+    union {
+        struct {
+            HglmVec2 c0;
+            HglmVec2 c1;
+        };
+        struct {
+            float m00;
+            float m10;
+            float m01;
+            float m11;
+        };
+        float f[4];
+    };
+} HglmMat2;
 
 typedef union __attribute__ ((aligned(16)))
 {
@@ -226,6 +262,12 @@ static HGL_INLINE float hglm_ivec2_len(HglmIVec2 v);
 static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, float s);
 static HGL_INLINE HglmIVec2 hglm_ivec2_lerp(HglmIVec2 a, HglmIVec2 b, float amount);
 
+static HGL_INLINE HglmIVec3 hglm_ivec3_make(int x, int y, int z);
+// TODO ...
+
+static HGL_INLINE HglmIVec4 hglm_ivec4_make(int x, int y, int z, int w);
+// TODO ...
+
 static HGL_INLINE HglmVec2 hglm_vec2_make(float x, float y);
 static HGL_INLINE HglmVec2 hglm_vec2_from_polar(float r, float phi);
 static HGL_INLINE HglmVec2 hglm_vec2_add(HglmVec2 a, HglmVec2 b);
@@ -234,6 +276,7 @@ static HGL_INLINE float hglm_vec2_distance(HglmVec2 a, HglmVec2 b);
 static HGL_INLINE float hglm_vec2_len(HglmVec2 v);
 static HGL_INLINE HglmVec2 hglm_vec2_normalize(HglmVec2 v);
 static HGL_INLINE float hglm_vec2_dot(HglmVec2 a, HglmVec2 b);
+static HGL_INLINE HglmVec2 hglm_vec2_recip(HglmVec2 v);
 static HGL_INLINE HglmVec2 hglm_vec2_hadamard(HglmVec2 a, HglmVec2 b);
 static HGL_INLINE HglmVec2 hglm_vec2_mul_scalar(HglmVec2 v, float s);
 static HGL_INLINE HglmVec2 hglm_vec2_reflect(HglmVec2 v, HglmVec2 normal);
@@ -250,6 +293,7 @@ static HGL_INLINE float hglm_vec3_len(HglmVec3 v);
 static HGL_INLINE HglmVec3 hglm_vec3_normalize(HglmVec3 v);
 static HGL_INLINE float hglm_vec3_dot(HglmVec3 a, HglmVec3 b);
 static HGL_INLINE HglmVec3 hglm_vec3_cross(HglmVec3 a, HglmVec3 b);
+static HGL_INLINE HglmVec3 hglm_vec3_recip(HglmVec3 v);
 static HGL_INLINE HglmVec3 hglm_vec3_hadamard(HglmVec3 a, HglmVec3 b);
 static HGL_INLINE HglmVec3 hglm_vec3_mul_scalar(HglmVec3 v, float s);
 static HGL_INLINE HglmVec3 hglm_vec3_reflect(HglmVec3 v, HglmVec3 normal);
@@ -264,11 +308,16 @@ static HGL_INLINE float hglm_vec4_distance(HglmVec4 a, HglmVec4 b);
 static HGL_INLINE float hglm_vec4_len(HglmVec4 v);
 static HGL_INLINE HglmVec4 hglm_vec4_normalize(HglmVec4 v);
 static HGL_INLINE float hglm_vec4_dot(HglmVec4 a, HglmVec4 b);
+static HGL_INLINE HglmVec4 hglm_vec4_recip(HglmVec4 v);
 static HGL_INLINE HglmVec4 hglm_vec4_hadamard(HglmVec4 a, HglmVec4 b);
 static HGL_INLINE HglmVec4 hglm_vec4_mul_scalar(HglmVec4 v, float s);
 static HGL_INLINE HglmVec4 hglm_vec4_perspective_divide(HglmVec4 v);
 static HGL_INLINE HglmVec4 hglm_vec4_lerp(HglmVec4 a, HglmVec4 b, float t);
 static HGL_INLINE HglmVec4 hglm_vec4_bezier3(HglmVec4 v0, HglmVec4 v1, HglmVec4 v2, HglmVec4 v3, float t);
+
+static HGL_INLINE HglmMat2 hglm_mat2_make(HglmVec2 c0, HglmVec2 c1);
+static HGL_INLINE HglmMat2 hglm_mat2_make_identity(void);
+// TODO ...
 
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make(HglmVec3 c0, HglmVec3 c1, HglmVec3 c2);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_identity(void);
@@ -367,9 +416,30 @@ static HGL_INLINE HglmIVec2 hglm_ivec2_lerp(HglmIVec2 a, HglmIVec2 b, float amou
     );
 }
 
+
+/* ========== HglmIVec3 =======================================================*/
+
+#define hglm_ivec3_print(v) (printf("%s = {%d, %d, %d}\n", #v , (v).x, (v).y, (v).z))
+
+static HGL_INLINE HglmIVec3 hglm_ivec3_make(int x, int y, int z)
+{
+    return (HglmIVec3) {.x = x, .y = y, .z = z};
+}
+
+
+/* ========== HglmIVec4 =======================================================*/
+
+#define hglm_ivec4_print(v) (printf("%s = {%d, %d, %d, %d}\n", #v , (v).x, (v).y, (v).z, (v).w))
+
+static HGL_INLINE HglmIVec4 hglm_ivec4_make(int x, int y, int z, int w)
+{
+    return (HglmIVec4) {.x = x, .y = y, .z = z, .w = w};
+}
+
+
 /* ========== HglmVec2 =======================================================*/
 
-#define hglm_vec2_print(v) (printf("%s = {%f, %f}\n", #v , (v).x, (v).y))
+#define hglm_vec2_print(v) (printf("%s = {%f, %f}\n", #v , (double)(v).x, (double)(v).y))
 
 static HGL_INLINE HglmVec2 hglm_vec2_make(float x, float y)
 {
@@ -415,6 +485,11 @@ static HGL_INLINE HglmVec2 hglm_vec2_normalize(HglmVec2 v)
 static HGL_INLINE float hglm_vec2_dot(HglmVec2 a, HglmVec2 b)
 {
     return a.x * b.x + a.y *b.y;
+}
+
+static HGL_INLINE HglmVec2 hglm_vec2_recip(HglmVec2 v)
+{
+    return (HglmVec2) {.x = 1.0f/v.x, .y = 1.0f/v.y};
 }
 
 static HGL_INLINE HglmVec2 hglm_vec2_hadamard(HglmVec2 a, HglmVec2 b)
@@ -467,7 +542,7 @@ static HGL_INLINE HglmVec2 hglm_vec2_bezier3(HglmVec2 v0, HglmVec2 v1, HglmVec2 
 
 /* ========== HglmVec3 =======================================================*/
 
-#define hglm_vec3_print(v) (printf("%s = {%f, %f, %f}\n", #v , (v).x, (v).y, (v).z))
+#define hglm_vec3_print(v) (printf("%s = {%f, %f, %f}\n", #v , (double)(v).x, (double)(v).y, (double)(v).z))
 
 static HGL_INLINE HglmVec3 hglm_vec3_make(float x, float y, float z)
 {
@@ -526,6 +601,11 @@ static HGL_INLINE HglmVec3 hglm_vec3_cross(HglmVec3 a, HglmVec3 b)
     };
 }
 
+static HGL_INLINE HglmVec3 hglm_vec3_recip(HglmVec3 v)
+{
+    return (HglmVec3) {.x = 1.0f/v.x, .y = 1.0f/v.y, .z = 1.0f/v.z};
+}
+
 static HGL_INLINE HglmVec3 hglm_vec3_hadamard(HglmVec3 a, HglmVec3 b)
 {
     return (HglmVec3) {.x = a.x * b.x, .y = a.y * b.y, .z = a.z * b.z};
@@ -576,7 +656,8 @@ static HGL_INLINE HglmVec3 hglm_vec3_bezier3(HglmVec3 v0, HglmVec3 v1, HglmVec3 
 
 /* ========== HglmVec4 =======================================================*/
 
-#define hglm_vec4_print(v) (printf("%s = {%f, %f, %f, %f}\n", #v , (v).x, (v).y, (v).z, (v).w))
+#define hglm_vec4_print(v) (printf("%s = {%f, %f, %f, %f}\n", #v , \
+                            (double)(v).x, (double)(v).y, (double)(v).z, (double)(v).w))
 
 static HGL_INLINE HglmVec4 hglm_vec4_make(float x, float y, float z, float w)
 {
@@ -665,6 +746,11 @@ static HGL_INLINE float hglm_vec4_dot(HglmVec4 a, HglmVec4 b)
 #endif
 }
 
+static HGL_INLINE HglmVec4 hglm_vec4_recip(HglmVec4 v)
+{
+    return (HglmVec4) {.x = 1.0f/v.x, .y = 1.0f/v.y, .z = 1.0f/v.z, .w = 1.0f/v.w};
+}
+
 static HGL_INLINE HglmVec4 hglm_vec4_hadamard(HglmVec4 a, HglmVec4 b)
 {
 #ifdef HGLM_USE_SIMD
@@ -723,6 +809,28 @@ static HGL_INLINE HglmVec4 hglm_vec4_bezier3(HglmVec4 v0, HglmVec4 v1, HglmVec4 
             hglm_vec4_mul_scalar(v3, bezier3.w)
         )
     );
+}
+
+
+/* ========== HglmMat3 =======================================================*/
+
+#define hglm_mat2_print(m)                        \
+(                                                 \
+    printf("%s = \n"                              \
+           "    |%14.5f %14.5f |\n"               \
+           "    |%14.5f %14.5f |\n", #m ,         \
+            (double) (m).c0.x, (double) (m).c1.x, \
+            (double) (m).c0.y, (double) (m).c1.y) \
+)
+
+static HGL_INLINE HglmMat2 hglm_mat2_make(HglmVec2 c0, HglmVec2 c1)
+{
+    return (HglmMat2){.c0 = c0, .c1 = c1};
+}
+
+static HGL_INLINE HglmMat2 hglm_mat2_make_identity()
+{
+    return HGLM_MAT2_IDENTITY;
 }
 
 
@@ -1532,4 +1640,8 @@ static HGL_INLINE float hglm_perlin3D(float x, float y, float z)
 }
 
 #endif /* HGLM_H */
+
+
+// TODO IVec2, IVec3, IVec4 functions
+// TODO Mat2 functions
 

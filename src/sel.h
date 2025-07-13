@@ -5,6 +5,8 @@
 
 #include "hgl_int.h"
 #include "hgl_float.h"
+#include "hglm.h"
+#include "hglm_aliases.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -28,7 +30,7 @@ typedef enum
     TYPE_MAT2,
     TYPE_MAT3,
     TYPE_MAT4,
-    TYPE_IMAGE,
+    //TYPE_IMAGE,
     TYPE_AND_NAMECHECKER_ERROR_,
     N_TYPES,
 } Type;
@@ -39,7 +41,15 @@ typedef union
     bool val_bool; 
     i32 val_i32; 
     f32 val_f32; 
-    /* todo ... */
+    Vec2 val_vec2;
+    Vec3 val_vec3;
+    Vec4 val_vec4;
+    IVec2 val_ivec2;
+    IVec3 val_ivec3;
+    IVec4 val_ivec4;
+    Mat2 val_mat2;
+    Mat3 val_mat3;
+    Mat4 val_mat4;
 } SelValue;
 
 /* "executable" expression */

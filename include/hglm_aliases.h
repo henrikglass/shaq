@@ -80,14 +80,25 @@
 #define RAD_TO_DEG HGLM_RAD_TO_DEG
 #endif
 
+#ifndef MAT2_IDENTITY
+#define MAT2_IDENTITY HGLM_MAT1_IDENTITY
+#endif
+
+#ifndef MAT3_IDENTITY
+#define MAT3_IDENTITY HGLM_MAT3_IDENTITY
+#endif
+
 #ifndef MAT4_IDENTITY
 #define MAT4_IDENTITY HGLM_MAT4_IDENTITY
 #endif
 
 typedef HglmIVec2 IVec2;
+typedef HglmIVec3 IVec3;
+typedef HglmIVec4 IVec4;
 typedef HglmVec2   Vec2;
 typedef HglmVec3   Vec3;
 typedef HglmVec4   Vec4;
+typedef HglmMat2   Mat2;
 typedef HglmMat3   Mat3;
 typedef HglmMat4   Mat4;
 typedef HglmMat    Mat;
@@ -101,6 +112,12 @@ typedef HglmMat    Mat;
 #define ivec2_mul_scalar         hglm_ivec2_mul_scalar
 #define ivec2_lerp               hglm_ivec2_lerp
 
+#define ivec3_print              hglm_ivec3_print
+#define ivec3_make               hglm_ivec3_make
+
+#define ivec4_print              hglm_ivec4_print
+#define ivec4_make               hglm_ivec4_make
+
 #define vec2_print               hglm_vec2_print
 #define vec2_make                hglm_vec2_make
 #define vec2_from_polar          hglm_vec2_from_polar
@@ -110,6 +127,7 @@ typedef HglmMat    Mat;
 #define vec2_len                 hglm_vec2_len
 #define vec2_normalize           hglm_vec2_normalize
 #define vec2_dot                 hglm_vec2_dot
+#define vec2_recip               hglm_vec2_recip
 #define vec2_hadamard            hglm_vec2_hadamard
 #define vec2_mul_scalar          hglm_vec2_mul_scalar
 #define vec2_reflect             hglm_vec2_reflect
@@ -127,6 +145,7 @@ typedef HglmMat    Mat;
 #define vec3_normalize           hglm_vec3_normalize
 #define vec3_dot                 hglm_vec3_dot
 #define vec3_cross               hglm_vec3_cross
+#define vec3_recip               hglm_vec3_recip
 #define vec3_hadamard            hglm_vec3_hadamard
 #define vec3_mul_scalar          hglm_vec3_mul_scalar
 #define vec3_reflect             hglm_vec3_reflect
@@ -142,12 +161,17 @@ typedef HglmMat    Mat;
 #define vec4_len                 hglm_vec4_len
 #define vec4_normalize           hglm_vec4_normalize
 #define vec4_dot                 hglm_vec4_dot
+#define vec4_recip               hglm_vec4_recip
 #define vec4_hadamard            hglm_vec4_hadamard
 #define vec4_mul_scalar          hglm_vec4_mul_scalar
 #define vec4_swizzle             hglm_vec4_swizzle
 #define vec4_perspective_divide  hglm_vec4_perspective_divide
 #define vec4_lerp                hglm_vec4_lerp
 #define vec4_bezier3             hglm_vec4_bezier3
+
+#define mat2_print               hglm_mat2_print
+#define mat2_make                hglm_mat2_make
+#define mat2_make_identity       hglm_mat2_make_identity
 
 #define mat3_print               hglm_mat3_print
 #define mat3_make                hglm_mat3_make
