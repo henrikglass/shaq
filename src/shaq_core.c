@@ -33,6 +33,11 @@ typedef struct {
     u32 n_uniforms;
 } Shader;
 
+typedef struct
+{
+    HglStringView name;
+} Texture;
+
 /*--- Private function prototypes -------------------------------------------------------*/
 
 static u64 get_time_nanos(void);
@@ -59,6 +64,8 @@ static struct ShaqState {
     u64 last_frame_timestamp_ns;
     f32 last_frame_deltatime_s;
     f32 last_frame_time_s;
+    
+    IVec2 iresolution;
 } shaq_state = {0};
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -148,6 +155,11 @@ f32 shaq_time(void)
 f32 shaq_deltatime(void)
 {
     return shaq_state.last_frame_deltatime_s;
+}
+
+IVec2 shaq_iresolution(void)
+{
+    return shaq_state.iresolution;
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

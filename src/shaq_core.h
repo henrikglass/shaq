@@ -5,6 +5,8 @@
 
 #include "hgl_int.h"
 #include "hgl_float.h"
+#include "hglm.h"
+#include "hglm_aliases.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -22,6 +24,7 @@ void shaq_new_frame(void);
 void shaq_end(void);
 f32 shaq_time(void);
 f32 shaq_deltatime(void);
+IVec2 shaq_iresolution(void);
 
 #endif /* SHAQ_CORE_H */
 

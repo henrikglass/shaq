@@ -31,7 +31,7 @@ typedef enum
     TYPE_MAT3,
     TYPE_MAT4,
     TYPE_STR,
-    //TYPE_IMAGE,
+    TYPE_TEXTURE,
     TYPE_AND_NAMECHECKER_ERROR_,
     N_TYPES,
 } Type;
@@ -52,6 +52,7 @@ typedef union
     Mat3 val_mat3;
     Mat4 val_mat4;
     HglStringView val_str;
+    i32 val_tex;
 } SelValue;
 
 typedef struct

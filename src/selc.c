@@ -110,7 +110,7 @@ typedef struct
     HglStringView id;
     //Type type;
     f32 value;
-} SelConstant;
+} Const;
 
 /**
  * An expression may be either binary, and have two children `lhs` and `rhs`, unary, 
@@ -180,21 +180,21 @@ static inline void print_expr_tree_helper(ExprTree *e, i32 indent);
 
 static const char *const TYPE_TO_STR[] =
 {
-    [TYPE_NIL]    = "nil",
-    [TYPE_BOOL]   = "bool",
-    [TYPE_INT]    = "int",
-    [TYPE_FLOAT]  = "float",
-    [TYPE_VEC2]   = "vec2",
-    [TYPE_VEC3]   = "vec3",
-    [TYPE_VEC4]   = "vec4",
-    [TYPE_IVEC2]  = "ivec2",
-    [TYPE_IVEC3]  = "ivec3",
-    [TYPE_IVEC4]  = "ivec4",
-    [TYPE_MAT2]   = "mat2",
-    [TYPE_MAT3]   = "mat3",
-    [TYPE_MAT4]   = "mat4",
-    [TYPE_STR]    = "str",
-    //[TYPE_IMAGE]  = "image",
+    [TYPE_NIL]        = "nil",
+    [TYPE_BOOL]       = "bool",
+    [TYPE_INT]        = "int",
+    [TYPE_FLOAT]      = "float",
+    [TYPE_VEC2]       = "vec2",
+    [TYPE_VEC3]       = "vec3",
+    [TYPE_VEC4]       = "vec4",
+    [TYPE_IVEC2]      = "ivec2",
+    [TYPE_IVEC3]      = "ivec3",
+    [TYPE_IVEC4]      = "ivec4",
+    [TYPE_MAT2]       = "mat2",
+    [TYPE_MAT3]       = "mat3",
+    [TYPE_MAT4]       = "mat4",
+    [TYPE_STR]        = "str",
+    [TYPE_TEXTURE]    = "texture",
     [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
 };
 
@@ -216,7 +216,7 @@ static const char *const TOKEN_TO_STR[] =
     [LEXER_ERROR_]      = "<LEXER-ERROR>",
 };
 
-const SelConstant BUILTIN_CONSTANTS[] = 
+const Const BUILTIN_CONSTANTS[] = 
 {
     {.id = HGL_SV_LIT("PI"),  .value =   3.1415926535},
     {.id = HGL_SV_LIT("TAU"), .value = 2*3.1415926535},
@@ -277,20 +277,20 @@ void sel_list_builtins(void) {
 void sel_print_value(Type t, SelValue v)
 {
     switch (t) {
-        case TYPE_BOOL:  printf("%s\n", v.val_bool ? "true" : "false"); break;
-        case TYPE_INT:   printf("%d\n", v.val_i32); break;
-        case TYPE_FLOAT: printf("%f\n", (double)v.val_f32); break;
-        case TYPE_VEC2:  vec2_print(v.val_vec2); break;
-        case TYPE_VEC3:  vec3_print(v.val_vec3); break;
-        case TYPE_VEC4:  vec4_print(v.val_vec4); break;
-        case TYPE_IVEC2: ivec2_print(v.val_ivec2); break;
-        case TYPE_IVEC3: ivec3_print(v.val_ivec3); break;
-        case TYPE_IVEC4: ivec4_print(v.val_ivec4); break;
-        case TYPE_MAT2:  mat2_print(v.val_mat2); break;
-        case TYPE_MAT3:  mat3_print(v.val_mat3); break;
-        case TYPE_MAT4:  mat4_print(v.val_mat4); break;
-        case TYPE_STR:   printf(HGL_SV_FMT "\n", HGL_SV_ARG(v.val_str)); break;
-        //case TYPE_IMAGE: // TODO
+        case TYPE_BOOL:    printf("%s\n", v.val_bool ? "true" : "false"); break;
+        case TYPE_INT:     printf("%d\n", v.val_i32); break;
+        case TYPE_FLOAT:   printf("%f\n", (double)v.val_f32); break;
+        case TYPE_VEC2:    vec2_print(v.val_vec2); break;
+        case TYPE_VEC3:    vec3_print(v.val_vec3); break;
+        case TYPE_VEC4:    vec4_print(v.val_vec4); break;
+        case TYPE_IVEC2:   ivec2_print(v.val_ivec2); break;
+        case TYPE_IVEC3:   ivec3_print(v.val_ivec3); break;
+        case TYPE_IVEC4:   ivec4_print(v.val_ivec4); break;
+        case TYPE_MAT2:    mat2_print(v.val_mat2); break;
+        case TYPE_MAT3:    mat3_print(v.val_mat3); break;
+        case TYPE_MAT4:    mat4_print(v.val_mat4); break;
+        case TYPE_STR:     printf(HGL_SV_FMT "\n", HGL_SV_ARG(v.val_str)); break;
+        case TYPE_TEXTURE: printf("tex = %d\n", v.val_tex); break;
         case TYPE_NIL:   // TODO
         case TYPE_AND_NAMECHECKER_ERROR_:
         case N_TYPES:
@@ -636,6 +636,7 @@ static Type type_and_namecheck(ExprTree *e)
             // TODO support implicit type conversions Add lhs + rhs types to Op?
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_STR, "Arithmetic is not allowed on strings.");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
         } break;
@@ -648,6 +649,7 @@ static Type type_and_namecheck(ExprTree *e)
                                       "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_STR, "Arithmetic is not allowed on strings.");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly multiplied. Use built-in functions instead.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly multiplied. Use built-in functions instead.");
         } break;

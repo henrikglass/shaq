@@ -45,6 +45,9 @@ static inline i32 remi(i32 *lhs, i32 *rhs);
 static inline i32 negi(i32 *val);
 static inline f32 negf(f32 *val);
 
+static inline SelValue fn_load_image_(void *args);
+static inline SelValue fn_output_of_(void *args);
+
 static inline SelValue fn_int_(void *args);
 static inline SelValue fn_mini_(void *args);
 static inline SelValue fn_maxi_(void *args);
@@ -144,6 +147,9 @@ static inline SelValue fn_mat4_mul_scalar_(void *args);
 
 const Func BUILTIN_FUNCTIONS[] = 
 {
+    { .id = HGL_SV_LIT("load_image"), .type = TYPE_TEXTURE, .impl = fn_load_image_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture load_image(str filepath)", .desc = "Returns a reference to a texture loaded from `filepath`", },
+    { .id = HGL_SV_LIT("output_of"),  .type = TYPE_TEXTURE, .impl = fn_output_of_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader`. Calling this function implicitly defines the render order.", },
+
     { .id = HGL_SV_LIT("int"),        .type = TYPE_INT,   .impl = fn_int_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = HGL_SV_LIT("mini"),       .type = TYPE_INT,   .impl = fn_mini_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int mini(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },
     { .id = HGL_SV_LIT("maxi"),       .type = TYPE_INT,   .impl = fn_maxi_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int maxi(int a, int b)", .desc = "Returns the maximum of `a` and `b`.", },
@@ -247,20 +253,21 @@ const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FU
 
 static const u32 TYPE_TO_SIZE[] = 
 {
-    [TYPE_NIL]    = 0,
-    [TYPE_BOOL]   = sizeof(bool),
-    [TYPE_INT]    = sizeof(i32),
-    [TYPE_FLOAT]  = sizeof(f32),
-    [TYPE_VEC2]   = 8,
-    [TYPE_VEC3]   = 12,
-    [TYPE_VEC4]   = 16,
-    [TYPE_IVEC2]  = 8,
-    [TYPE_IVEC3]  = 12,
-    [TYPE_IVEC4]  = 16,
-    [TYPE_MAT2]   = 16,
-    [TYPE_MAT3]   = 36,
-    [TYPE_MAT4]   = 64,
-    [TYPE_STR]    = sizeof(HglStringView),
+    [TYPE_NIL]       = 0,
+    [TYPE_BOOL]      = sizeof(bool),
+    [TYPE_INT]       = sizeof(i32),
+    [TYPE_FLOAT]     = sizeof(f32),
+    [TYPE_VEC2]      = 8,
+    [TYPE_VEC3]      = 12,
+    [TYPE_VEC4]      = 16,
+    [TYPE_IVEC2]     = 8,
+    [TYPE_IVEC3]     = 12,
+    [TYPE_IVEC4]     = 16,
+    [TYPE_MAT2]      = 16,
+    [TYPE_MAT3]      = 36,
+    [TYPE_MAT4]      = 64,
+    [TYPE_STR]       = sizeof(HglStringView),
+    [TYPE_TEXTURE]   = sizeof(i32),
 };
 
 /* Simple Expression Language Virtual Machine */
@@ -276,7 +283,8 @@ static struct SVM {
 SelValue sel_run(ExeExpr *exe)
 {
     if (exe == NULL) {
-        return (SelValue) {.val_i32 = -1};
+        //return (SelValue) {.val_i32 = -1};
+        return (SelValue) {0};
     }
 
     /* Reset SVM & load program */
@@ -478,6 +486,24 @@ static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, vec4_
 static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
 static inline i32 negi(i32 *val) { return -(*val); }
 static inline f32 negf(f32 *val) { return -(*val); }
+
+/* --------------------- TEXTURE functions ------------------ */
+
+#include <stdio.h>
+
+static inline SelValue fn_load_image_(void *args)
+{
+    (void) args;
+    printf("fisk\n");
+    return (SelValue) { .val_tex = -1}; // TODO shaq_core.c
+}
+
+static inline SelValue fn_output_of_(void *args)
+{
+    (void) args;
+    printf("kalas\n");
+    return (SelValue) { .val_tex = -1}; // TODO shaq_core.c
+}
 
 /* ----------------------- INT functions -------------------- */
 
