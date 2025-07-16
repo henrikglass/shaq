@@ -22,7 +22,7 @@ typedef struct
     HglStringView id;
     //Type type;
     f32 value;
-} Constant;
+} SelConstant;
 
 typedef struct
 {
@@ -32,7 +32,7 @@ typedef struct
     Type argtypes[BUILTIN_MAX_N_ARGS];
     const char *synopsis;
     const char *desc;
-} Function;
+} SelFunction;
 
 /*--- Built-in function implementations -------------------------------------------------*/
 
@@ -341,7 +341,7 @@ static inline SelValue builtin_mat4_id_(void *args)
 
 /*--- Built-in tables -------------------------------------------------------------------*/
 
-static const Constant BUILTIN_CONSTANTS[] = 
+static const SelConstant BUILTIN_CONSTANTS[] = 
 {
     {.id = HGL_SV_LIT("PI"),  .value =   3.1415926535},
     {.id = HGL_SV_LIT("TAU"), .value = 2*3.1415926535},
@@ -350,7 +350,7 @@ static const Constant BUILTIN_CONSTANTS[] =
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
-static const Function BUILTIN_FUNCTIONS[] = 
+static const SelFunction BUILTIN_FUNCTIONS[] = 
 {
     { .id = HGL_SV_LIT("int"),        .type = TYPE_INT,   .impl = builtin_int_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = HGL_SV_LIT("mini"),       .type = TYPE_INT,   .impl = builtin_mini_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int mini(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },

@@ -1,34 +1,54 @@
 #include <stdio.h>
 
 #include "sel.h"
+#include "shaq_core.h"
 
-int main(void)
+#define HGL_FLAGS_IMPLEMENTATION
+#include "hgl_flags.h"
+
+#include <time.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[])
 {
-    ExeExpr *e = sel_compile("sin(0.5*PI)");
-    SelValue r = sel_run(e);
+    const char **opt_input = hgl_flags_add_str("-i,--input", "The input project (.ini) file to run", NULL, 0);
+    u64 *opt_rng_seed = hgl_flags_add_u64("-s,--seed", "`srand()` seed (defaults to `time(NULL)`)", 0, 0);
+    bool *opt_list_builtins = hgl_flags_add_bool("-l,--list-builtins", "List the built-in functions and constants in the Simple Expression Language (SEL)", false, 0);
+    bool *opt_help = hgl_flags_add_bool("-help,--help", "Display this message", false, 0);
 
-    switch (e->type) {
-        case TYPE_BOOL:  printf("result = %d\n", r.val_bool); break;
-        case TYPE_INT:   printf("result = %d\n", r.val_i32); break;
-        case TYPE_FLOAT: printf("result = %f\n", (double)r.val_f32); break;
-        case TYPE_NIL:   // TODO
-        //case TYPE_BVEC2: // TODO
-        //case TYPE_BVEC3: // TODO
-        //case TYPE_BVEC4: // TODO
-        case TYPE_VEC2:  // TODO
-        case TYPE_VEC3:  // TODO
-        case TYPE_VEC4:  // TODO
-        case TYPE_IVEC2: // TODO
-        case TYPE_IVEC3: // TODO
-        case TYPE_IVEC4: // TODO
-        case TYPE_MAT2:  // TODO
-        case TYPE_MAT3:  // TODO
-        case TYPE_MAT4:  // TODO
-        //case TYPE_IMAGE: // TODO
-        case TYPE_AND_NAMECHECKER_ERROR_:
-        case N_TYPES:
-            assert(false);
+    i32 err = hgl_flags_parse(argc, argv);
+    if (err != 0 || *opt_help) {
+        printf("Usage: %s [Options]\n", argv[0]);
+        hgl_flags_print();
+        return (err != 0) ? 1 : 0;
     }
+
+    if (*opt_list_builtins) {
+        sel_list_builtins();
+        return 0;
+    }
+   
+    if (*opt_input == NULL) {
+        fprintf(stderr, "No input file (*.ini) provided.\n");
+        return 1;
+    }
+
+    srand(*opt_rng_seed == 0 ? (u64)time(NULL): *opt_rng_seed);
+
+    shaq_begin(*opt_input);
+    while (true) {
+        if (shaq_should_close()) {
+            break;
+        }
+
+        if (shaq_needs_reload()) {
+            shaq_reload();
+        }
+
+        shaq_new_frame();
+    }
+    shaq_end();
+
 }
 
 // TODO SEL: Better error handling & error messages

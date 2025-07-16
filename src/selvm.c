@@ -1,0 +1,1031 @@
+/*--- Include files ---------------------------------------------------------------------*/
+
+#include "sel.h"
+#include "shaq_core.h"
+
+#include <time.h>
+
+/*--- Private macros --------------------------------------------------------------------*/
+
+#define SVM_STACK_SIZE (16*1024)
+
+/*--- Private type definitions ----------------------------------------------------------*/
+
+/*--- Private function prototypes -------------------------------------------------------*/
+
+static void svm_run(void);
+static void svm_reset(void);
+
+static inline void *svm_next_bytes(u32 size);
+static inline Op *svm_next_op(void);
+static inline void svm_stack_push(void *data, u32 size);
+static inline void svm_stack_push_selvalue(SelValue v, Type t);
+static inline void *svm_stack_pop(u32 size);
+static inline i32 addi(i32 *lhs, i32 *rhs);
+static inline f32 addf(f32 *lhs, f32 *rhs);
+static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs);
+static inline i32 subi(i32 *lhs, i32 *rhs);
+static inline f32 subf(f32 *lhs, f32 *rhs);
+static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs);
+static inline i32 muli(i32 *lhs, i32 *rhs);
+static inline f32 mulf(f32 *lhs, f32 *rhs);
+static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs);
+static inline i32 divi(i32 *lhs, i32 *rhs);
+static inline f32 divf(f32 *lhs, f32 *rhs);
+static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs);
+static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs);
+static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs);
+static inline i32 remi(i32 *lhs, i32 *rhs);
+static inline i32 negi(i32 *val);
+static inline f32 negf(f32 *val);
+
+static inline SelValue fn_int_(void *args);
+static inline SelValue fn_mini_(void *args);
+static inline SelValue fn_maxi_(void *args);
+static inline SelValue fn_randi_(void *args);
+static inline SelValue fn_iota_(void *args);
+
+static inline SelValue fn_float_(void *args);
+static inline SelValue fn_time_(void *args);
+static inline SelValue fn_deltatime_(void *args);
+static inline SelValue fn_rand_(void *args);
+static inline SelValue fn_sqrt_(void *args);
+static inline SelValue fn_pow_(void *args);
+static inline SelValue fn_exp_(void *args);
+static inline SelValue fn_log_(void *args);
+static inline SelValue fn_exp2_(void *args);
+static inline SelValue fn_log2_(void *args);
+static inline SelValue fn_sin_(void *args);
+static inline SelValue fn_cos_(void *args);
+static inline SelValue fn_tan_(void *args);
+static inline SelValue fn_asin_(void *args);
+static inline SelValue fn_acos_(void *args);
+static inline SelValue fn_atan_(void *args);
+static inline SelValue fn_atan2_(void *args);
+static inline SelValue fn_round_(void *args);
+static inline SelValue fn_floor_(void *args);
+static inline SelValue fn_ceil_(void *args);
+static inline SelValue fn_fract_(void *args);
+static inline SelValue fn_min_(void *args);
+static inline SelValue fn_max_(void *args);
+static inline SelValue fn_clamp_(void *args);
+static inline SelValue fn_lerp_(void *args);
+static inline SelValue fn_ilerp_(void *args);
+static inline SelValue fn_remap_(void *args);
+static inline SelValue fn_lerpsmooth_(void *args);
+static inline SelValue fn_smoothstep_(void *args);
+static inline SelValue fn_radians_(void *args);
+static inline SelValue fn_perlin3D_(void *args);
+
+static inline SelValue fn_vec2_(void *args);
+static inline SelValue fn_vec2_from_polar_(void *args);
+static inline SelValue fn_vec2_distance_(void *args);
+static inline SelValue fn_vec2_length_(void *args);
+static inline SelValue fn_vec2_normalize_(void *args);
+static inline SelValue fn_vec2_dot_(void *args);
+static inline SelValue fn_vec2_mul_scalar_(void *args);
+static inline SelValue fn_vec2_lerp_(void *args);
+static inline SelValue fn_vec2_slerp_(void *args);
+
+static inline SelValue fn_vec3_(void *args);
+static inline SelValue fn_vec3_from_spherical_(void *args);
+static inline SelValue fn_vec3_distance_(void *args);
+static inline SelValue fn_vec3_length_(void *args);
+static inline SelValue fn_vec3_normalize_(void *args);
+static inline SelValue fn_vec3_dot_(void *args);
+static inline SelValue fn_vec3_mul_scalar_(void *args);
+static inline SelValue fn_vec3_lerp_(void *args);
+static inline SelValue fn_vec3_slerp_(void *args);
+static inline SelValue fn_vec3_cross_(void *args);
+
+static inline SelValue fn_vec4_(void *args);
+static inline SelValue fn_vec4_distance_(void *args);
+static inline SelValue fn_vec4_length_(void *args);
+static inline SelValue fn_vec4_normalize_(void *args);
+static inline SelValue fn_vec4_dot_(void *args);
+static inline SelValue fn_vec4_mul_scalar_(void *args);
+static inline SelValue fn_vec4_lerp_(void *args);
+static inline SelValue fn_vec4_xyz_(void *args);
+static inline SelValue fn_rgba_(void *args);
+
+static inline SelValue fn_ivec2_(void *args);
+static inline SelValue fn_iresolution_(void *args);
+
+static inline SelValue fn_ivec3_(void *args);
+
+static inline SelValue fn_ivec4_(void *args);
+
+static inline SelValue fn_mat2_(void *args);
+static inline SelValue fn_mat2_id_(void *args);
+
+static inline SelValue fn_mat3_(void *args);
+static inline SelValue fn_mat3_id_(void *args);
+
+static inline SelValue fn_mat4_(void *args);
+static inline SelValue fn_mat4_id_(void *args);
+static inline SelValue fn_mat4_make_scale_(void *args);
+static inline SelValue fn_mat4_make_rotation_(void *args);
+static inline SelValue fn_mat4_make_translation_(void *args);
+static inline SelValue fn_mat4_look_at_(void *args);
+static inline SelValue fn_mat4_scale_(void *args);
+static inline SelValue fn_mat4_rotate_(void *args);
+static inline SelValue fn_mat4_translate_(void *args);
+static inline SelValue fn_mat4_mul_mat4_(void *args);
+static inline SelValue fn_mat4_mul_vec4_(void *args);
+static inline SelValue fn_mat4_mul_scalar_(void *args);
+
+/*--- Public variables ------------------------------------------------------------------*/
+
+const Func BUILTIN_FUNCTIONS[] = 
+{
+    { .id = HGL_SV_LIT("int"),        .type = TYPE_INT,   .impl = fn_int_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
+    { .id = HGL_SV_LIT("mini"),       .type = TYPE_INT,   .impl = fn_mini_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int mini(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },
+    { .id = HGL_SV_LIT("maxi"),       .type = TYPE_INT,   .impl = fn_maxi_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int maxi(int a, int b)", .desc = "Returns the maximum of `a` and `b`.", },
+    { .id = HGL_SV_LIT("randi"),      .type = TYPE_INT,   .impl = fn_randi_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int randi(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
+    { .id = HGL_SV_LIT("iota"),       .type = TYPE_INT,   .impl = fn_iota_,       .argtypes = {TYPE_NIL},                                                             .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
+
+    { .id = HGL_SV_LIT("float"),      .type = TYPE_FLOAT, .impl = fn_float_,      .argtypes = {TYPE_INT, TYPE_NIL},                                                   .synopsis = "float float(int x)", .desc = "Typecast int to float.", },
+    { .id = HGL_SV_LIT("time"),       .type = TYPE_FLOAT, .impl = fn_time_,       .argtypes = {TYPE_NIL},                                                             .synopsis = "float time()", .desc = "Returns the program runtime in seconds.", },
+    { .id = HGL_SV_LIT("deltatime"),  .type = TYPE_FLOAT, .impl = fn_deltatime_,  .argtypes = {TYPE_NIL},                                                             .synopsis = "float deltatime()", .desc = "Returns the frame delta time in seconds.", },
+    { .id = HGL_SV_LIT("rand"),       .type = TYPE_FLOAT, .impl = fn_rand_,       .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float rand(float min, float max)", .desc = "Returns a random number in [`min`, `max`].", },
+    { .id = HGL_SV_LIT("sqrt"),       .type = TYPE_FLOAT, .impl = fn_sqrt_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float sqrt(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("pow"),        .type = TYPE_FLOAT, .impl = fn_pow_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float pow(float x, float y)", .desc = NULL, },
+    { .id = HGL_SV_LIT("exp"),        .type = TYPE_FLOAT, .impl = fn_exp_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float exp(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("log"),        .type = TYPE_FLOAT, .impl = fn_log_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float log(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("exp2"),       .type = TYPE_FLOAT, .impl = fn_exp2_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float exp2(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("log2"),       .type = TYPE_FLOAT, .impl = fn_log2_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float log2(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("sin"),        .type = TYPE_FLOAT, .impl = fn_sin_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float sin(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("cos"),        .type = TYPE_FLOAT, .impl = fn_cos_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float cos(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("tan"),        .type = TYPE_FLOAT, .impl = fn_tan_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float tan(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("asin"),       .type = TYPE_FLOAT, .impl = fn_asin_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float asin(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("acos"),       .type = TYPE_FLOAT, .impl = fn_acos_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float acos(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("atan"),       .type = TYPE_FLOAT, .impl = fn_atan_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float atan(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("atan2"),      .type = TYPE_FLOAT, .impl = fn_atan2_,      .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float atan2(float y, float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("round"),      .type = TYPE_FLOAT, .impl = fn_round_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float round(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("floor"),      .type = TYPE_FLOAT, .impl = fn_floor_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float floor(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("ceil"),       .type = TYPE_FLOAT, .impl = fn_ceil_,       .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float ceil(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("fract"),      .type = TYPE_FLOAT, .impl = fn_fract_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float fract(float x)", .desc = NULL, },
+    { .id = HGL_SV_LIT("min"),        .type = TYPE_FLOAT, .impl = fn_min_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float min(float a, float b)", .desc = NULL, },
+    { .id = HGL_SV_LIT("max"),        .type = TYPE_FLOAT, .impl = fn_max_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float max(float a, float b)", .desc = NULL, },
+    { .id = HGL_SV_LIT("clamp"),      .type = TYPE_FLOAT, .impl = fn_clamp_,      .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float clamp(float min, float max, float x)", .desc = "Returns x clamped to [`min`,`max`]", },
+    { .id = HGL_SV_LIT("lerp"),       .type = TYPE_FLOAT, .impl = fn_lerp_,       .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linear interpolation", },
+    { .id = HGL_SV_LIT("ilerp"),      .type = TYPE_FLOAT, .impl = fn_ilerp_,      .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float ilerp(float a, float b, float x)", .desc = "Inverse linear interpolation", },
+    { .id = HGL_SV_LIT("remap"),      .type = TYPE_FLOAT, .impl = fn_remap_,      .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float remap(float in_min, float in_max, float out_min, float out_max, float x)", .desc = "See Freya Holmér's talks :-)", },
+    { .id = HGL_SV_LIT("lerpsmooth"), .type = TYPE_FLOAT, .impl = fn_lerpsmooth_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},             .synopsis = "float lerpsmooth(float a, float b, float dt, float omega)", .desc = "See Freya Holmér's talks :-)" , },
+    { .id = HGL_SV_LIT("smoothstep"), .type = TYPE_FLOAT, .impl = fn_smoothstep_, .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float smoothstep(float t)", .desc = "Steps, smoothly. :3", },
+    { .id = HGL_SV_LIT("radians"),    .type = TYPE_FLOAT, .impl = fn_radians_,    .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float radians(float degrees)", .desc = "Converts degrees into radians", },
+    { .id = HGL_SV_LIT("perlin3D"),   .type = TYPE_FLOAT, .impl = fn_perlin3D_,   .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
+
+    { .id = HGL_SV_LIT("vec2"),            .type = TYPE_VEC2,  .impl = fn_vec2_,            .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_from_polar"), .type = TYPE_VEC2,  .impl = fn_vec2_from_polar_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_distance"),   .type = TYPE_FLOAT, .impl = fn_vec2_distance_,   .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 vec2_distance(vec2 a, vec2 b)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_length"),     .type = TYPE_FLOAT, .impl = fn_vec2_length_,     .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_length(vec2 v)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_normalize"),  .type = TYPE_VEC2,  .impl = fn_vec2_normalize_,  .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_normalize(vec2 v)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_dot"),        .type = TYPE_FLOAT, .impl = fn_vec2_dot_,        .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 vec2_dot(vec2 a, vec2 b)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_mul_scalar"), .type = TYPE_VEC2,  .impl = fn_vec2_mul_scalar_, .argtypes = {TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},            .synopsis = "vec2 vec2_mul_scalar(vec2 v, float s)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_lerp"),       .type = TYPE_VEC2,  .impl = fn_vec2_lerp_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_lerp(vec2 a, vec2 b, float t)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_slerp"),      .type = TYPE_VEC2,  .impl = fn_vec2_slerp_,      .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_slerp(vec2 a, vec2 b, float t)", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("vec3"),                .type = TYPE_VEC3,  .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = NULL, },
+    { .id = HGL_SV_LIT("vec2_from_spherical"), .type = TYPE_VEC3,  .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_distance"),       .type = TYPE_FLOAT, .impl = fn_vec3_distance_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 vec3_distance(vec3 a, vec3 b)",                        . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_length"),         .type = TYPE_FLOAT, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 vec3_length(vec3 v)",                                  . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_normalize"),      .type = TYPE_VEC3,  .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 vec3_normalize(vec3 v)",                               . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_dot"),            .type = TYPE_FLOAT, .impl = fn_vec3_dot_,            .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 vec3_dot(vec3 a, vec3 b)",                             . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_mul_scalar"),     .type = TYPE_VEC3,  .impl = fn_vec3_mul_scalar_,     .argtypes = {TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},              .synopsis = "vec3 vec3_mul_scalar(vec3 v, float s)",                     . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_lerp"),           .type = TYPE_VEC3,  .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 vec3_lerp(vec3 a, vec3 b, float t)",                   . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_slerp"),          .type = TYPE_VEC3,  .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 vec3_slerp(vec3 a, vec3 b, float t)",                  . desc = NULL, },
+    { .id = HGL_SV_LIT("vec3_cross"),          .type = TYPE_VEC3,  .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 vec3_slerp(vec3 a, vec3 b, float t)",                  . desc = NULL, },
+
+    { .id = HGL_SV_LIT("vec4"),            .type = TYPE_VEC4,  .impl = fn_vec4_,            .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_distance"),   .type = TYPE_FLOAT, .impl = fn_vec4_distance_,   .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "vec4 vec4_distance(vec4 a, vec4 b)",            .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_length"),     .type = TYPE_FLOAT, .impl = fn_vec4_length_,     .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 vec4_length(vec4 v)",                      .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_normalize"),  .type = TYPE_VEC4,  .impl = fn_vec4_normalize_,  .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 vec4_normalize(vec4 v)",                   .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_dot"),        .type = TYPE_FLOAT, .impl = fn_vec4_dot_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "vec4 vec4_dot(vec4 a, vec4 b)",                 .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_mul_scalar"), .type = TYPE_VEC4,  .impl = fn_vec4_mul_scalar_, .argtypes = {TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},                          .synopsis = "vec4 vec4_mul_scalar(vec4 v, float s)",         .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_lerp"),       .type = TYPE_VEC4,  .impl = fn_vec4_lerp_,       .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 vec4_lerp(vec4 a, vec4 b, float t)",       .desc = NULL, },
+    { .id = HGL_SV_LIT("vec4_xyz"),        .type = TYPE_VEC3,  .impl = fn_vec4_xyz_,        .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec3 vec3_xyz(vec4 v)",                         .desc = "Returns the x,y, and z components of `v` as a vec3", },
+    { .id = HGL_SV_LIT("rgba"),            .type = TYPE_VEC4,  .impl = fn_rgba_,            .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
+
+    { .id = HGL_SV_LIT("ivec2"),        .type = TYPE_IVEC2, .impl = fn_ivec2_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "ivec2 ivec2(int x, int y)", .desc = NULL, },
+    { .id = HGL_SV_LIT("iresolution"),  .type = TYPE_IVEC2, .impl = fn_iresolution_,      .argtypes = {TYPE_NIL},                                         .synopsis = "ivec2 iresolution()", .desc = "Returns the current window resolution", },
+
+    { .id = HGL_SV_LIT("ivec3"),      .type = TYPE_IVEC3, .impl = fn_ivec3_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL},                               .synopsis = "ivec3 ivec3(int x, int y, int z)", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("ivec4"),      .type = TYPE_IVEC4, .impl = fn_ivec4_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL},                     .synopsis = "ivec4 ivec4(int x, int y, int z, int w)", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("mat2"),       .type = TYPE_MAT2,  .impl = fn_mat2_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},                                       .synopsis = "mat2 mat2(vec2 c0, vec2 c1)", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat2_id"),    .type = TYPE_MAT2,  .impl = fn_mat2_id_,    .argtypes = {TYPE_NIL},                                                             .synopsis = "mat2 mat2_id()", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("mat3"),       .type = TYPE_MAT3,  .impl = fn_mat3_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL},                            .synopsis = "mat3 mat3(vec3 c0, vec3 c1, vec3 c2)", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat3_id"),    .type = TYPE_MAT3,  .impl = fn_mat3_id_,    .argtypes = {TYPE_NIL},                                                             .synopsis = "mat3 mat3_id()", .desc = NULL, },
+
+    { .id = HGL_SV_LIT("mat4"),                  .type = TYPE_MAT4, .impl = fn_mat4_,                  .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_NIL}, .synopsis = "mat4 mat4(vec4 c0, vec4 c1, vec4 c2, vec4 c3)",        .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_id"),               .type = TYPE_MAT4, .impl = fn_mat4_id_,               .argtypes = {TYPE_NIL},                                             .synopsis = "mat4 mat4_id()",                                       .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_make_scale"),       .type = TYPE_MAT4, .impl = fn_mat4_make_scale_,       .argtypes = {TYPE_VEC3, TYPE_NIL},                                  .synopsis = "mat4 mat4_make_scale(vec3 v)",                         .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_make_rotation"),    .type = TYPE_MAT4, .impl = fn_mat4_make_rotation_,    .argtypes = {TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},                      .synopsis = "mat4 mat4_make_rotation(float angle, vec3 axis)",      .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_make_translation"), .type = TYPE_MAT4, .impl = fn_mat4_make_translation_, .argtypes = {TYPE_VEC3, TYPE_NIL},                                  .synopsis = "mat4 mat4_make_translation(vec3 v)",                   .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_look_at"),          .type = TYPE_MAT4, .impl = fn_mat4_look_at_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL},            .synopsis = "mat4 mat4_look_at(vec3 camera, vec3 target, vec3 up)", .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_scale"),            .type = TYPE_MAT4, .impl = fn_mat4_scale_,            .argtypes = {TYPE_MAT4, TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat4 mat4_scale(mat4 m, vec3 v)",                      .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_rotate"),           .type = TYPE_MAT4, .impl = fn_mat4_rotate_,           .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},           .synopsis = "mat4 mat4_rotate(mat4 m, float angle, vec3 axis)",     .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_translate"),        .type = TYPE_MAT4, .impl = fn_mat4_translate_,        .argtypes = {TYPE_MAT4, TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat4 mat4_translate(mat4 m, vec3 v)",                  .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_mul_mat4"),         .type = TYPE_MAT4, .impl = fn_mat4_mul_mat4_,         .argtypes = {TYPE_MAT4, TYPE_MAT4, TYPE_NIL},                       .synopsis = "mat4 mat4_mul_mat4(mat4 lhs, mat4 rhs)",               .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_mul_vec4"),         .type = TYPE_VEC4, .impl = fn_mat4_mul_vec4_,         .argtypes = {TYPE_MAT4, TYPE_VEC4, TYPE_NIL},                       .synopsis = "vec4 mat4_mul_vec4(mat4 m, vec4 v)",                   .desc = NULL, },
+    { .id = HGL_SV_LIT("mat4_mul_scalar"),       .type = TYPE_MAT4, .impl = fn_mat4_mul_scalar_,       .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_NIL},                      .synopsis = "mat4 mat4_mul_scalar(mat4 m, float s)",                .desc = NULL, },
+
+
+};
+const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
+
+/*--- Private variables -----------------------------------------------------------------*/
+
+static const u32 TYPE_TO_SIZE[] = 
+{
+    [TYPE_NIL]    = 0,
+    [TYPE_BOOL]   = sizeof(bool),
+    [TYPE_INT]    = sizeof(i32),
+    [TYPE_FLOAT]  = sizeof(f32),
+    [TYPE_VEC2]   = 8,
+    [TYPE_VEC3]   = 12,
+    [TYPE_VEC4]   = 16,
+    [TYPE_IVEC2]  = 8,
+    [TYPE_IVEC3]  = 12,
+    [TYPE_IVEC4]  = 16,
+    [TYPE_MAT2]   = 16,
+    [TYPE_MAT3]   = 36,
+    [TYPE_MAT4]   = 64,
+    [TYPE_STR]    = sizeof(HglStringView),
+};
+
+/* Simple Expression Language Virtual Machine */
+static struct SVM {
+    const ExeExpr *exe;
+    u8 stack[SVM_STACK_SIZE];
+    u32 pc;
+    u32 sp;
+} svm = {0};
+
+/*--- Public functions ------------------------------------------------------------------*/
+
+SelValue sel_run(ExeExpr *exe)
+{
+    if (exe == NULL) {
+        return (SelValue) {.val_i32 = -1};
+    }
+
+    /* Reset SVM & load program */
+    svm_reset();
+    svm.exe = exe;
+
+    /* Execute in interpreter */
+    svm_run(); 
+
+    /* Assert machine state is as expected */
+    u32 tsize = TYPE_TO_SIZE[svm.exe->type];
+    assert(svm.sp - tsize == 0);
+    assert(svm.pc == svm.exe->size);
+
+    /* retreive, pack, and return the result result */
+    void *raw_result = svm_stack_pop(tsize);
+    SelValue result = {0};
+    memcpy(&result, raw_result, tsize); // Okay? Otherwise switch on exe->type
+
+    return result;
+}
+
+/*--- Private functions -----------------------------------------------------------------*/
+
+static void svm_run()
+{
+    while (true) {
+
+        /* end-of-program */
+        if (svm.pc >= svm.exe->size) {
+            break;
+        }
+
+        Op *op = svm_next_op();
+        u32 tsize = TYPE_TO_SIZE[op->type];
+        
+        switch (op->kind) {
+            case OP_PUSH: {
+                svm_stack_push(svm_next_bytes(op->argsize), op->argsize);
+            } break;
+
+            case OP_ADD: {
+                void *rhs = svm_stack_pop(tsize);
+                void *lhs = svm_stack_pop(tsize);
+                switch (op->type) {
+                    case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = addv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    default: assert(false);
+                }
+            } break;
+
+            case OP_SUB: {
+                void *rhs = svm_stack_pop(tsize);
+                void *lhs = svm_stack_pop(tsize);
+                switch (op->type) {
+                    case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = subv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    default: assert(false);
+                }
+            } break;
+
+            case OP_MUL: {
+                void *rhs = svm_stack_pop(tsize);
+                void *lhs = svm_stack_pop(tsize);
+                switch (op->type) {
+                    case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = mulv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    default: assert(false);
+                }
+            } break;
+
+            case OP_DIV: {
+                void *rhs = svm_stack_pop(tsize);
+                void *lhs = svm_stack_pop(tsize);
+                switch (op->type) {
+                    case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = divv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    default: assert(false);
+                }
+            } break;
+
+            case OP_REM: {
+                void *rhs = svm_stack_pop(tsize);
+                void *lhs = svm_stack_pop(tsize);
+                switch (op->type) {
+                    case TYPE_INT: {i32 tmp = remi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    default: assert(false);
+                }
+            } break;
+
+            case OP_NEG: {
+                void *val = svm_stack_pop(tsize);
+                switch (op->type) {
+                    case TYPE_INT: {i32 tmp = negi(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_FLOAT: {f32 tmp = negf(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    default: assert(false);
+                }
+            } break;
+
+            case OP_FUNC: {
+                i32 func_id = *(i32*)svm_next_bytes(sizeof(i32));
+                const Func *func = &BUILTIN_FUNCTIONS[func_id];
+                for (i32 i = 0; i < SEL_FUNC_MAX_N_ARGS; i++) {
+                    if (func->argtypes[i] == TYPE_NIL) {
+                        break;
+                    }
+                    svm_stack_pop(TYPE_TO_SIZE[func->argtypes[i]]);
+                }
+                SelValue res = (func->impl)(&svm.stack[svm.sp]);
+                svm_stack_push_selvalue(res, func->type);
+            } break;
+        }
+    }
+}
+
+static void svm_reset(void)
+{
+    svm.exe = NULL;
+    svm.pc  = 0;
+    svm.sp  = 0;
+}
+
+static inline void *svm_next_bytes(u32 size)
+{
+    void *data = (void *)&svm.exe->code[svm.pc]; 
+    svm.pc += size;
+    return data;
+}
+
+static inline Op *svm_next_op()
+{
+    Op *op = (Op *)&svm.exe->code[svm.pc];
+    svm.pc += sizeof(Op);
+    return op;
+}
+
+static inline void svm_stack_push(void *data, u32 size)
+{
+    if (svm.sp + size > SVM_STACK_SIZE) {
+        assert(false && "out of stack space");
+    }
+    memcpy(&svm.stack[svm.sp], data, size);
+    svm.sp += size;
+}
+
+static inline void svm_stack_push_selvalue(SelValue v, Type t)
+{
+    memcpy(&svm.stack[svm.sp], &v, TYPE_TO_SIZE[t]);
+    svm.sp += TYPE_TO_SIZE[t];
+}
+
+static inline void *svm_stack_pop(u32 size)
+{
+    if (svm.sp < size) {
+        assert(false && "popping below stack boundary");
+    }
+    svm.sp -= size;
+    return &svm.stack[svm.sp];
+}
+
+/* ----------------------- Basic operators -------------------- */
+
+static inline i32 addi(i32 *lhs, i32 *rhs) { return (*lhs) + (*rhs); }
+static inline f32 addf(f32 *lhs, f32 *rhs) { return (*lhs) + (*rhs); }
+static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs) {return vec2_add(*lhs, *rhs);}
+static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs) {return vec3_add(*lhs, *rhs);}
+static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs) {return vec4_add(*lhs, *rhs);}
+
+static inline i32 subi(i32 *lhs, i32 *rhs) { return (*lhs) - (*rhs); }
+static inline f32 subf(f32 *lhs, f32 *rhs) { return (*lhs) - (*rhs); }
+static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) {return vec2_sub(*lhs, *rhs);}
+static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) {return vec3_sub(*lhs, *rhs);}
+static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) {return vec4_sub(*lhs, *rhs);}
+
+static inline i32 muli(i32 *lhs, i32 *rhs) { return (*lhs) * (*rhs); }
+static inline f32 mulf(f32 *lhs, f32 *rhs) { return (*lhs) * (*rhs); }
+static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, *rhs);}
+static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, *rhs);}
+static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, *rhs);}
+
+static inline i32 divi(i32 *lhs, i32 *rhs) { return (*lhs) / (*rhs); }
+static inline f32 divf(f32 *lhs, f32 *rhs) { return (*lhs) / (*rhs); }
+static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, vec2_recip(*rhs));}
+static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, vec3_recip(*rhs));}
+static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, vec4_recip(*rhs));}
+
+static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
+static inline i32 negi(i32 *val) { return -(*val); }
+static inline f32 negf(f32 *val) { return -(*val); }
+
+/* ----------------------- INT functions -------------------- */
+
+static inline SelValue fn_int_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_i32 = (i32)a0}; 
+}
+
+static inline SelValue fn_mini_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_i32 = (args_i32[0] < args_i32[1]) ? args_i32[0] : args_i32[1]}; 
+}
+
+static inline SelValue fn_maxi_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_i32 = (args_i32[0] > args_i32[1]) ? args_i32[0] : args_i32[1]}; 
+}
+
+static inline SelValue fn_randi_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    i32 min = args_i32[0];
+    i32 max = args_i32[1];
+    return (SelValue) {.val_i32 = rand() % (max + 1 - min) + min}; 
+}
+
+static inline SelValue fn_iota_(void *args)
+{
+    (void) args;
+    static i32 iota = 0;
+    return (SelValue) {.val_i32 = iota++}; 
+}
+
+/* ----------------------- FLOAT functions -------------------- */
+
+static inline SelValue fn_float_(void *args)
+{
+    i32 a0 = *(i32*)args;
+    return (SelValue) {.val_f32 = (f32)a0}; 
+}
+
+static inline SelValue fn_time_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_f32 = shaq_time()};
+}
+
+static inline SelValue fn_deltatime_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_f32 = shaq_deltatime()};
+}
+
+static inline SelValue fn_rand_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    f32 min = args_f32[0];
+    f32 max = args_f32[1];
+    f32 range = max - min;
+    return (SelValue) {.val_f32 = ((f32)rand()/(f32)RAND_MAX)*range + min}; 
+}
+
+static inline SelValue fn_sqrt_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = sqrtf(a0)}; 
+}
+
+static inline SelValue fn_pow_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = powf(args_f32[0], args_f32[1])}; 
+}
+
+static inline SelValue fn_exp_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = expf(a0)}; 
+}
+
+static inline SelValue fn_log_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = logf(a0)}; 
+}
+
+static inline SelValue fn_exp2_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = exp2f(a0)}; 
+}
+
+static inline SelValue fn_log2_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = log2f(a0)}; 
+}
+
+static inline SelValue fn_sin_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = sinf(a0)}; 
+}
+
+static inline SelValue fn_cos_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = cosf(a0)}; 
+}
+
+static inline SelValue fn_tan_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = tanf(a0)}; 
+}
+
+static inline SelValue fn_asin_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = asinf(a0)}; 
+}
+
+static inline SelValue fn_acos_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = acosf(a0)}; 
+}
+
+static inline SelValue fn_atan_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = atanf(a0)}; 
+}
+
+static inline SelValue fn_atan2_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = atan2f(args_f32[0], args_f32[1])}; 
+}
+
+static inline SelValue fn_round_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = roundf(a0)}; 
+}
+
+static inline SelValue fn_floor_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = floorf(a0)}; 
+}
+
+static inline SelValue fn_ceil_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = ceilf(a0)}; 
+}
+
+static inline SelValue fn_fract_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = a0 - floorf(a0)}; 
+}
+
+static inline SelValue fn_min_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = (args_f32[0] < args_f32[1]) ? args_f32[0] : args_f32[1]}; 
+}
+
+static inline SelValue fn_max_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = (args_f32[0] > args_f32[1]) ? args_f32[0] : args_f32[1]}; 
+}
+
+static inline SelValue fn_clamp_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_clamp(args_f32[0], args_f32[1], args_f32[2])}; 
+}
+
+static inline SelValue fn_lerp_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_lerp(args_f32[0], args_f32[1], args_f32[2])}; 
+}
+
+static inline SelValue fn_ilerp_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_ilerp(args_f32[0], args_f32[1], args_f32[2])}; 
+}
+
+static inline SelValue fn_remap_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_remap(args_f32[0], args_f32[1], args_f32[2], args_f32[3], args_f32[4])}; 
+}
+
+static inline SelValue fn_lerpsmooth_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_lerpsmooth(args_f32[0], args_f32[1], args_f32[2], args_f32[3])}; 
+}
+
+static inline SelValue fn_smoothstep_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = hglm_smoothstep(a0)}; 
+}
+
+static inline SelValue fn_radians_(void *args)
+{
+    f32 a0 = *(f32*)args;
+    return (SelValue) {.val_f32 = (f32)((2.0*HGLM_PI/360.0)) * a0}; 
+}
+
+static inline SelValue fn_perlin3D_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_perlin3D(args_f32[0], args_f32[1], args_f32[2])}; 
+}
+
+
+/* ----------------------- VEC2 functions -------------------- */
+
+static inline SelValue fn_vec2_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_make(args_f32[0], args_f32[1])};
+}
+
+static inline SelValue fn_vec2_from_polar_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_from_polar(args_f32[0], args_f32[1])};
+}
+
+static inline SelValue fn_vec2_distance_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_f32 = hglm_vec2_distance(args_v2[0], args_v2[1])};
+}
+
+static inline SelValue fn_vec2_length_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_f32 = hglm_vec2_len(args_v2[0])};
+}
+
+static inline SelValue fn_vec2_normalize_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_normalize(args_v2[0])};
+}
+
+static inline SelValue fn_vec2_dot_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_f32 = hglm_vec2_dot(args_v2[0], args_v2[1])};
+}
+
+static inline SelValue fn_vec2_mul_scalar_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_mul_scalar(args_v2[0], *(f32*)&args_v2[1])};
+}
+
+static inline SelValue fn_vec2_lerp_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_lerp(args_v2[0], args_v2[1], *(f32*)&args_v2[2])};
+}
+
+static inline SelValue fn_vec2_slerp_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_slerp(args_v2[0], args_v2[1], *(f32*)&args_v2[2])};
+}
+
+
+/* ----------------------- VEC3 functions -------------------- */
+
+static inline SelValue fn_vec3_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_make(args_f32[0], args_f32[1], args_f32[2])};
+}
+
+static inline SelValue fn_vec3_from_spherical_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_from_spherical(args_f32[0], args_f32[1], args_f32[1])};
+} 
+  
+static inline SelValue fn_vec3_distance_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_f32 = hglm_vec3_distance(args_v3[0], args_v3[1])};
+} 
+  
+static inline SelValue fn_vec3_length_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_f32 = hglm_vec3_len(args_v3[0])};
+} 
+  
+static inline SelValue fn_vec3_normalize_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_normalize(args_v3[0])};
+} 
+  
+static inline SelValue fn_vec3_dot_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_f32 = hglm_vec3_dot(args_v3[0], args_v3[1])};
+} 
+  
+static inline SelValue fn_vec3_mul_scalar_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_mul_scalar(args_v3[0], *(f32*)&args_v3[1])};
+} 
+  
+static inline SelValue fn_vec3_lerp_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_lerp(args_v3[0], args_v3[1], *(f32*)&args_v3[2])};
+} 
+  
+static inline SelValue fn_vec3_slerp_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_lerp(args_v3[0], args_v3[1], *(f32*)&args_v3[2])};
+} 
+  
+static inline SelValue fn_vec3_cross_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_cross(args_v3[0], args_v3[1])};
+} 
+
+
+/* ----------------------- VEC4 functions -------------------- */
+
+static inline SelValue fn_vec4_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_vec4 = hglm_vec4_make(args_f32[0], args_f32[1], args_f32[2], args_f32[3])};
+}
+
+static inline SelValue fn_vec4_distance_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_f32 = hglm_vec4_distance(args_v4[0], args_v4[1])};
+} 
+  
+static inline SelValue fn_vec4_length_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_f32 = hglm_vec4_len(args_v4[0])};
+} 
+  
+static inline SelValue fn_vec4_normalize_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_vec4 = hglm_vec4_normalize(args_v4[0])};
+} 
+  
+static inline SelValue fn_vec4_dot_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_f32 = hglm_vec4_dot(args_v4[0], args_v4[1])};
+} 
+  
+static inline SelValue fn_vec4_mul_scalar_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_vec4 = hglm_vec4_mul_scalar(args_v4[0], *(f32*)&args_v4[1])};
+} 
+  
+static inline SelValue fn_vec4_lerp_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_vec4 = hglm_vec4_lerp(args_v4[0], args_v4[1], *(f32*)&args_v4[2])};
+} 
+  
+static inline SelValue fn_vec4_xyz_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_vec3 = args_v4[0].xyz};
+} 
+ 
+static inline SelValue fn_rgba_(void *args)
+{
+    u32 argu32 = *(u32 *)args;
+    f32 r = (f32)(argu32 >> 24 & 0xFF) / 255.0f;
+    f32 g = (f32)(argu32 >> 16 & 0xFF) / 255.0f;
+    f32 b = (f32)(argu32 >>  8 & 0xFF) / 255.0f;
+    f32 a = (f32)(argu32 >>  0 & 0xFF) / 255.0f;
+    return (SelValue) {.val_vec4 = hglm_vec4_make(r, g, b, a)};
+}
+
+
+/* ---------------------- IVEC2 functions -------------------- */
+
+static inline SelValue fn_ivec2_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_ivec2 = hglm_ivec2_make(args_i32[0], args_i32[1])};
+}
+
+static inline SelValue fn_iresolution_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_ivec2 = hglm_ivec2_make(-1, -1)}; // TODO shaq_core.c
+}
+
+
+/* ---------------------- IVEC4 functions -------------------- */
+
+static inline SelValue fn_ivec3_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_ivec3 = hglm_ivec3_make(args_i32[0], args_i32[1], args_i32[2])};
+}
+
+
+/* ---------------------- IVEC4 functions -------------------- */
+
+static inline SelValue fn_ivec4_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_ivec4 = hglm_ivec4_make(args_i32[0], args_i32[1], args_i32[2], args_i32[3])};
+}
+
+
+/* ---------------------- MAT2 functions -------------------- */
+
+static inline SelValue fn_mat2_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_mat2 = hglm_mat2_make(args_v2[0], args_v2[1])};
+}
+
+static inline SelValue fn_mat2_id_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_mat2 = HGLM_MAT2_IDENTITY};
+}
+
+
+/* ---------------------- MAT3 functions -------------------- */
+
+static inline SelValue fn_mat3_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_mat3 = hglm_mat3_make(args_v3[0], args_v3[1], args_v3[2])};
+}
+
+static inline SelValue fn_mat3_id_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_mat3 = HGLM_MAT3_IDENTITY};
+}
+
+
+/* ---------------------- MAT4 functions -------------------- */
+
+static inline SelValue fn_mat4_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_make(args_v4[0], args_v4[1], args_v4[2], args_v4[3])};
+}
+
+static inline SelValue fn_mat4_id_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_mat4 = HGLM_MAT4_IDENTITY};
+}
+
+static inline SelValue fn_mat4_make_scale_(void *args)
+{ 
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_make_scale(args_v3[0])};
+}  
+
+static inline SelValue fn_mat4_make_rotation_(void *args)
+{ 
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_make_rotation(args_f32[0], *(Vec3*)&args_f32[1])};
+}  
+
+static inline SelValue fn_mat4_make_translation_(void *args)
+{ 
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_make_translation(args_v3[0])};
+}  
+
+static inline SelValue fn_mat4_look_at_(void *args)
+{ 
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_look_at(args_v3[0], args_v3[1], args_v3[2])};
+}  
+
+static inline SelValue fn_mat4_scale_(void *args)
+{ 
+    Mat4 *args_m4 = (Mat4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_scale(args_m4[0], *(Vec3*)&args_m4[1])};
+}  
+
+static inline SelValue fn_mat4_rotate_(void *args)
+{ 
+    u8 *args8 = (u8 *) args;
+    Mat4 *args_m4 = (Mat4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_rotate(args_m4[0], 
+                                                   *(f32*)(args8 + sizeof(Mat4)), 
+                                                   *(Vec3*)(args8 + sizeof(Mat4) + sizeof(Vec3)))};
+}  
+
+static inline SelValue fn_mat4_translate_(void *args)
+{ 
+    Mat4 *args_m4 = (Mat4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_translate(args_m4[0], *(Vec3*)&args_m4[1])};
+}  
+
+static inline SelValue fn_mat4_mul_mat4_(void *args)
+{ 
+    Mat4 *args_m4 = (Mat4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_mul_mat4(args_m4[0], args_m4[1])};
+}  
+
+static inline SelValue fn_mat4_mul_vec4_(void *args)
+{ 
+    Mat4 *args_m4 = (Mat4 *) args;
+    return (SelValue) {.val_vec4 = hglm_mat4_mul_vec4(args_m4[0], *(Vec4*)&args_m4[1])};
+}  
+
+static inline SelValue fn_mat4_mul_scalar_(void *args)
+{ 
+    Mat4 *args_m4 = (Mat4 *) args;
+    return (SelValue) {.val_mat4 = hglm_mat4_mul_scalar(args_m4[0], *(f32*)&args_m4[1])};
+}  
+
+
+

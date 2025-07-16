@@ -5,7 +5,6 @@
 #define HGL_STRING_IMPLEMENTATION
 #include "hgl_string.h"
 #include "alloc.h"
-#include "builtins.h"
 
 #include <assert.h>
 
@@ -13,7 +12,7 @@
 
 #define TRY(expr_)                                                    \
     do {                                                              \
-        int err_ = (int) (expr_);                                     \
+        i32 err_ = (i32) (expr_);                                     \
         if (err_ != 0) {                                              \
             return err_;                                              \
         }                                                             \
@@ -54,7 +53,6 @@
         return TYPE_AND_NAMECHECKER_ERROR_;                           \
     }
 
-#define SVM_STACK_SIZE (16*1024)
 
 /*--- Private type definitions ----------------------------------------------------------*/
 
@@ -71,6 +69,7 @@ typedef enum
     TOK_BOOL_LITERAL,
     TOK_INT_LITERAL,
     TOK_FLOAT_LITERAL,
+    TOK_STR_LITERAL,
     TOK_IDENTIFIER,
     EOF_TOKEN_,
     LEXER_ERROR_,
@@ -106,6 +105,13 @@ typedef enum
 
 static_assert(N_EXPR_KINDS <= 256, "");
 
+typedef struct
+{
+    HglStringView id;
+    //Type type;
+    f32 value;
+} SelConstant;
+
 /**
  * An expression may be either binary, and have two children `lhs` and `rhs`, unary, 
  * and have a single child `child`, or atomic, and have no children. 
@@ -126,27 +132,6 @@ typedef struct ExprTree
     struct ExprTree *rhs;
 } ExprTree;
 
-typedef enum
-{
-    OP_PUSH,
-    OP_ADD,
-    OP_SUB,
-    OP_MUL,
-    OP_DIV,
-    OP_REM,
-    OP_NEG,
-    OP_FUNC,
-} OpKind;
-
-typedef struct
-{
-    u8 kind;
-    u8 type;
-    // Todo LHS/RHS types? Union?
-    u8 argsize;
-    u8 pad[1];
-} Op;
-static_assert(sizeof(Op) == 4, "");
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
@@ -161,14 +146,14 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token);
 
 /* parser */
 static ExprTree *parse_expr(const char *str);
-static int parse_add_expr(ExprTree **e, Lexer *l);
-static int parse_mul_expr(ExprTree **e, Lexer *l);
-static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l);
-static int parse_arglist_expr(ExprTree **e, Lexer *l);
+static i32 parse_add_expr(ExprTree **e, Lexer *l);
+static i32 parse_mul_expr(ExprTree **e, Lexer *l);
+static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l);
+static i32 parse_arglist_expr(ExprTree **e, Lexer *l);
 
 /* Type-/namechecker */
 static Type type_and_namecheck(ExprTree *e);
-static Type type_and_namecheck_function(ExprTree *e, const Function *f, const Type *argtypes);
+static Type type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes);
 
 /* codegen */
 static ExeExpr *codegen(const ExprTree *e);
@@ -180,47 +165,14 @@ static void exe_append_i32(ExeExpr *exe, i32 v);
 static void exe_append_f32(ExeExpr *exe, f32 v);
 static void exe_append(ExeExpr *exe, const void *val, u32 size);
 
-/* virtual machine/interpreter */
-static void svm_run(void);
-static void svm_reset(void);
-static inline void *svm_next_bytes(u32 size);
-static inline Op *svm_next_op(void);
-static inline void svm_stack_push(void *data, u32 size);
-static inline void svm_stack_push_selvalue(SelValue v, Type t);
-static inline void *svm_stack_pop(u32 size);
-static inline i32 addi(i32 *lhs, i32 *rhs);
-static inline f32 addf(f32 *lhs, f32 *rhs);
-static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs);
-static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs);
-static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs);
-static inline i32 subi(i32 *lhs, i32 *rhs);
-static inline f32 subf(f32 *lhs, f32 *rhs);
-static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs);
-static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs);
-static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs);
-static inline i32 muli(i32 *lhs, i32 *rhs);
-static inline f32 mulf(f32 *lhs, f32 *rhs);
-static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs);
-static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs);
-static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs);
-static inline i32 divi(i32 *lhs, i32 *rhs);
-static inline f32 divf(f32 *lhs, f32 *rhs);
-static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs);
-static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs);
-static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs);
-static inline i32 remi(i32 *lhs, i32 *rhs);
-static inline i32 negi(i32 *val);
-static inline f32 negf(f32 *val);
-
 /* misc. debug */
 static void token_print(Token *t);
-static bool is_identifier_char(int c);
-static bool is_decimal_char(int c);
-static bool is_hexadecimal_char(int c);
+static bool is_identifier_char(i32 c);
+static bool is_decimal_char(i32 c);
+static bool is_hexadecimal_char(i32 c);
 static inline void print_expr(ExprTree *e);
 static inline void print_expr_tree(ExprTree *e);
-static inline void print_expr_tree_helper(ExprTree *e, int indent);
-
+static inline void print_expr_tree_helper(ExprTree *e, i32 indent);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -232,9 +184,6 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_BOOL]   = "bool",
     [TYPE_INT]    = "int",
     [TYPE_FLOAT]  = "float",
-    //[TYPE_BVEC2]  = "bvec2",
-    //[TYPE_BVEC3]  = "bvec3",
-    //[TYPE_BVEC4]  = "bvec4",
     [TYPE_VEC2]   = "vec2",
     [TYPE_VEC3]   = "vec3",
     [TYPE_VEC4]   = "vec4",
@@ -244,28 +193,9 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_MAT2]   = "mat2",
     [TYPE_MAT3]   = "mat3",
     [TYPE_MAT4]   = "mat4",
+    [TYPE_STR]    = "str",
     //[TYPE_IMAGE]  = "image",
     [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
-};
-
-static const u32 TYPE_TO_SIZE[] = 
-{
-    [TYPE_NIL]    = 0,
-    [TYPE_BOOL]   = sizeof(bool),
-    [TYPE_INT]    = sizeof(i32),
-    [TYPE_FLOAT]  = sizeof(f32),
-    //[TYPE_BVEC2]  = 2,
-    //[TYPE_BVEC3]  = 3,
-    //[TYPE_BVEC4]  = 4,
-    [TYPE_VEC2]   = 8,
-    [TYPE_VEC3]   = 12,
-    [TYPE_VEC4]   = 16,
-    [TYPE_IVEC2]  = 8,
-    [TYPE_IVEC3]  = 12,
-    [TYPE_IVEC4]  = 16,
-    [TYPE_MAT2]   = 16,
-    [TYPE_MAT3]   = 36,
-    [TYPE_MAT4]   = 64,
 };
 
 static const char *const TOKEN_TO_STR[] =
@@ -286,13 +216,15 @@ static const char *const TOKEN_TO_STR[] =
     [LEXER_ERROR_]      = "<LEXER-ERROR>",
 };
 
-/* Simple Expression Language Virtual Machine */
-static struct SVM {
-    const ExeExpr *exe;
-    u8 stack[SVM_STACK_SIZE];
-    u32 pc;
-    u32 sp;
-} svm = {0};
+const SelConstant BUILTIN_CONSTANTS[] = 
+{
+    {.id = HGL_SV_LIT("PI"),  .value =   3.1415926535},
+    {.id = HGL_SV_LIT("TAU"), .value = 2*3.1415926535},
+    {.id = HGL_SV_LIT("PHI"), .value =   1.6180339887},
+    {.id = HGL_SV_LIT("e"),   .value =   2.7182818284},
+};
+static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
+
 
 static HglArena temp_allocator = HGL_ARENA_INITIALIZER(1024*1024);
 static HglArena eexpr_allocator = HGL_ARENA_INITIALIZER(1024*1024);
@@ -314,6 +246,13 @@ ExeExpr *sel_compile(const char *src)
         return NULL;
     }
 
+    /* DEBUG */
+    //print_expr(e);
+    //printf("\n");
+    //print_expr_tree(e);
+    //printf("\n");
+    /* END DEBUG */
+
     /* codegen step. *Should* never fail if the previous steps succeed */
     ExeExpr *exe = codegen(e);
 
@@ -321,26 +260,42 @@ ExeExpr *sel_compile(const char *src)
     return exe;
 }
 
-SelValue sel_run(ExeExpr *exe)
+void sel_list_builtins(void) {
+    printf("Constants:\n");
+    for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
+        printf("  " HGL_SV_FMT " = %f\n", HGL_SV_ARG(BUILTIN_CONSTANTS[i].id), 
+                                          (f64)BUILTIN_CONSTANTS[i].value);
+    }
+
+    printf("Functions:\n");
+    for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
+        printf("  %-80s %s\n", BUILTIN_FUNCTIONS[i].synopsis,
+               (BUILTIN_FUNCTIONS[i].desc != NULL) ? BUILTIN_FUNCTIONS[i].desc : "-");
+    }
+}
+
+void sel_print_value(Type t, SelValue v)
 {
-    /* Reset SVM & load program */
-    svm_reset();
-    svm.exe = exe;
-
-    /* Execute in interpreter */
-    svm_run(); 
-
-    /* Assert machine state is as expected */
-    u32 tsize = TYPE_TO_SIZE[svm.exe->type];
-    assert(svm.sp - tsize == 0);
-    assert(svm.pc == svm.exe->size);
-
-    /* retreive, pack, and return the result result */
-    void *raw_result = svm_stack_pop(tsize);
-    SelValue result = {0};
-    memcpy(&result, raw_result, tsize); // Okay? Otherwise switch on exe->type
-
-    return result;
+    switch (t) {
+        case TYPE_BOOL:  printf("%s\n", v.val_bool ? "true" : "false"); break;
+        case TYPE_INT:   printf("%d\n", v.val_i32); break;
+        case TYPE_FLOAT: printf("%f\n", (double)v.val_f32); break;
+        case TYPE_VEC2:  vec2_print(v.val_vec2); break;
+        case TYPE_VEC3:  vec3_print(v.val_vec3); break;
+        case TYPE_VEC4:  vec4_print(v.val_vec4); break;
+        case TYPE_IVEC2: ivec2_print(v.val_ivec2); break;
+        case TYPE_IVEC3: ivec3_print(v.val_ivec3); break;
+        case TYPE_IVEC4: ivec4_print(v.val_ivec4); break;
+        case TYPE_MAT2:  mat2_print(v.val_mat2); break;
+        case TYPE_MAT3:  mat3_print(v.val_mat3); break;
+        case TYPE_MAT4:  mat4_print(v.val_mat4); break;
+        case TYPE_STR:   printf(HGL_SV_FMT "\n", HGL_SV_ARG(v.val_str)); break;
+        //case TYPE_IMAGE: // TODO
+        case TYPE_NIL:   // TODO
+        case TYPE_AND_NAMECHECKER_ERROR_:
+        case N_TYPES:
+            printf("-\n");
+    }
 }
 
 /*--- LEXER -----------------------------------------------------------------------------*/
@@ -386,6 +341,21 @@ static Token lexer_peek(Lexer *l)
         case '/':  return (Token) {.kind = TOK_FSLASH,  .text = hgl_sv_substr(l->buf, 0, 1)}; break;
         case '%':  return (Token) {.kind = TOK_PERCENT, .text = hgl_sv_substr(l->buf, 0, 1)}; break;
         case ',':  return (Token) {.kind = TOK_COMMA,   .text = hgl_sv_substr(l->buf, 0, 1)}; break;
+
+        case '"': {
+            size_t i = 1;
+            for (; l->buf.length; i++) {
+                c = l->buf.start[i];
+                if (c == '"') {
+                    i++; 
+                    break;
+                }
+            }
+            return (Token) {
+                .kind = TOK_STR_LITERAL, 
+                .text = hgl_sv_substr(l->buf, 0, i),
+            };
+        } break;
 
         case 'a' ... 'z': case 'A' ... 'Z': case '_': {
             size_t i = 1;
@@ -468,16 +438,23 @@ static Token lexer_peek(Lexer *l)
 
 static ExprTree *parse_expr(const char *str)
 {
+    i32 err;
     Lexer l = lexer_begin(str);
     ExprTree *e = NULL;
-    int err = parse_add_expr(&e, &l);
+    err = parse_add_expr(&e, &l);
     if (err != 0) {
         return NULL;
     }
+    if (lexer_peek(&l).kind != EOF_TOKEN_) {
+        fprintf(stderr, "[SEL] Parser error: Trailing characters at end of complete "
+                "expression: `" HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
+        return NULL;
+    }
+
     return e;
 }
 
-static int parse_add_expr(ExprTree **e, Lexer *l)
+static i32 parse_add_expr(ExprTree **e, Lexer *l)
 {
     ExprTree *tmp;
     Token t;
@@ -497,7 +474,7 @@ static int parse_add_expr(ExprTree **e, Lexer *l)
     return 0;
 }
 
-static int parse_mul_expr(ExprTree **e, Lexer *l)
+static i32 parse_mul_expr(ExprTree **e, Lexer *l)
 {
     ExprTree *tmp;
 
@@ -517,12 +494,11 @@ static int parse_mul_expr(ExprTree **e, Lexer *l)
     return 0;
 }
 
-static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
+static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
 {
     ExprTree *tmp;
     Token t;
 
-    // TODO fix this behavior
     //if (lexer_peek(l).kind == TOK_RPAREN) {
     //    *e = NULL;
     //    return -1;
@@ -555,7 +531,8 @@ static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
 
         case TOK_BOOL_LITERAL: 
         case TOK_INT_LITERAL: 
-        case TOK_FLOAT_LITERAL: {
+        case TOK_FLOAT_LITERAL: 
+        case TOK_STR_LITERAL: {
             *e = new_atom_expr(EXPR_LIT, t);            
         } break;
 
@@ -585,7 +562,7 @@ static int parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
     return 0;
 }
 
-static int parse_arglist_expr(ExprTree **e, Lexer *l)
+static i32 parse_arglist_expr(ExprTree **e, Lexer *l)
 {
     ExprTree *tmp;
 
@@ -641,7 +618,8 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token)
 
 static Type type_and_namecheck(ExprTree *e)
 {
-    Type t0, t1;
+    Type t0 = TYPE_NIL;
+    Type t1;
 
     if (e == NULL) {
         return TYPE_NIL;
@@ -657,6 +635,7 @@ static Type type_and_namecheck(ExprTree *e)
                                       "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
             // TODO support implicit type conversions Add lhs + rhs types to Op?
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_STR, "Arithmetic is not allowed on strings.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
         } break;
@@ -668,6 +647,7 @@ static Type type_and_namecheck(ExprTree *e)
             TYPE_AND_NAMECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
                                       "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_STR, "Arithmetic is not allowed on strings.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly multiplied. Use built-in functions instead.");
             TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly multiplied. Use built-in functions instead.");
         } break;
@@ -711,6 +691,8 @@ static Type type_and_namecheck(ExprTree *e)
                 t0 = TYPE_INT;
             } else if (e->token.kind == TOK_FLOAT_LITERAL) {
                 t0 = TYPE_FLOAT;
+            } else if (e->token.kind == TOK_STR_LITERAL) {
+                t0 = TYPE_STR;
             } else {
                 TYPE_AND_NAMECHECK_ASSERT(false, "You should not see this #2"); // TODO
             }
@@ -736,7 +718,7 @@ out:
     return e->type;
 }
 
-static Type type_and_namecheck_function(ExprTree *e, const Function *f, const Type *argtypes)
+static Type type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes)
 {
     /* no more actual arguments? */
     if (e == NULL) {
@@ -869,6 +851,14 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 });
                 //printf("PUSH: %f\n", (f64)val);
                 exe_append_f32(exe, val);
+            } else if (e->type == TYPE_STR) {
+                exe_append_op(exe, (Op){
+                    .kind    = OP_PUSH,
+                    .type    = e->type,
+                    .argsize = sizeof(e->token.text),
+                });
+                //printf("PUSH: %f\n", (f64)val);
+                exe_append(exe, &e->token.text, sizeof(e->token.text));
             } else {
                 assert(false && "Logic error in previous compiler steps... #1");
             }
@@ -937,185 +927,6 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size)
     exe->size += size;
 }
 
-
-/*--- VIRTUAL MACHINE/INTERPRETER -------------------------------------------------------*/
-
-static void svm_run()
-{
-    while (true) {
-
-        /* end-of-program */
-        if (svm.pc >= svm.exe->size) {
-            break;
-        }
-
-        Op *op = svm_next_op();
-        u32 tsize = TYPE_TO_SIZE[op->type];
-        
-        switch (op->kind) {
-            case OP_PUSH: {
-                svm_stack_push(svm_next_bytes(op->argsize), op->argsize);
-            } break;
-
-            case OP_ADD: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = addv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
-                }
-            } break;
-
-            case OP_SUB: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = subv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
-                }
-            } break;
-
-            case OP_MUL: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = mulv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
-                }
-            } break;
-
-            case OP_DIV: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = divv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
-                }
-            } break;
-
-            case OP_REM: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = remi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
-                }
-            } break;
-
-            case OP_NEG: {
-                void *val = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = negi(val); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = negf(val); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
-                }
-            } break;
-
-            case OP_FUNC: {
-                i32 func_id = *(i32*)svm_next_bytes(sizeof(i32));
-                const Function *func = &BUILTIN_FUNCTIONS[func_id];
-                for (i32 i = 0; i < BUILTIN_MAX_N_ARGS; i++) {
-                    if (func->argtypes[i] == TYPE_NIL) {
-                        break;
-                    }
-                    svm_stack_pop(TYPE_TO_SIZE[func->argtypes[i]]);
-                }
-                SelValue res = (func->impl)(&svm.stack[svm.sp]);
-                svm_stack_push_selvalue(res, func->type);
-            } break;
-        }
-    }
-}
-
-static void svm_reset(void)
-{
-    svm.exe = NULL;
-    svm.pc  = 0;
-    svm.sp  = 0;
-}
-
-static inline void *svm_next_bytes(u32 size)
-{
-    void *data = (void *)&svm.exe->code[svm.pc]; 
-    svm.pc += size;
-    return data;
-}
-
-static inline Op *svm_next_op()
-{
-    Op *op = (Op *)&svm.exe->code[svm.pc];
-    svm.pc += sizeof(Op);
-    return op;
-}
-
-static inline void svm_stack_push(void *data, u32 size)
-{
-    if (svm.sp + size > SVM_STACK_SIZE) {
-        assert(false && "out of stack space");
-    }
-    memcpy(&svm.stack[svm.sp], data, size);
-    svm.sp += size;
-}
-
-static inline void svm_stack_push_selvalue(SelValue v, Type t)
-{
-    memcpy(&svm.stack[svm.sp], &v, TYPE_TO_SIZE[t]);
-    svm.sp += TYPE_TO_SIZE[t];
-}
-
-static inline void *svm_stack_pop(u32 size)
-{
-    if (svm.sp < size) {
-        assert(false && "popping below stack boundary");
-    }
-    svm.sp -= size;
-    return &svm.stack[svm.sp];
-}
-
-static inline i32 addi(i32 *lhs, i32 *rhs) { return (*lhs) + (*rhs); }
-static inline f32 addf(f32 *lhs, f32 *rhs) { return (*lhs) + (*rhs); }
-static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs) {return vec2_add(*lhs, *rhs);}
-static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs) {return vec3_add(*lhs, *rhs);}
-static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs) {return vec4_add(*lhs, *rhs);}
-
-static inline i32 subi(i32 *lhs, i32 *rhs) { return (*lhs) - (*rhs); }
-static inline f32 subf(f32 *lhs, f32 *rhs) { return (*lhs) - (*rhs); }
-static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) {return vec2_sub(*lhs, *rhs);}
-static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) {return vec3_sub(*lhs, *rhs);}
-static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) {return vec4_sub(*lhs, *rhs);}
-
-static inline i32 muli(i32 *lhs, i32 *rhs) { return (*lhs) * (*rhs); }
-static inline f32 mulf(f32 *lhs, f32 *rhs) { return (*lhs) * (*rhs); }
-static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, *rhs);}
-static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, *rhs);}
-static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, *rhs);}
-
-static inline i32 divi(i32 *lhs, i32 *rhs) { return (*lhs) / (*rhs); }
-static inline f32 divf(f32 *lhs, f32 *rhs) { return (*lhs) / (*rhs); }
-static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, vec2_recip(*rhs));}
-static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, vec3_recip(*rhs));}
-static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, vec4_recip(*rhs));}
-
-static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
-static inline i32 negi(i32 *val) { return -(*val); }
-static inline f32 negf(f32 *val) { return -(*val); }
-
 /*--- Misc. -----------------------------------------------------------------------------*/
 
 static void token_print(Token *token)
@@ -1123,7 +934,7 @@ static void token_print(Token *token)
     printf(HGL_SV_FMT, HGL_SV_ARG(token->text));
 }
 
-static bool is_identifier_char(int c)
+static bool is_identifier_char(i32 c)
 {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
@@ -1131,13 +942,13 @@ static bool is_identifier_char(int c)
            (c == '_');
 }
 
-static bool is_decimal_char(int c)
+static bool is_decimal_char(i32 c)
 {
     return (c >= '0' && c <= '9') ||
            (c == '_');
 }
 
-static bool is_hexadecimal_char(int c)
+static bool is_hexadecimal_char(i32 c)
 {
     return (c >= '0' && c <= '9') ||
            (c >= 'a' && c <= 'f') ||
@@ -1211,9 +1022,9 @@ static void print_expr_tree(ExprTree *e)
     print_expr_tree_helper(e, 0); 
 }
 
-static void print_expr_tree_helper(ExprTree *e, int indent)
+static void print_expr_tree_helper(ExprTree *e, i32 indent)
 {
-    int pad = -2*indent;
+    i32 pad = -2*indent;
     if (e == NULL) return;
     switch (e->kind) {
         case EXPR_ADD:     printf("%*s+\n", pad, "");  print_expr_tree_helper(e->lhs, indent + 1); print_expr_tree_helper(e->rhs, indent + 1); break;

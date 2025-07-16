@@ -10,21 +10,22 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
 			  -Wno-error=cpp 
 C_INCLUDES := -Iinclude
-C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -fno-strict-aliasing
+C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -D_DEFAULT_SOURCE -fno-strict-aliasing
 L_FLAGS    := -lm
 
 
-SOURCES := src/main.c 	       \
-		   src/alloc.c 	       \
-		   src/sel.c           \
+SOURCES := src/alloc.c 	       \
+		   src/selc.c          \
+		   src/selvm.c         \
+		   src/shaq_core.c     \
 
 all: shaq sel
 
 shaq:
-	gcc $(C_FLAGS) $(SOURCES) -o shaq $(L_FLAGS)
+	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq $(L_FLAGS)
 
 sel:
-	gcc $(C_FLAGS) -Isrc test/test_sel.c src/sel.c src/alloc.c -o sel $(L_FLAGS)
+	gcc $(C_FLAGS) -Isrc test/test_sel.c $(SOURCES) -o sel $(L_FLAGS)
 
 clean:
 	-rm shaq

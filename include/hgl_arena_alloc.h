@@ -42,10 +42,11 @@
  * include hgl_arena_alloc.h without creating the implementation, simply ommit the #define
  * of HGL_ARENA_ALLOC_IMPLEMENTATION.
  *
- * Below is a complet listing of the API:
+ * Below is a complete listing of the API:
  *
  * HglArena hgl_arena_make(size_t arena_size)
  * void *hgl_arena_alloc(HglArena *arena, size_t alloc_size)
+ * void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size);
  * void hgl_arena_free_all(HglArena *arena)
  * void hgl_arena_destroy(HglArena *arena)
  *
@@ -131,7 +132,8 @@ void *hgl_arena_alloc(HglArena *arena, size_t alloc_size);
 
 /**
  * Reallocate `ptr` in the arena. `ptr` MUST be the result of the last 
- * call to `hgl_arena_alloc()`, otherwise the program aborts. 
+ * call to `hgl_arena_alloc()`, otherwise the program aborts, unless 
+ * HGL_ARENA_ALLOW_EXPENSIVE_REALLOC is defined. 
  *
  * This is really only here in case you have a single dynamic array living
  * inside an arena and you wish to grow it.
@@ -240,8 +242,15 @@ void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size)
 {
     /* check pointer */
     if (ptr != arena->last_alloc) {
+#ifdef HGL_ARENA_ALLOW_EXPENSIVE_REALLOC
+        void *newptr = hgl_arena_alloc(arena, alloc_size);
+        size_t ptr_diff = (uint8_t *)newptr - (uint8_t *)ptr;
+        memcpy(newptr, ptr, (alloc_size < ptr_diff) ? alloc_size : ptr_diff);
+        return newptr;
+#else
         fprintf(stderr, "hgl_arena_realloc(): invalid pointer.\n");
         abort();
+#endif
     }
 
     /* restore old head */
