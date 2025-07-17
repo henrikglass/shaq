@@ -494,15 +494,18 @@ static inline f32 negf(f32 *val) { return -(*val); }
 static inline SelValue fn_load_image_(void *args)
 {
     (void) args;
-    printf("fisk\n");
-    return (SelValue) { .val_tex = -1}; // TODO shaq_core.c
+    return (SelValue) { .val_tex = {.error = 1}}; // TODO
 }
 
 static inline SelValue fn_output_of_(void *args)
 {
     (void) args;
-    printf("kalas\n");
-    return (SelValue) { .val_tex = -1}; // TODO shaq_core.c
+    HglStringView name = *(HglStringView *)args;
+    i32 index = shaq_get_index_of_shader(name);
+    if (index == -1) {
+        return (SelValue) { .val_tex = {.error = 1}};
+    }
+    return (SelValue) { .val_tex = {.kind = 0, .render_texture_index = (u32) index}};
 }
 
 /* ----------------------- INT functions -------------------- */

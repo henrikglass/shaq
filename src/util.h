@@ -1,13 +1,9 @@
-#ifndef SHAQ_CORE_H
-#define SHAQ_CORE_H
+#ifndef UTIL_H
+#define UTIL_H
 
 /*--- Include files ---------------------------------------------------------------------*/
 
 #include "hgl_int.h"
-#include "hgl_float.h"
-#include "hglm.h"
-#include "hglm_aliases.h"
-#include "hgl_string.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -17,17 +13,8 @@
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-void shaq_begin(const char *ini_filepath);
-b8 shaq_needs_reload(void);
-b8 shaq_should_close(void);
-void shaq_reload(void);
-void shaq_new_frame(void);
-void shaq_end(void);
+u64 util_get_time_nanos(void);
+i64 util_get_file_modify_time(const char *filepath);
 
-f32 shaq_time(void);
-f32 shaq_deltatime(void);
-IVec2 shaq_iresolution(void);
-i32 shaq_get_index_of_shader(HglStringView name);
-
-#endif /* SHAQ_CORE_H */
+#endif /* UTIL_H */
 

@@ -37,6 +37,15 @@ typedef enum
 } Type;
 static_assert(N_TYPES <= 256, "");
 
+typedef struct
+{
+    u32 error : 1;
+    u32 kind  : 1;
+    u32 loaded_texture_index : 8;
+    u32 render_texture_index : 8;
+} TextureIndex;
+static_assert(sizeof(TextureIndex) == 4, "actually doesn't matter TODO remove");
+
 typedef union
 {
     bool val_bool; 
@@ -52,7 +61,7 @@ typedef union
     Mat3 val_mat3;
     Mat4 val_mat4;
     HglStringView val_str;
-    i32 val_tex;
+    TextureIndex val_tex;
 } SelValue;
 
 typedef struct
