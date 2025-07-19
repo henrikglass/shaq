@@ -43,14 +43,20 @@
     do {                                                              \
         fprintf(stderr, "[SEL] Type-/namecheck error: " __VA_ARGS__); \
         fprintf(stderr, "\n");                                        \
-        return TYPE_AND_NAMECHECKER_ERROR_;                           \
+        return (TypeAndQualifier) {                                   \
+            TYPE_AND_NAMECHECKER_ERROR_,                              \
+            QUALIFIER_NONE                                            \
+        };                                                            \
     } while (0)
 
 #define TYPE_AND_NAMECHECK_ASSERT(cond_, ...)                         \
     if (!(cond_)) {                                                   \
         fprintf(stderr, "[SEL] Type-/namecheck error: " __VA_ARGS__); \
         fprintf(stderr, "\n");                                        \
-        return TYPE_AND_NAMECHECKER_ERROR_;                           \
+        return (TypeAndQualifier) {                                   \
+            TYPE_AND_NAMECHECKER_ERROR_,                              \
+            QUALIFIER_NONE                                            \
+        };                                                            \
     }
 
 
@@ -113,6 +119,12 @@ typedef struct
     f32 value;
 } Const;
 
+typedef struct
+{
+    Type type;
+    TypeQualifier qualifier;
+} TypeAndQualifier;
+
 /**
  * An expression may be either binary, and have two children `lhs` and `rhs`, unary, 
  * and have a single child `child`, or atomic, and have no children. 
@@ -126,6 +138,7 @@ typedef struct ExprTree
     ExprKind kind;
     Token token;
     Type type;
+    TypeQualifier qualifier;
     union {
         struct ExprTree *child;
         struct ExprTree *lhs;
@@ -153,8 +166,8 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l);
 static i32 parse_arglist_expr(ExprTree **e, Lexer *l);
 
 /* Type-/namechecker */
-static Type type_and_namecheck(ExprTree *e);
-static Type type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes);
+static TypeAndQualifier type_and_namecheck(ExprTree *e);
+static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, bool const_args);
 
 /* codegen */
 static ExeExpr *codegen(const ExprTree *e);
@@ -234,17 +247,19 @@ static HglArena eexpr_allocator = HGL_ARENA_INITIALIZER(1024*1024);
 
 ExeExpr *sel_compile(const char *src)
 {
+    ExeExpr *exe = NULL;
+
     /* lexer + parser step */
     ExprTree *e = parse_expr(src);
     if (e == NULL) {
-        return NULL;
+        goto out;
     }
 
     /* type + namecheck step */
-    Type type = type_and_namecheck(e);
-    assert(type != TYPE_NIL); // should not be possible
-    if (type == TYPE_AND_NAMECHECKER_ERROR_) {
-        return NULL;
+    TypeAndQualifier t = type_and_namecheck(e);
+    assert(t.type != TYPE_NIL); // should not be possible
+    if (t.type == TYPE_AND_NAMECHECKER_ERROR_) {
+        goto out;
     }
 
     /* DEBUG */
@@ -255,8 +270,9 @@ ExeExpr *sel_compile(const char *src)
     /* END DEBUG */
 
     /* codegen step. *Should* never fail if the previous steps succeed */
-    ExeExpr *exe = codegen(e);
+    exe = codegen(e);
 
+out:
     arena_free_all(&temp_allocator);
     return exe;
 }
@@ -626,13 +642,13 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token)
 
 /*--- TYPE-/NAMECHECKER -----------------------------------------------------------------*/
 
-static Type type_and_namecheck(ExprTree *e)
+static TypeAndQualifier type_and_namecheck(ExprTree *e)
 {
-    Type t0 = TYPE_NIL;
-    Type t1;
+    TypeAndQualifier t0 = {TYPE_NIL, QUALIFIER_NONE};
+    TypeAndQualifier t1;
 
     if (e == NULL) {
-        return TYPE_NIL;
+        return (TypeAndQualifier) {TYPE_NIL, QUALIFIER_NONE};
     }
 
     switch (e->kind) {
@@ -641,40 +657,58 @@ static Type type_and_namecheck(ExprTree *e)
         case EXPR_SUB: {
             t0 = type_and_namecheck(e->lhs); 
             t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
-                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
+                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
             // TODO support implicit type conversions Add lhs + rhs types to Op?
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_STR, "Arithmetic is not allowed on strings.");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
+            if ((t0.qualifier == QUALIFIER_CONST) && 
+                (t1.qualifier == QUALIFIER_CONST)) {
+                t0.qualifier = QUALIFIER_CONST;
+            } else {
+                t0.qualifier = QUALIFIER_NONE;
+            }
         } break;
 
         case EXPR_MUL:
         case EXPR_DIV: {
             t0 = type_and_namecheck(e->lhs); 
             t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0 == t1, "Operands to arithmetic operation are of different types: "
-                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0], TYPE_TO_STR[t1]);
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_STR, "Arithmetic is not allowed on strings.");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_MAT2 && t0 != TYPE_MAT3 && t0 != TYPE_MAT4, "Matricies may not (yet) be directly multiplied. Use built-in functions instead.");
-            TYPE_AND_NAMECHECK_ASSERT(t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2 && t0 != TYPE_IVEC2, "Integer vectors may not (yet) be directly multiplied. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
+                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "Matricies may not (yet) be directly multiplied. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2, "Integer vectors may not (yet) be directly multiplied. Use built-in functions instead.");
+            if ((t0.qualifier == QUALIFIER_CONST) && 
+                (t1.qualifier == QUALIFIER_CONST)) {
+                t0.qualifier = QUALIFIER_CONST;
+            } else {
+                t0.qualifier = QUALIFIER_NONE;
+            }
         } break;
         
         case EXPR_REM: {
             t0 = type_and_namecheck(e->lhs); 
             t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0 == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
-            TYPE_AND_NAMECHECK_ASSERT(t1 == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
+            TYPE_AND_NAMECHECK_ASSERT(t1.type == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
+            if ((t0.qualifier == QUALIFIER_CONST) && 
+                (t1.qualifier == QUALIFIER_CONST)) {
+                t0.qualifier = QUALIFIER_CONST;
+            } else {
+                t0.qualifier = QUALIFIER_NONE;
+            }
         } break;
         
         case EXPR_NEG: {
-            // TODO better rule
+            // TODO better rule / support more types
             t0 = type_and_namecheck(e->child);
-            TYPE_AND_NAMECHECK_ASSERT(t0 == TYPE_INT || t0 == TYPE_FLOAT , 
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT || t0.type == TYPE_FLOAT , 
                                       "Operand to unary minus operator must be of type INT or FLOAT.");
         } break;
         
@@ -685,7 +719,7 @@ static Type type_and_namecheck(ExprTree *e)
         case EXPR_FUNC: {
             for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
-                    t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes);
+                    t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes, true);
                     goto out;
                 } 
             }
@@ -698,22 +732,23 @@ static Type type_and_namecheck(ExprTree *e)
         
         case EXPR_LIT: {
             if (e->token.kind == TOK_BOOL_LITERAL) {
-                t0 = TYPE_BOOL;
+                t0.type = TYPE_BOOL;
             } else if (e->token.kind == TOK_INT_LITERAL) {
-                t0 = TYPE_INT;
+                t0.type = TYPE_INT;
             } else if (e->token.kind == TOK_FLOAT_LITERAL) {
-                t0 = TYPE_FLOAT;
+                t0.type = TYPE_FLOAT;
             } else if (e->token.kind == TOK_STR_LITERAL) {
-                t0 = TYPE_STR;
+                t0.type = TYPE_STR;
             } else {
                 TYPE_AND_NAMECHECK_ASSERT(false, "You should not see this #2"); // TODO
             }
+            t0.qualifier = QUALIFIER_CONST;
         } break;
         
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (hgl_sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
-                    t0 = TYPE_FLOAT;
+                    t0 = (TypeAndQualifier) {TYPE_FLOAT, QUALIFIER_CONST};
                     goto out;
                 } 
             }
@@ -726,35 +761,43 @@ static Type type_and_namecheck(ExprTree *e)
     }
 
 out:
-    e->type = t0;
-    return e->type;
+    e->type = t0.type;
+    e->qualifier = t0.qualifier;
+    return t0;
 }
 
-static Type type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes)
+static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, bool const_args)
 {
     /* no more actual arguments? */
     if (e == NULL) {
         TYPE_AND_NAMECHECK_ASSERT(*argtypes == TYPE_NIL, "Too few arguments to built-in function: `%s`.", f->synopsis);
-        return f->type;
+        return (TypeAndQualifier){
+            .type = f->type, 
+            .qualifier = ((f->qualifier == QUALIFIER_PURE) && const_args) ? QUALIFIER_CONST : QUALIFIER_NONE,
+        };
     }
 
     /* no more arguments expected? */
     if (*argtypes == TYPE_NIL) {
         TYPE_AND_NAMECHECK_ERROR("Too many arguments to built-in function: `%s`.", f->synopsis);
-        return f->type;
+        return (TypeAndQualifier){
+            .type = f->type, 
+            .qualifier = ((f->qualifier == QUALIFIER_PURE) && const_args) ? QUALIFIER_CONST : QUALIFIER_NONE,
+        };
     }
 
     /* Typecheck left-hand-side expression (head of argslist)*/
     TYPE_AND_NAMECHECK_ASSERT(e->kind == EXPR_ARGLIST, "You should not see this #4");
-    Type t = type_and_namecheck(e->lhs);
-    if (t == TYPE_AND_NAMECHECKER_ERROR_) {
+    TypeAndQualifier t = type_and_namecheck(e->lhs);
+    if (t.type == TYPE_AND_NAMECHECKER_ERROR_) {
         return t;
     }
-    TYPE_AND_NAMECHECK_ASSERT(t == *argtypes, "Type mismatch in arguments to built-in function: `%s`. Expected `%s` - Got `%s`.",
-                              f->synopsis, TYPE_TO_STR[*argtypes], TYPE_TO_STR[t]);
+    TYPE_AND_NAMECHECK_ASSERT(t.type == *argtypes, "Type mismatch in arguments to built-in function: "
+                              "`%s`. Expected `%s` - Got `%s`.", f->synopsis, TYPE_TO_STR[*argtypes], 
+                              TYPE_TO_STR[t.type]);
 
     /* Typecheck right-hand-side expression (tail of argslist)*/
-    return type_and_namecheck_function(e->rhs, f, ++argtypes);
+    return type_and_namecheck_function(e->rhs, f, ++argtypes, t.qualifier == QUALIFIER_CONST);
 
 }
 
@@ -766,6 +809,7 @@ static ExeExpr *codegen(const ExprTree *e)
     ExeExpr *exe = arena_alloc(&eexpr_allocator, sizeof(ExeExpr));
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
+    exe->qualifier = e->qualifier;
     codegen_expr(exe, e);
     return exe;
 }

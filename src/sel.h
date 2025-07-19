@@ -37,6 +37,13 @@ typedef enum
 } Type;
 static_assert(N_TYPES <= 256, "");
 
+typedef enum
+{
+    QUALIFIER_NONE  =  0,
+    QUALIFIER_CONST = (1 << 0), // for constant expression
+    QUALIFIER_PURE  = (1 << 1), // for pure functions
+} TypeQualifier;
+
 typedef struct
 {
     u32 error : 1;
@@ -67,6 +74,7 @@ typedef union
 typedef struct
 {
     HglStringView id;
+    TypeQualifier qualifier;
     Type type;
     SelValue (*impl)(void *args);
     Type argtypes[SEL_FUNC_MAX_N_ARGS];
@@ -103,6 +111,8 @@ typedef struct
     u32 size;
     u32 capacity;
     Type type;
+    TypeQualifier qualifier;
+    SelValue last_computed_value;
 } ExeExpr;
 
 /*--- Public variables ------------------------------------------------------------------*/
