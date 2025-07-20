@@ -72,6 +72,7 @@ typedef enum
     TOK_COMMA,
     TOK_BOOL_LITERAL,
     TOK_INT_LITERAL,
+    TOK_UINT_LITERAL,
     TOK_FLOAT_LITERAL,
     TOK_STR_LITERAL,
     TOK_IDENTIFIER,
@@ -165,23 +166,23 @@ static i32 parse_arglist_expr(ExprTree **e, Lexer *l);
 
 /* Type-/namechecker */
 static TypeAndQualifier type_and_namecheck(ExprTree *e);
-static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, bool const_args);
+static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args);
 
 /* codegen */
 static ExeExpr *codegen(const ExprTree *e);
 static void codegen_expr(ExeExpr *exe, const ExprTree *e);
 static void exe_append_op(ExeExpr *exe, Op op);
-static void exe_append_bool(ExeExpr *exe, bool v);
+static void exe_append_bool(ExeExpr *exe, b8 v);
 static void exe_append_i32(ExeExpr *exe, i32 v);
-static void exe_append_i32(ExeExpr *exe, i32 v);
+static void exe_append_u32(ExeExpr *exe, u32 v);
 static void exe_append_f32(ExeExpr *exe, f32 v);
 static void exe_append(ExeExpr *exe, const void *val, u32 size);
 
 /* misc. debug */
 static void token_print(Token *t);
-static bool is_identifier_char(i32 c);
-static bool is_decimal_char(i32 c);
-static bool is_hexadecimal_char(i32 c);
+static b8 is_identifier_char(i32 c);
+static b8 is_decimal_char(i32 c);
+static b8 is_hexadecimal_char(i32 c);
 static inline void print_expr(ExprTree *e);
 static inline void print_expr_tree(ExprTree *e);
 static inline void print_expr_tree_helper(ExprTree *e, i32 indent);
@@ -271,6 +272,7 @@ void sel_print_value(Type t, SelValue v)
     switch (t) {
         case TYPE_BOOL:    printf("%s\n", v.val_bool ? "true" : "false"); break;
         case TYPE_INT:     printf("%d\n", v.val_i32); break;
+        case TYPE_UINT:    printf("%uu\n", v.val_u32); break;
         case TYPE_FLOAT:   printf("%f\n", (double)v.val_f32); break;
         case TYPE_VEC2:    vec2_print(v.val_vec2); break;
         case TYPE_VEC3:    vec3_print(v.val_vec3); break;
@@ -401,10 +403,16 @@ static Token lexer_peek(Lexer *l)
             if (c != '.') {
                 // Not the job of the lexer to check this honestly
                 if (i != l->buf.length) {
-                    LEXER_ASSERT(!is_identifier_char(c));
+                    LEXER_ASSERT(!is_identifier_char(c) || c == 'u', "hmm");
+                }
+
+                b8 is_unsigned = false;
+                if (c == 'u') {
+                    is_unsigned = true;
+                    i++;
                 }
                 return (Token) {
-                    .kind = TOK_INT_LITERAL,
+                    .kind = is_unsigned ? TOK_UINT_LITERAL : TOK_INT_LITERAL,
                     .text = sv_substr(l->buf, 0, i),
                     .length = i,
                 };
@@ -532,6 +540,7 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
 
         case TOK_BOOL_LITERAL: 
         case TOK_INT_LITERAL: 
+        case TOK_UINT_LITERAL: 
         case TOK_FLOAT_LITERAL: 
         case TOK_STR_LITERAL: {
             *e = new_atom_expr(EXPR_LIT, t);            
@@ -670,8 +679,9 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         case EXPR_REM: {
             t0 = type_and_namecheck(e->lhs); 
             t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT, "Left-hand-side operand to remainder operation is not an INT.");
-            TYPE_AND_NAMECHECK_ASSERT(t1.type == TYPE_INT, "Right-hand-side operand to remainder operation is not an INT.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
+                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT || t0.type == TYPE_UINT, "Operands to `%%` operator must be of type INT or UINT.");
             if ((t0.qualifier == QUALIFIER_CONST) && 
                 (t1.qualifier == QUALIFIER_CONST)) {
                 t0.qualifier = QUALIFIER_CONST;
@@ -684,7 +694,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
             // TODO better rule / support more types
             t0 = type_and_namecheck(e->child);
             TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT || t0.type == TYPE_FLOAT , 
-                                      "Operand to unary minus operator must be of type INT or FLOAT.");
+                                      "Operand to unary `-` operator must be of type INT or FLOAT.");
         } break;
         
         case EXPR_PAREN: {
@@ -710,6 +720,8 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
                 t0.type = TYPE_BOOL;
             } else if (e->token.kind == TOK_INT_LITERAL) {
                 t0.type = TYPE_INT;
+            } else if (e->token.kind == TOK_UINT_LITERAL) {
+                t0.type = TYPE_UINT;
             } else if (e->token.kind == TOK_FLOAT_LITERAL) {
                 t0.type = TYPE_FLOAT;
             } else if (e->token.kind == TOK_STR_LITERAL) {
@@ -741,7 +753,7 @@ out:
     return t0;
 }
 
-static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, bool const_args)
+static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args)
 {
     /* no more actual arguments? */
     if (e == NULL) {
@@ -835,8 +847,8 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
 
         case EXPR_FUNC: {
             codegen_expr(exe, e->child);
-            i32 i = 0;
-            for (i = 0; i < (i32)N_BUILTIN_FUNCTIONS; i++) {
+            u32 i = 0;
+            for (i = 0; i < (u32)N_BUILTIN_FUNCTIONS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
                     break;
                 }
@@ -844,9 +856,9 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
             exe_append_op(exe, (Op){
                 .kind = expr_to_op[e->kind], 
                 .type = e->type,
-                .argsize = sizeof(i32),
+                .argsize = sizeof(u32),
             });
-            exe_append_i32(exe, i);
+            exe_append_u32(exe, i);
             //printf("FUNC: " HGL_SV_FMT "\n", HGL_SV_ARG(e->token.text));
         } break;
 
@@ -856,40 +868,25 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
         } break;
 
         case EXPR_LIT: {
+            exe_append_op(exe, (Op){
+                .kind    = OP_PUSH,
+                .type    = e->type,
+                .argsize = TYPE_TO_SIZE[e->type],
+            });
             if (e->type == TYPE_BOOL) {
-                bool val = sv_equals(e->token.text, HGL_SV_LIT("true"));
-                exe_append_op(exe, (Op){
-                    .kind    = OP_PUSH,
-                    .type    = e->type,
-                    .argsize = sizeof(bool),
-                });
+                b8 val = sv_equals(e->token.text, HGL_SV_LIT("true"));
                 exe_append_bool(exe, val);
             } else if (e->type == TYPE_INT) {
                 i32 val = (i32) sv_to_i64(e->token.text);
-                exe_append_op(exe, (Op){
-                    .kind    = OP_PUSH,
-                    .type    = e->type,
-                    .argsize = sizeof(i32),
-                });
-                //printf("PUSH: %d\n", val);
                 exe_append_i32(exe, val);
+            } else if (e->type == TYPE_UINT) {
+                u32 val = (u32) sv_to_u64(e->token.text);
+                exe_append_u32(exe, val);
             } else if (e->type == TYPE_FLOAT) {
                 f32 val = (f32) sv_to_f64(e->token.text);
-                exe_append_op(exe, (Op){
-                    .kind    = OP_PUSH,
-                    .type    = e->type,
-                    .argsize = sizeof(f32),
-                });
-                //printf("PUSH: %f\n", (f64)val);
                 exe_append_f32(exe, val);
             } else if (e->type == TYPE_STR) {
-                exe_append_op(exe, (Op){
-                    .kind    = OP_PUSH,
-                    .type    = e->type,
-                    .argsize = sizeof(e->token.text),
-                });
-                //printf("PUSH: %f\n", (f64)val);
-                exe_append(exe, &e->token.text, sizeof(e->token.text));
+                exe_append(exe, &e->token.text, TYPE_TO_SIZE[e->type]);
             } else {
                 assert(false && "Logic error in previous compiler steps... #1");
             }
@@ -925,12 +922,17 @@ static void exe_append_op(ExeExpr *exe, Op op)
     exe_append(exe, &op, sizeof(op));
 }
 
-static void exe_append_bool(ExeExpr *exe, bool v)
+static void exe_append_bool(ExeExpr *exe, b8 v)
 {
     exe_append(exe, &v, sizeof(v));
 }
 
 static void exe_append_i32(ExeExpr *exe, i32 v)
+{
+    exe_append(exe, &v, sizeof(v));
+}
+
+static void exe_append_u32(ExeExpr *exe, u32 v)
 {
     exe_append(exe, &v, sizeof(v));
 }
@@ -965,7 +967,7 @@ static void token_print(Token *token)
     printf(HGL_SV_FMT, HGL_SV_ARG(token->text));
 }
 
-static bool is_identifier_char(i32 c)
+static b8 is_identifier_char(i32 c)
 {
     return (c >= 'a' && c <= 'z') ||
            (c >= 'A' && c <= 'Z') ||
@@ -973,18 +975,16 @@ static bool is_identifier_char(i32 c)
            (c == '_');
 }
 
-static bool is_decimal_char(i32 c)
+static b8 is_decimal_char(i32 c)
 {
-    return (c >= '0' && c <= '9') ||
-           (c == '_');
+    return (c >= '0' && c <= '9');
 }
 
-static bool is_hexadecimal_char(i32 c)
+static b8 is_hexadecimal_char(i32 c)
 {
     return (c >= '0' && c <= '9') ||
            (c >= 'a' && c <= 'f') ||
-           (c >= 'A' && c <= 'F') ||
-           (c == '_');
+           (c >= 'A' && c <= 'F');
 }
 
 static void print_expr(ExprTree *e)

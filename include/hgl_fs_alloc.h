@@ -313,7 +313,7 @@ void *hgl_fs_realloc(HglFsAllocator *allocator, void *ptr, size_t size)
     ptr8 -= HGL_FS_ALLOC_ALIGNMENT;
     HglFsChunkHeader *header = (HglFsChunkHeader *) ptr8;
     size_t current_allocation_size = header->next_chunk - (uint8_t *)ptr;
-    printf("current_allocation_size = %zu\n", current_allocation_size);
+    //printf("current_allocation_size = %zu\n", current_allocation_size);
 
     /* alloc new & copy data there */
     void *newptr = hgl_fs_alloc(allocator, size);

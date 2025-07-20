@@ -8,6 +8,9 @@
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
+static size_t whitespace_lexeme(StringView sv);
+static size_t identifier_lexeme(StringView sv);
+
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Private variables -----------------------------------------------------------------*/
@@ -19,9 +22,18 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
     StringView k = sv_trim(sv_from_cstr(kv->key));
 
     if (sv_starts_with_lchop(&k, "uniform")) {
+
+        /* expect whitespace */
+        if (!sv_starts_with_lexeme(&k, whitespace_lexeme)) {
+            fprintf(stderr, "[SHAQ] Error: Malformed left-hand-side expression: `%s`.\n", kv->key);
+            return -1;
+        }
+
+        /* expect type identifier */
         k = sv_ltrim(k);
         if      (sv_starts_with_lchop(&k, "bool"))      { u->type = TYPE_BOOL;    }
         else if (sv_starts_with_lchop(&k, "int"))       { u->type = TYPE_INT;     }
+        else if (sv_starts_with_lchop(&k, "uint"))      { u->type = TYPE_UINT;    }
         else if (sv_starts_with_lchop(&k, "float"))     { u->type = TYPE_FLOAT;   }
         else if (sv_starts_with_lchop(&k, "vec2"))      { u->type = TYPE_VEC2;    }
         else if (sv_starts_with_lchop(&k, "vec3"))      { u->type = TYPE_VEC3;    }
@@ -34,11 +46,24 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
         else if (sv_starts_with_lchop(&k, "mat4"))      { u->type = TYPE_MAT4;    }
         else if (sv_starts_with_lchop(&k, "sampler2D")) { u->type = TYPE_TEXTURE; }
         else {
-            printf("Unknown or unsupported type in lhs expression: `%s`.\n", kv->key);
+            fprintf(stderr, "[SHAQ] Error: Unknown or unsupported type in lhs expression: `%s`.\n", kv->key);
             return -1;
         }
 
-        u->name = sv_trim(k);
+        /* expect whitespace */
+        if (!sv_starts_with_lexeme(&k, whitespace_lexeme)) {
+            fprintf(stderr, "[SHAQ] Error: Malformed left-hand-side expression: `%s`.\n", kv->key);
+            return -1;
+        }
+
+        /* expect type identifier */
+        k = sv_ltrim(k);
+        u->name = sv_lchop_lexeme(&k, identifier_lexeme);
+        if (u->name.length == 0) {
+            fprintf(stderr, "[SHAQ] Error: Malformed left-hand-side expression: `%s`.\n", kv->key);
+            return -1;
+        }
+
         u->exe = sel_compile(kv->val);
 
         if (u->exe == NULL) {
@@ -59,4 +84,31 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
+
+static size_t whitespace_lexeme(StringView sv)
+{
+    if (sv.length < 1) return 0;
+    if (isspace(sv.start[0])) return 1;
+    return 0;
+}
+
+static size_t identifier_lexeme(StringView sv)
+{
+    size_t i, j;
+
+    for (i = 0; i < sv.length; i++) {
+        if (!isalnum(sv.start[i]) && sv.start[i] != '_') {
+            break;
+        } 
+    }
+
+    for (j = i; j < sv.length; j++) {
+        if (!isspace(sv.start[j])) {
+            break;
+        } 
+    }
+
+    if (j != sv.length) return 0; // identifier trailed by something other than whitespace
+    return i;
+}
 

@@ -20,6 +20,7 @@ typedef enum
     TYPE_NIL = 0,
     TYPE_BOOL,
     TYPE_INT,
+    TYPE_UINT,
     TYPE_FLOAT,
     TYPE_VEC2,
     TYPE_VEC3,
@@ -57,6 +58,7 @@ typedef union
 {
     bool val_bool; 
     i32 val_i32; 
+    u32 val_u32; 
     f32 val_f32; 
     Vec2 val_vec2;
     Vec3 val_vec3;
@@ -125,6 +127,7 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_NIL]        = "nil",
     [TYPE_BOOL]       = "bool",
     [TYPE_INT]        = "int",
+    [TYPE_UINT]       = "uint",
     [TYPE_FLOAT]      = "float",
     [TYPE_VEC2]       = "vec2",
     [TYPE_VEC3]       = "vec3",
@@ -139,6 +142,28 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_TEXTURE]    = "texture",
     [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
 };
+
+static const u32 TYPE_TO_SIZE[] = 
+{
+    [TYPE_NIL]       = 0,
+    [TYPE_BOOL]      = sizeof(bool),
+    [TYPE_INT]       = sizeof(i32),
+    [TYPE_UINT]      = sizeof(u32),
+    [TYPE_FLOAT]     = sizeof(f32),
+    [TYPE_VEC2]      = 8,
+    [TYPE_VEC3]      = 12,
+    [TYPE_VEC4]      = 16,
+    [TYPE_IVEC2]     = 8,
+    [TYPE_IVEC3]     = 12,
+    [TYPE_IVEC4]     = 16,
+    [TYPE_MAT2]      = 16,
+    [TYPE_MAT3]      = 36,
+    [TYPE_MAT4]      = 64,
+    [TYPE_STR]       = sizeof(StringView),
+    [TYPE_TEXTURE]   = sizeof(i32),
+    [TYPE_AND_NAMECHECKER_ERROR_] = 0,
+};
+static_assert(sizeof(TYPE_TO_SIZE)/sizeof(TYPE_TO_SIZE[0]) == N_TYPES);
 
 
 /*--- Public function prototypes --------------------------------------------------------*/

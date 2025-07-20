@@ -22,26 +22,31 @@ static inline void svm_stack_push(void *data, u32 size);
 static inline void svm_stack_push_selvalue(SelValue v, Type t);
 static inline void *svm_stack_pop(u32 size);
 static inline i32 addi(i32 *lhs, i32 *rhs);
+static inline u32 addu(u32 *lhs, u32 *rhs);
 static inline f32 addf(f32 *lhs, f32 *rhs);
 static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 subi(i32 *lhs, i32 *rhs);
+static inline u32 subu(u32 *lhs, u32 *rhs);
 static inline f32 subf(f32 *lhs, f32 *rhs);
 static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 muli(i32 *lhs, i32 *rhs);
+static inline u32 mulu(u32 *lhs, u32 *rhs);
 static inline f32 mulf(f32 *lhs, f32 *rhs);
 static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 divi(i32 *lhs, i32 *rhs);
+static inline u32 divu(u32 *lhs, u32 *rhs);
 static inline f32 divf(f32 *lhs, f32 *rhs);
 static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs);
 static inline i32 remi(i32 *lhs, i32 *rhs);
+static inline u32 remu(u32 *lhs, u32 *rhs);
 static inline i32 negi(i32 *val);
 static inline f32 negf(f32 *val);
 
@@ -49,10 +54,21 @@ static inline SelValue fn_load_image_(void *args);
 static inline SelValue fn_output_of_(void *args);
 
 static inline SelValue fn_int_(void *args);
+static inline SelValue fn_unsigned_(void *args);
 static inline SelValue fn_mini_(void *args);
 static inline SelValue fn_maxi_(void *args);
 static inline SelValue fn_randi_(void *args);
 static inline SelValue fn_iota_(void *args);
+
+static inline SelValue fn_signed_(void *args);
+static inline SelValue fn_xor_(void *args);
+static inline SelValue fn_and_(void *args);
+static inline SelValue fn_or_(void *args);
+static inline SelValue fn_not_(void *args);
+static inline SelValue fn_lshift_(void *args);
+static inline SelValue fn_rshift_(void *args);
+static inline SelValue fn_rol_(void *args);
+static inline SelValue fn_ror_(void *args);
 
 static inline SelValue fn_float_(void *args);
 static inline SelValue fn_time_(void *args);
@@ -150,11 +166,22 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = HGL_SV_LIT("load_image"), .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_load_image_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture load_image(str filepath)", .desc = "Returns a reference to a texture loaded from `filepath`", },
     { .id = HGL_SV_LIT("output_of"),  .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_output_of_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader`. Calling this function implicitly defines the render order.", },
 
-    { .id = HGL_SV_LIT("int"),        .type = TYPE_INT, .qualifier = QUALIFIER_PURE, .impl = fn_int_,        .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
-    { .id = HGL_SV_LIT("mini"),       .type = TYPE_INT, .qualifier = QUALIFIER_PURE, .impl = fn_mini_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int mini(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },
-    { .id = HGL_SV_LIT("maxi"),       .type = TYPE_INT, .qualifier = QUALIFIER_PURE, .impl = fn_maxi_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int maxi(int a, int b)", .desc = "Returns the maximum of `a` and `b`.", },
-    { .id = HGL_SV_LIT("randi"),      .type = TYPE_INT, .qualifier = QUALIFIER_NONE, .impl = fn_randi_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "int randi(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
-    { .id = HGL_SV_LIT("iota"),       .type = TYPE_INT, .qualifier = QUALIFIER_NONE, .impl = fn_iota_,       .argtypes = {TYPE_NIL},                                                             .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
+    { .id = HGL_SV_LIT("int"),        .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
+    { .id = HGL_SV_LIT("unsigned"),   .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_unsigned_, .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "uint unsigned(int x)", .desc = "Typecast int to uint.", },
+    { .id = HGL_SV_LIT("mini"),       .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_mini_,     .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int mini(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },
+    { .id = HGL_SV_LIT("maxi"),       .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_maxi_,     .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int maxi(int a, int b)", .desc = "Returns the maximum of `a` and `b`.", },
+    { .id = HGL_SV_LIT("randi"),      .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_randi_,    .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int randi(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
+    { .id = HGL_SV_LIT("iota"),       .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_iota_,     .argtypes = {TYPE_NIL},                      .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
+
+    { .id = HGL_SV_LIT("signed"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_signed_, .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "int signed(uint x)", .desc = "Typecast uint to int.", },
+    { .id = HGL_SV_LIT("xor"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_xor_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint xor(uint a, uint b)", .desc = "bitwise XOR of `a` and `b`.", },
+    { .id = HGL_SV_LIT("and"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_and_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint and(uint a, uint b)", .desc = "bitwise AND of `a` and `b`.", },
+    { .id = HGL_SV_LIT("or"),     .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_or_,     .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint or(uint a, uint b)", .desc = "bitwise OR of `a` and `b`.", },
+    { .id = HGL_SV_LIT("not"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_not_,    .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "uint not(uint x)", .desc = "bitwise NOT of `x`.", },
+    { .id = HGL_SV_LIT("lshift"), .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_lshift_, .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint lshift(uint x, uint n)", .desc = "left shift of `x` by `n`.", },
+    { .id = HGL_SV_LIT("rshift"), .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_rshift_, .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint rshift(uint x, uint n)", .desc = "right shift of `x` by `n`.", },
+    { .id = HGL_SV_LIT("rol"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_rol_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint rol(uint x, uint n)", .desc = "left rotate of `x` by `n`.", },
+    { .id = HGL_SV_LIT("ror"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_ror_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint ror(uint x, uint n)", .desc = "right rotate of `x` by `n`.", },
 
     { .id = HGL_SV_LIT("float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_float_,      .argtypes = {TYPE_INT, TYPE_NIL},                                                   .synopsis = "float float(int x)", .desc = "Typecast int to float.", },
     { .id = HGL_SV_LIT("time"),       .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_time_,       .argtypes = {TYPE_NIL},                                                             .synopsis = "float time()", .desc = "Returns the program runtime in seconds.", },
@@ -251,25 +278,6 @@ const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FU
 
 /*--- Private variables -----------------------------------------------------------------*/
 
-static const u32 TYPE_TO_SIZE[] = 
-{
-    [TYPE_NIL]       = 0,
-    [TYPE_BOOL]      = sizeof(bool),
-    [TYPE_INT]       = sizeof(i32),
-    [TYPE_FLOAT]     = sizeof(f32),
-    [TYPE_VEC2]      = 8,
-    [TYPE_VEC3]      = 12,
-    [TYPE_VEC4]      = 16,
-    [TYPE_IVEC2]     = 8,
-    [TYPE_IVEC3]     = 12,
-    [TYPE_IVEC4]     = 16,
-    [TYPE_MAT2]      = 16,
-    [TYPE_MAT3]      = 36,
-    [TYPE_MAT4]      = 64,
-    [TYPE_STR]       = sizeof(StringView),
-    [TYPE_TEXTURE]   = sizeof(i32),
-};
-
 /* Simple Expression Language Virtual Machine */
 static struct SVM {
     const ExeExpr *exe;
@@ -332,6 +340,7 @@ static void svm_run()
                 void *lhs = svm_stack_pop(tsize);
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_UINT: {u32 tmp = addu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -345,6 +354,7 @@ static void svm_run()
                 void *lhs = svm_stack_pop(tsize);
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_UINT: {u32 tmp = subu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -358,6 +368,7 @@ static void svm_run()
                 void *lhs = svm_stack_pop(tsize);
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_UINT: {u32 tmp = mulu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -371,6 +382,7 @@ static void svm_run()
                 void *lhs = svm_stack_pop(tsize);
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_UINT: {u32 tmp = divu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -384,6 +396,7 @@ static void svm_run()
                 void *lhs = svm_stack_pop(tsize);
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = remi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_UINT: {u32 tmp = remu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -398,7 +411,7 @@ static void svm_run()
             } break;
 
             case OP_FUNC: {
-                i32 func_id = *(i32*)svm_next_bytes(sizeof(i32));
+                u32 func_id = *(u32*)svm_next_bytes(sizeof(u32));
                 const Func *func = &BUILTIN_FUNCTIONS[func_id];
                 for (i32 i = 0; i < SEL_FUNC_MAX_N_ARGS; i++) {
                     if (func->argtypes[i] == TYPE_NIL) {
@@ -461,30 +474,35 @@ static inline void *svm_stack_pop(u32 size)
 /* ----------------------- Basic operators -------------------- */
 
 static inline i32 addi(i32 *lhs, i32 *rhs) { return (*lhs) + (*rhs); }
+static inline u32 addu(u32 *lhs, u32 *rhs) { return (*lhs) + (*rhs); }
 static inline f32 addf(f32 *lhs, f32 *rhs) { return (*lhs) + (*rhs); }
 static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs) {return vec2_add(*lhs, *rhs);}
 static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs) {return vec3_add(*lhs, *rhs);}
 static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs) {return vec4_add(*lhs, *rhs);}
 
 static inline i32 subi(i32 *lhs, i32 *rhs) { return (*lhs) - (*rhs); }
+static inline u32 subu(u32 *lhs, u32 *rhs) { return (*lhs) - (*rhs); }
 static inline f32 subf(f32 *lhs, f32 *rhs) { return (*lhs) - (*rhs); }
 static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) {return vec2_sub(*lhs, *rhs);}
 static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) {return vec3_sub(*lhs, *rhs);}
 static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) {return vec4_sub(*lhs, *rhs);}
 
 static inline i32 muli(i32 *lhs, i32 *rhs) { return (*lhs) * (*rhs); }
+static inline u32 mulu(u32 *lhs, u32 *rhs) { return (*lhs) * (*rhs); }
 static inline f32 mulf(f32 *lhs, f32 *rhs) { return (*lhs) * (*rhs); }
 static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, *rhs);}
 static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, *rhs);}
 static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, *rhs);}
 
 static inline i32 divi(i32 *lhs, i32 *rhs) { return (*lhs) / (*rhs); }
+static inline u32 divu(u32 *lhs, u32 *rhs) { return (*lhs) / (*rhs); }
 static inline f32 divf(f32 *lhs, f32 *rhs) { return (*lhs) / (*rhs); }
 static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, vec2_recip(*rhs));}
 static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, vec3_recip(*rhs));}
 static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, vec4_recip(*rhs));}
 
 static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
+static inline u32 remu(u32 *lhs, u32 *rhs) { return (*lhs) % (*rhs); }
 static inline i32 negi(i32 *val) { return -(*val); }
 static inline f32 negf(f32 *val) { return -(*val); }
 
@@ -520,6 +538,12 @@ static inline SelValue fn_int_(void *args)
     return (SelValue) {.val_i32 = (i32)a0}; 
 }
 
+static inline SelValue fn_unsigned_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_u32 = (u32)args_i32[0]}; 
+}
+
 static inline SelValue fn_mini_(void *args)
 {
     i32 *args_i32 = (i32 *) args;
@@ -546,6 +570,75 @@ static inline SelValue fn_iota_(void *args)
     static i32 iota = 0;
     return (SelValue) {.val_i32 = iota++}; 
 }
+
+
+/* ----------------------- UINT functions --------------------- */
+
+static inline SelValue fn_signed_(void *args)
+{
+    u32 a0 = *(u32*)args;
+    return (SelValue) {.val_i32 = (i32) a0}; 
+}
+
+static inline SelValue fn_xor_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    return (SelValue) {.val_u32 = (args_u32[0] ^ args_u32[1])}; 
+}
+
+static inline SelValue fn_and_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    return (SelValue) {.val_u32 = (args_u32[0] & args_u32[1])}; 
+}
+
+static inline SelValue fn_or_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    return (SelValue) {.val_u32 = (args_u32[0] | args_u32[1])}; 
+}
+
+static inline SelValue fn_not_(void *args)
+{
+    u32 a0 = *(u32*)args;
+    return (SelValue) {.val_u32 = ~a0}; 
+}
+
+static inline SelValue fn_lshift_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    return (SelValue) {.val_u32 = (args_u32[0] << args_u32[1])}; 
+}
+
+static inline SelValue fn_rshift_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    return (SelValue) {.val_u32 = (args_u32[0] >> args_u32[1])}; 
+}
+
+static inline SelValue fn_rol_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    u32 x = args_u32[0];
+    u32 n = args_u32[1] & (32 - 1);
+    u32 b = x >> (32 - n);
+    x <<= n;
+    x |= b;
+    //x |= (0xFFFFFFFFu >> (32 - n)) & upper;
+    return (SelValue) {.val_u32 = x}; 
+}
+
+static inline SelValue fn_ror_(void *args)
+{
+    u32 *args_u32 = (u32 *) args;
+    u32 x = args_u32[0];
+    u32 n = args_u32[1] & (32 - 1);
+    u32 b = x << (32 - n);
+    x >>= n;
+    x |= b;
+    return (SelValue) {.val_u32 = x}; 
+}
+
 
 /* ----------------------- FLOAT functions -------------------- */
 

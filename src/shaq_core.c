@@ -146,7 +146,7 @@ void shaq_new_frame(void)
     nanosleep(&ts, &ts);
     for (u32 i = 0; i < shaq_state.shaders.count; i++) {
         Shader *s  = &shaq_state.shaders.arr[i];
-#if 0
+#if 1
         printf("shader[%u] = \"" HGL_SV_FMT "\"\n", i, HGL_SV_ARG(s->name));
         printf("  filepath = " HGL_SV_FMT "\n", HGL_SV_ARG(s->filepath));
 #endif
@@ -160,7 +160,7 @@ void shaq_new_frame(void)
                 r = sel_run(u->exe);
             }
 
-#if 0
+#if 1
             printf("  uniform[%u] %d " HGL_SV_FMT " = ", j, u->type, HGL_SV_ARG(u->name));
             sel_print_value(u->type, r);
 #else
