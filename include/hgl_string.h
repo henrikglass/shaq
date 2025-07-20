@@ -102,6 +102,7 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <errno.h>
+#include <stdlib.h>
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -151,6 +152,11 @@ HglStringView hgl_sv_from_sb(HglStringBuilder *sb);
  * Create a string view of `cstr` with length `strlen(cstr)`
  */
 HglStringView hgl_sv_from_cstr(const char *cstr);
+
+/**
+ * Create NULL-terminated `cstr` from `sv`. Must be freed after use.
+ */
+char *hgl_sv_make_cstr_copy(HglStringView sv);
 
 /**
  * (Re-)Start a reentrant string view operation (I.e. functions that have "next"
@@ -446,7 +452,6 @@ void hgl_sb_rchop(HglStringBuilder *sb, size_t n);
 #if !defined(HGL_STRING_ALLOC) &&   \
     !defined(HGL_STRING_REALLOC) && \
     !defined(HGL_STRING_FREE)
-#include <stdlib.h>
 #define HGL_STRING_ALLOC malloc
 #define HGL_STRING_REALLOC realloc
 #define HGL_STRING_FREE free
@@ -479,6 +484,14 @@ HglStringView hgl_sv_from_cstr(const char *cstr)
         .start = cstr,
         .length = strlen(cstr)
     };
+}
+
+char *hgl_sv_make_cstr_copy(HglStringView sv)
+{
+    char *cstr = HGL_STRING_ALLOC(sv.length + 1);
+    memcpy(cstr, sv.start, sv.length);
+    cstr[sv.length] = '\0';
+    return cstr;
 }
 
 void hgl_sv_op_begin(HglStringView *sv)

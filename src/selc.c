@@ -1,12 +1,10 @@
 /*--- Include files ---------------------------------------------------------------------*/
 
 #include "sel.h"
-
-#define HGL_STRING_IMPLEMENTATION
-#include "hgl_string.h"
 #include "alloc.h"
 
 #include <assert.h>
+#include <stdio.h>
 
 /*--- Private macros --------------------------------------------------------------------*/
 
@@ -85,13 +83,13 @@ typedef enum
 typedef struct
 {
     TokenKind kind;
-    HglStringView text; 
+    StringView text; 
     u32 length;
 } Token;
 
 typedef struct
 {
-    HglStringView buf; 
+    StringView buf; 
 } Lexer;
 
 typedef enum
@@ -114,7 +112,7 @@ static_assert(N_EXPR_KINDS <= 256, "");
 
 typedef struct
 {
-    HglStringView id;
+    StringView id;
     //Type type;
     f32 value;
 } Const;
@@ -192,26 +190,6 @@ static inline void print_expr_tree_helper(ExprTree *e, i32 indent);
 
 /*--- Private variables -----------------------------------------------------------------*/
 
-static const char *const TYPE_TO_STR[] =
-{
-    [TYPE_NIL]        = "nil",
-    [TYPE_BOOL]       = "bool",
-    [TYPE_INT]        = "int",
-    [TYPE_FLOAT]      = "float",
-    [TYPE_VEC2]       = "vec2",
-    [TYPE_VEC3]       = "vec3",
-    [TYPE_VEC4]       = "vec4",
-    [TYPE_IVEC2]      = "ivec2",
-    [TYPE_IVEC3]      = "ivec3",
-    [TYPE_IVEC4]      = "ivec4",
-    [TYPE_MAT2]       = "mat2",
-    [TYPE_MAT3]       = "mat3",
-    [TYPE_MAT4]       = "mat4",
-    [TYPE_STR]        = "str",
-    [TYPE_TEXTURE]    = "texture",
-    [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
-};
-
 static const char *const TOKEN_TO_STR[] =
 {
     [TOK_LPAREN]        = "(",
@@ -239,10 +217,6 @@ const Const BUILTIN_CONSTANTS[] =
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
-
-static HglArena temp_allocator = HGL_ARENA_INITIALIZER(1024*1024);
-static HglArena eexpr_allocator = HGL_ARENA_INITIALIZER(1024*1024);
-
 /*--- Public functions ------------------------------------------------------------------*/
 
 ExeExpr *sel_compile(const char *src)
@@ -263,17 +237,18 @@ ExeExpr *sel_compile(const char *src)
     }
 
     /* DEBUG */
-    //print_expr(e);
-    //printf("\n");
-    //print_expr_tree(e);
-    //printf("\n");
+#if 0
+    print_expr(e);
+    printf("\n");
+    print_expr_tree(e);
+    printf("\n");
+#endif
     /* END DEBUG */
 
     /* codegen step. *Should* never fail if the previous steps succeed */
     exe = codegen(e);
 
 out:
-    arena_free_all(&temp_allocator);
     return exe;
 }
 
@@ -324,14 +299,14 @@ void sel_print_value(Type t, SelValue v)
 static Lexer lexer_begin(const char *str)
 {
     Lexer l = {0};
-    l.buf = hgl_sv_from_cstr(str);
+    l.buf = sv_from_cstr(str);
     return l;
 }
 
 static Token lexer_next(Lexer *l)
 {
     Token t = lexer_peek(l);
-    hgl_sv_lchop(&l->buf, t.length);
+    sv_lchop(&l->buf, t.length);
     return t;
 }
 
@@ -344,7 +319,7 @@ static Token lexer_peek(Lexer *l)
 {
     // TODO anneal this brittle crap
 
-    l->buf = hgl_sv_ltrim(l->buf);
+    l->buf = sv_ltrim(l->buf);
 
     if (l->buf.length == 0) {
         return (Token) {.kind = EOF_TOKEN_};
@@ -354,14 +329,14 @@ static Token lexer_peek(Lexer *l)
     switch (c) {
         case '\0': return (Token) {.kind = EOF_TOKEN_}; break;
         case '\n': return (Token) {.kind = EOF_TOKEN_}; break;
-        case '(':  return (Token) {.kind = TOK_LPAREN,  .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case ')':  return (Token) {.kind = TOK_RPAREN,  .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case '+':  return (Token) {.kind = TOK_PLUS,    .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case '-':  return (Token) {.kind = TOK_MINUS,   .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case '*':  return (Token) {.kind = TOK_STAR,    .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case '/':  return (Token) {.kind = TOK_FSLASH,  .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case '%':  return (Token) {.kind = TOK_PERCENT, .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
-        case ',':  return (Token) {.kind = TOK_COMMA,   .text = hgl_sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '(':  return (Token) {.kind = TOK_LPAREN,  .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case ')':  return (Token) {.kind = TOK_RPAREN,  .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '+':  return (Token) {.kind = TOK_PLUS,    .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '-':  return (Token) {.kind = TOK_MINUS,   .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '*':  return (Token) {.kind = TOK_STAR,    .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '/':  return (Token) {.kind = TOK_FSLASH,  .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '%':  return (Token) {.kind = TOK_PERCENT, .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case ',':  return (Token) {.kind = TOK_COMMA,   .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
 
         case '"': {
             size_t i = 1;
@@ -371,7 +346,7 @@ static Token lexer_peek(Lexer *l)
                     i++; 
                     return (Token) {
                         .kind = TOK_STR_LITERAL, 
-                        .text = hgl_sv_substr(l->buf, 1, i - 2), // discard opening and closing quotation marks
+                        .text = sv_substr(l->buf, 1, i - 2), // discard opening and closing quotation marks
                         .length = i,
                     };
                 }
@@ -386,11 +361,11 @@ static Token lexer_peek(Lexer *l)
                 if (!is_identifier_char(c)) break;
             }
 
-            HglStringView s = hgl_sv_substr(l->buf, 0, i);
+            StringView s = sv_substr(l->buf, 0, i);
 
             /* boolean literal? */
-            if (hgl_sv_equals(s, HGL_SV_LIT("true")) ||
-                hgl_sv_equals(s, HGL_SV_LIT("false"))) {
+            if (sv_equals(s, HGL_SV_LIT("true")) ||
+                sv_equals(s, HGL_SV_LIT("false"))) {
                 return (Token) {
                     .kind = TOK_BOOL_LITERAL, 
                     .text = s,
@@ -430,7 +405,7 @@ static Token lexer_peek(Lexer *l)
                 }
                 return (Token) {
                     .kind = TOK_INT_LITERAL,
-                    .text = hgl_sv_substr(l->buf, 0, i),
+                    .text = sv_substr(l->buf, 0, i),
                     .length = i,
                 };
             }
@@ -448,7 +423,7 @@ static Token lexer_peek(Lexer *l)
             }
             return (Token) {
                 .kind = TOK_FLOAT_LITERAL,
-                .text = hgl_sv_substr(l->buf, 0, i),
+                .text = sv_substr(l->buf, 0, i),
                 .length = i,
             };
 
@@ -614,7 +589,7 @@ static i32 parse_arglist_expr(ExprTree **e, Lexer *l)
 
 static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, ExprTree *rhs)
 {
-    ExprTree *e = arena_alloc(&temp_allocator, sizeof(ExprTree));
+    ExprTree *e = arena_alloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     e->lhs = lhs;
@@ -624,7 +599,7 @@ static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, Expr
 
 static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child)
 {
-    ExprTree *e = arena_alloc(&temp_allocator, sizeof(ExprTree));
+    ExprTree *e = arena_alloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     e->child = child;
@@ -633,7 +608,7 @@ static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child)
 
 static ExprTree *new_atom_expr(ExprKind kind, Token token)
 {
-    ExprTree *e = arena_alloc(&temp_allocator, sizeof(ExprTree));
+    ExprTree *e = arena_alloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     return e;
@@ -718,7 +693,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         
         case EXPR_FUNC: {
             for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
-                if (hgl_sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
+                if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
                     t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes, true);
                     goto out;
                 } 
@@ -747,7 +722,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
-                if (hgl_sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
+                if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     t0 = (TypeAndQualifier) {TYPE_FLOAT, QUALIFIER_CONST};
                     goto out;
                 } 
@@ -806,7 +781,7 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 
 static ExeExpr *codegen(const ExprTree *e)
 {
-    ExeExpr *exe = arena_alloc(&eexpr_allocator, sizeof(ExeExpr));
+    ExeExpr *exe = arena_alloc(g_longterm_arena, sizeof(ExeExpr));
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
     exe->qualifier = e->qualifier;
@@ -862,7 +837,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
             codegen_expr(exe, e->child);
             i32 i = 0;
             for (i = 0; i < (i32)N_BUILTIN_FUNCTIONS; i++) {
-                if (hgl_sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
+                if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
                     break;
                 }
             }
@@ -882,7 +857,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
 
         case EXPR_LIT: {
             if (e->type == TYPE_BOOL) {
-                bool val = hgl_sv_equals(e->token.text, HGL_SV_LIT("true"));
+                bool val = sv_equals(e->token.text, HGL_SV_LIT("true"));
                 exe_append_op(exe, (Op){
                     .kind    = OP_PUSH,
                     .type    = e->type,
@@ -890,7 +865,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 });
                 exe_append_bool(exe, val);
             } else if (e->type == TYPE_INT) {
-                i32 val = (i32) hgl_sv_to_i64(e->token.text);
+                i32 val = (i32) sv_to_i64(e->token.text);
                 exe_append_op(exe, (Op){
                     .kind    = OP_PUSH,
                     .type    = e->type,
@@ -899,7 +874,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 //printf("PUSH: %d\n", val);
                 exe_append_i32(exe, val);
             } else if (e->type == TYPE_FLOAT) {
-                f32 val = (f32) hgl_sv_to_f64(e->token.text);
+                f32 val = (f32) sv_to_f64(e->token.text);
                 exe_append_op(exe, (Op){
                     .kind    = OP_PUSH,
                     .type    = e->type,
@@ -922,7 +897,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
 
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
-                if (hgl_sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
+                if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     f32 val = BUILTIN_CONSTANTS[i].value;
                     exe_append_op(exe, (Op){
                         .kind    = OP_PUSH,
@@ -970,13 +945,13 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size)
     if (exe->code == NULL) {
         exe->size = 0;
         exe->capacity = 64;
-        exe->code = arena_alloc(&eexpr_allocator, exe->capacity * sizeof(*exe->code));
+        exe->code = arena_alloc(g_longterm_arena, exe->capacity * sizeof(*exe->code));
     } 
     if (exe->capacity < exe->size + size) {
         while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
-        exe->code = arena_realloc(&eexpr_allocator, exe->code, exe->capacity * sizeof(*exe->code));
+        exe->code = arena_realloc(g_longterm_arena, exe->code, exe->capacity * sizeof(*exe->code));
     }
     assert(exe->code != NULL && "eexe_allocator alloc failed");
     memcpy(&exe->code[exe->size], val, size);

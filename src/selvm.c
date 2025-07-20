@@ -266,7 +266,7 @@ static const u32 TYPE_TO_SIZE[] =
     [TYPE_MAT2]      = 16,
     [TYPE_MAT3]      = 36,
     [TYPE_MAT4]      = 64,
-    [TYPE_STR]       = sizeof(HglStringView),
+    [TYPE_STR]       = sizeof(StringView),
     [TYPE_TEXTURE]   = sizeof(i32),
 };
 
@@ -494,15 +494,18 @@ static inline f32 negf(f32 *val) { return -(*val); }
 
 static inline SelValue fn_load_image_(void *args)
 {
-    (void) args;
-    return (SelValue) { .val_tex = {.error = 1}}; // TODO
+    StringView filepath = *(StringView *)args;
+    i32 index = shaq_load_texture_if_necessary(filepath);
+    if (index == -1) {
+        return (SelValue) { .val_tex = {.error = 1}};
+    }
+    return (SelValue) { .val_tex = {.kind = 1, .loaded_texture_index = (u32) index}};
 }
 
 static inline SelValue fn_output_of_(void *args)
 {
-    (void) args;
-    HglStringView name = *(HglStringView *)args;
-    i32 index = shaq_get_index_of_shader(name);
+    StringView name = *(StringView *)args;
+    i32 index = shaq_find_shader_id_by_name(name);
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }

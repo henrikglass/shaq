@@ -15,6 +15,7 @@ L_FLAGS    := -lm
 
 
 SOURCES := src/alloc.c 	       \
+		   src/str.c           \
 		   src/selc.c          \
 		   src/selvm.c         \
 		   src/shaq_core.c     \
@@ -22,6 +23,7 @@ SOURCES := src/alloc.c 	       \
 		   src/uniform.c       \
 		   src/texture.c       \
 		   src/util.c          \
+		   src/io.c            \
 
 
 all: shaq sel

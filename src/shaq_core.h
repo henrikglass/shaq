@@ -5,9 +5,8 @@
 
 #include "hgl_int.h"
 #include "hgl_float.h"
-#include "hglm.h"
-#include "hglm_aliases.h"
-#include "hgl_string.h"
+#include "vecmath.h"
+#include "str.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -27,7 +26,8 @@ void shaq_end(void);
 f32 shaq_time(void);
 f32 shaq_deltatime(void);
 IVec2 shaq_iresolution(void);
-i32 shaq_get_index_of_shader(HglStringView name);
+i32 shaq_find_shader_id_by_name(StringView name);
+i32 shaq_load_texture_if_necessary(StringView filepath);
 
 #endif /* SHAQ_CORE_H */
 

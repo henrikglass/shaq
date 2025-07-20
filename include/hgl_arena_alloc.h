@@ -141,6 +141,12 @@ void *hgl_arena_alloc(HglArena *arena, size_t alloc_size);
 void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size);
 
 /**
+ * Free `ptr`. `ptr` MUST be the result of the last call to `hgl_arena_alloc()`, 
+ * otherwise the program aborts.
+ */
+void hgl_arena_free_last(HglArena *arena, void *ptr);
+
+/**
  * Free all allocations in `arena`.
  */
 void hgl_arena_free_all(HglArena *arena);
@@ -260,6 +266,16 @@ void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size)
     return hgl_arena_alloc(arena, alloc_size);
 }
 
+void hgl_arena_free_last(HglArena *arena, void *ptr)
+{
+    if (ptr != arena->last_alloc) {
+        fprintf(stderr, "hgl_arena_free_last(): invalid pointer.\n");
+        abort();
+    }
+
+    arena->head = (uint8_t*)ptr - arena->memory;
+}
+
 void hgl_arena_free_all(HglArena *arena)
 {
     arena->head = 0;
@@ -267,7 +283,7 @@ void hgl_arena_free_all(HglArena *arena)
 
 void hgl_arena_print_usage(HglArena *arena)
 {
-    printf("Arena usage: %f%% (%lu/%lu bytes).\n",
+    printf("usage: %f%% (%lu/%lu bytes).\n",
            100.0 * ((double) arena->head / (double) arena->size),
            arena->head, arena->size);
 }

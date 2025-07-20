@@ -5,9 +5,9 @@
 
 #include "hgl_int.h"
 #include "hgl_float.h"
-#include "hgl_string.h"
-#include "hglm.h"
-#include "hglm_aliases.h"
+
+#include "str.h"
+#include "vecmath.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -67,13 +67,13 @@ typedef union
     Mat2 val_mat2;
     Mat3 val_mat3;
     Mat4 val_mat4;
-    HglStringView val_str;
+    StringView val_str;
     TextureIndex val_tex;
 } SelValue;
 
 typedef struct
 {
-    HglStringView id;
+    StringView id;
     TypeQualifier qualifier;
     Type type;
     SelValue (*impl)(void *args);
@@ -119,6 +119,27 @@ typedef struct
 
 extern const Func BUILTIN_FUNCTIONS[];
 extern const size_t N_BUILTIN_FUNCTIONS;
+
+static const char *const TYPE_TO_STR[] =
+{
+    [TYPE_NIL]        = "nil",
+    [TYPE_BOOL]       = "bool",
+    [TYPE_INT]        = "int",
+    [TYPE_FLOAT]      = "float",
+    [TYPE_VEC2]       = "vec2",
+    [TYPE_VEC3]       = "vec3",
+    [TYPE_VEC4]       = "vec4",
+    [TYPE_IVEC2]      = "ivec2",
+    [TYPE_IVEC3]      = "ivec3",
+    [TYPE_IVEC4]      = "ivec4",
+    [TYPE_MAT2]       = "mat2",
+    [TYPE_MAT3]       = "mat3",
+    [TYPE_MAT4]       = "mat4",
+    [TYPE_STR]        = "str",
+    [TYPE_TEXTURE]    = "texture",
+    [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
+};
+
 
 /*--- Public function prototypes --------------------------------------------------------*/
 

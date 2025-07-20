@@ -15,8 +15,11 @@
 typedef struct {
     //const char *name;
     //const char *src;
-    HglStringView name;
-    HglStringView src;
+    StringView name;
+    StringView filepath;
+    u8 *source_code;
+    size_t source_code_size;
+    i64 modifytime;
     Array(Uniform, SHAQ_MAX_N_SHADERS) uniforms;
     Array(u32, SHAQ_MAX_N_SHADERS) shader_depends;
     Texture outimage;
@@ -26,8 +29,9 @@ typedef struct {
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-void shader_parse_from_ini_section(Shader *sh, HglIniSection *s);
+i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s);
 void shader_determine_dependencies(Shader *s);
+b8 shader_needs_reload(Shader *s);
 
 #endif /* SHADER_H */
 

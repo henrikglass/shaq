@@ -143,6 +143,11 @@ void hgl_fs_free(HglFsAllocator *allocator, void *ptr);
  */
 void hgl_fs_free_all(HglFsAllocator *allocator);
 
+/**
+ * Print fs allocator memory usage.
+ */
+void hgl_fs_print_usage(HglFsAllocator *allocator);
+
 #endif /* HGL_FS_ALLOC_H */
 
 #ifdef HGL_FS_ALLOC_IMPLEMENTATION
@@ -219,6 +224,7 @@ HglFsAllocator hgl_fs_make_from_buffer(void *buf, size_t size, int free_stack_ca
         return (HglFsAllocator) {0};
     }
 
+    assert((free_stack_capacity * sizeof(HglFsChunkDescriptor)) < size && "Free stack capacity too big");
     size_t allocable_size = size - (free_stack_capacity * sizeof(HglFsChunkDescriptor));
 
     HglFsAllocator allocator = {
@@ -366,6 +372,19 @@ void hgl_fs_free_all(HglFsAllocator *allocator)
     allocator->free_count = 1;
     allocator->free_stack[0].start = allocator->memory;
     allocator->free_stack[0].end = allocator->memory + allocator->size;
+}
+
+void hgl_fs_print_usage(HglFsAllocator *allocator)
+{
+    size_t usage = allocator->size;
+    int i = allocator->free_count;
+    while (i-- > 0) {
+        HglFsChunkDescriptor *chunk = &allocator->free_stack[i];
+        usage -= (chunk->end - chunk->start);
+    }
+    printf("usage: %f%% (%lu/%lu bytes).\n",
+           100.0 * ((double) usage / (double) allocator->size),
+           usage, allocator->size);
 }
 
 #endif

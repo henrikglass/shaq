@@ -1,0 +1,56 @@
+
+typedef HglStringView StringView;
+typedef HglStringBuilder StringBuilder;
+
+#define sv_from                  hgl_sv_from
+#define sv_from_sb               hgl_sv_from_sb
+#define sv_from_cstr             hgl_sv_from_cstr
+#define sv_make_cstr_copy        hgl_sv_make_cstr_copy
+#define sv_op_begin              hgl_sv_op_begin
+#define sv_split_next            hgl_sv_split_next
+#define sv_find_next             hgl_sv_find_next
+#define sv_find_next_regex_match hgl_sv_find_next_regex_match
+#define sv_substr                hgl_sv_substr
+#define sv_lchop                 hgl_sv_lchop
+#define sv_rchop                 hgl_sv_rchop
+#define sv_lchop_until           hgl_sv_lchop_until
+#define sv_rchop_until           hgl_sv_rchop_until
+#define sv_lchop_lexeme          hgl_sv_lchop_lexeme
+#define sv_ltrim                 hgl_sv_ltrim
+#define sv_rtrim                 hgl_sv_rtrim
+#define sv_trim                  hgl_sv_trim
+#define sv_to_u64                hgl_sv_to_u64
+#define sv_to_i64                hgl_sv_to_i64
+#define sv_to_f64                hgl_sv_to_f64
+#define sv_lchop_u64             hgl_sv_lchop_u64
+#define sv_lchop_i64             hgl_sv_lchop_i64
+#define sv_lchop_f64             hgl_sv_lchop_f64
+#define sv_starts_with_lchop     hgl_sv_starts_with_lchop
+#define sv_starts_with_lexeme    hgl_sv_starts_with_lexeme
+#define sv_contains              hgl_sv_contains
+#define sv_starts_with           hgl_sv_starts_with
+#define sv_ends_with             hgl_sv_ends_with
+#define sv_compare               hgl_sv_compare
+#define sv_equals                hgl_sv_equals
+#define sb_make                  hgl_sb_make
+#define sb_make_copy             hgl_sb_make_copy
+#define sb_destroy               hgl_sb_destroy
+#define sb_clear                 hgl_sb_clear
+#define sb_grow                  hgl_sb_grow
+#define sb_grow_by_policy        hgl_sb_grow_by_policy
+#define sb_shrink_to_fit         hgl_sb_shrink_to_fit
+#define sb_append                hgl_sb_append
+#define sb_append_char           hgl_sb_append_char
+#define sb_append_sv             hgl_sb_append_sv
+#define sb_append_cstr           hgl_sb_append_cstr
+#define sb_append_fmt            hgl_sb_append_fmt
+#define sb_append_file           hgl_sb_append_file
+#define sb_replace_section       hgl_sb_replace_section
+#define sb_replace               hgl_sb_replace
+#define sb_replace_regex         hgl_sb_replace_regex
+#define sb_rtrim                 hgl_sb_rtrim
+#define sb_ltrim                 hgl_sb_ltrim
+#define sb_trim                  hgl_sb_trim
+#define sb_rchop                 hgl_sb_rchop
+
+// TODO header + description + move to hgl repo
