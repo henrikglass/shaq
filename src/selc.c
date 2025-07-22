@@ -2,6 +2,7 @@
 
 #include "sel.h"
 #include "alloc.h"
+#include "glad/glad.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -114,8 +115,8 @@ static_assert(N_EXPR_KINDS <= 256, "");
 typedef struct
 {
     StringView id;
-    //Type type;
-    f32 value;
+    Type type;
+    SelValue value;
 } Const;
 
 typedef struct
@@ -172,7 +173,6 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 static ExeExpr *codegen(const ExprTree *e);
 static void codegen_expr(ExeExpr *exe, const ExprTree *e);
 static void exe_append_op(ExeExpr *exe, Op op);
-static void exe_append_bool(ExeExpr *exe, b8 v);
 static void exe_append_i32(ExeExpr *exe, i32 v);
 static void exe_append_u32(ExeExpr *exe, u32 v);
 static void exe_append_f32(ExeExpr *exe, f32 v);
@@ -211,10 +211,16 @@ static const char *const TOKEN_TO_STR[] =
 
 const Const BUILTIN_CONSTANTS[] = 
 {
-    {.id = HGL_SV_LIT("PI"),  .value =   3.1415926535},
-    {.id = HGL_SV_LIT("TAU"), .value = 2*3.1415926535},
-    {.id = HGL_SV_LIT("PHI"), .value =   1.6180339887},
-    {.id = HGL_SV_LIT("e"),   .value =   2.7182818284},
+    {.id = HGL_SV_LIT("PI"),                 .type = TYPE_FLOAT, .value.val_f32 =     3.1415926535},
+    {.id = HGL_SV_LIT("TAU"),                .type = TYPE_FLOAT, .value.val_f32 = 2.0*3.1415926535},
+    {.id = HGL_SV_LIT("PHI"),                .type = TYPE_FLOAT, .value.val_f32 =     1.6180339887},
+    {.id = HGL_SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32 =     2.7182818284},
+    {.id = HGL_SV_LIT("GL_NEAREST"),         .type = TYPE_UINT,  .value.val_f32 = GL_NEAREST },
+    {.id = HGL_SV_LIT("GL_LINEAR"),          .type = TYPE_UINT,  .value.val_f32 = GL_LINEAR },
+    {.id = HGL_SV_LIT("GL_REPEAT"),          .type = TYPE_UINT,  .value.val_f32 = GL_REPEAT },
+    {.id = HGL_SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_UINT,  .value.val_f32 = GL_MIRRORED_REPEAT },
+    {.id = HGL_SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_EDGE },
+    {.id = HGL_SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_BORDER },
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
@@ -256,13 +262,15 @@ out:
 void sel_list_builtins(void) {
     printf("Constants:\n");
     for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
-        printf("  " HGL_SV_FMT " = %f\n", HGL_SV_ARG(BUILTIN_CONSTANTS[i].id), 
-                                          (f64)BUILTIN_CONSTANTS[i].value);
+        printf("  %-80.*s TYPE: %s\n", 
+               HGL_SV_ARG(BUILTIN_CONSTANTS[i].id), 
+               TYPE_TO_STR[BUILTIN_CONSTANTS[i].type]);
     }
 
     printf("Functions:\n");
     for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
-        printf("  %-80s %s\n", BUILTIN_FUNCTIONS[i].synopsis,
+        printf("  %-80s %s\n", 
+               BUILTIN_FUNCTIONS[i].synopsis,
                (BUILTIN_FUNCTIONS[i].desc != NULL) ? BUILTIN_FUNCTIONS[i].desc : "-");
     }
 }
@@ -286,8 +294,8 @@ void sel_print_value(Type t, SelValue v)
         case TYPE_STR:     printf("\""HGL_SV_FMT"\"" "\n", HGL_SV_ARG(v.val_str)); break;
         case TYPE_TEXTURE: {
             if (v.val_tex.error) printf("ERROR\n"); 
-            else if (v.val_tex.kind == 0) printf("render texture: %u\n", v.val_tex.render_texture_index); 
-            else if (v.val_tex.kind == 1) printf("loaded texture: %u\n", v.val_tex.loaded_texture_index);
+            else if (v.val_tex.kind == SHADER_INDEX) printf("render texture: %u\n", v.val_tex.render_texture_index); 
+            else if (v.val_tex.kind == LOADED_TEXTURE_INDEX) printf("loaded texture: %u\n", v.val_tex.loaded_texture_index);
         } break;
         case TYPE_NIL:     printf("<NIL>\n"); break;
         case TYPE_AND_NAMECHECKER_ERROR_:
@@ -735,7 +743,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
-                    t0 = (TypeAndQualifier) {TYPE_FLOAT, QUALIFIER_CONST};
+                    t0 = (TypeAndQualifier) {BUILTIN_CONSTANTS[i].type, QUALIFIER_CONST};
                     goto out;
                 } 
             }
@@ -797,6 +805,7 @@ static ExeExpr *codegen(const ExprTree *e)
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
     exe->qualifier = e->qualifier;
+    exe->has_been_computed_once = false;
     codegen_expr(exe, e);
     return exe;
 }
@@ -874,8 +883,8 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .argsize = TYPE_TO_SIZE[e->type],
             });
             if (e->type == TYPE_BOOL) {
-                b8 val = sv_equals(e->token.text, HGL_SV_LIT("true"));
-                exe_append_bool(exe, val);
+                i32 val = sv_equals(e->token.text, HGL_SV_LIT("true")) ? 1 : 0;
+                exe_append_i32(exe, val);
             } else if (e->type == TYPE_INT) {
                 i32 val = (i32) sv_to_i64(e->token.text);
                 exe_append_i32(exe, val);
@@ -895,14 +904,13 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
         case EXPR_CONST: {
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
-                    f32 val = BUILTIN_CONSTANTS[i].value;
                     exe_append_op(exe, (Op){
                         .kind    = OP_PUSH,
                         .type    = e->type,
-                        .argsize = sizeof(f32),
+                        .argsize = TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type],
                     });
-                    //printf("PUSH: %f\n", (f64)val);
-                    exe_append_f32(exe, val);
+                    exe_append(exe, &BUILTIN_CONSTANTS[i].value, 
+                               TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type]);
                     break; 
                 } 
             }
@@ -920,11 +928,6 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
 static void exe_append_op(ExeExpr *exe, Op op)
 {
     exe_append(exe, &op, sizeof(op));
-}
-
-static void exe_append_bool(ExeExpr *exe, b8 v)
-{
-    exe_append(exe, &v, sizeof(v));
 }
 
 static void exe_append_i32(ExeExpr *exe, i32 v)

@@ -1,6 +1,9 @@
 /*--- Include files ---------------------------------------------------------------------*/
 
 #include "uniform.h"
+#include "alloc.h"
+
+#include "glad/glad.h"
 
 /*--- Private macros --------------------------------------------------------------------*/
 
@@ -81,6 +84,15 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
     }
     
     return -1;
+}
+
+void uniform_determine_location_in_shader_program(Uniform *u, u32 shader_program)
+{
+    char *name_cstr = arena_alloc(g_frame_arena, u->name.length + 1);
+    memcpy(name_cstr, u->name.start, u->name.length);
+    name_cstr[u->name.length] = '\0';
+    u->gl_uniform_location = glGetUniformLocation(shader_program, name_cstr);
+    printf(HGL_SV_FMT " found location: %d\n", HGL_SV_ARG(u->name), u->gl_uniform_location);
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

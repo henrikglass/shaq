@@ -17,12 +17,15 @@ typedef struct {
     //const char *src;
     StringView name;
     StringView filepath;
-    u8 *source_code;
-    size_t source_code_size;
+    u8 *frag_shader_src;
+    size_t frag_shader_src_size;
     i64 modifytime;
     Array(Uniform, SHAQ_MAX_N_SHADERS) uniforms;
     Array(u32, SHAQ_MAX_N_SHADERS) shader_depends;
-    Texture outimage;
+    Texture render_texture;
+
+    /* OpenGL */
+    u32 gl_shader_program_id;
 } Shader;
 
 /*--- Public variables ------------------------------------------------------------------*/
@@ -32,6 +35,10 @@ typedef struct {
 i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s);
 void shader_determine_dependencies(Shader *s);
 b8 shader_needs_reload(Shader *s);
+void shader_reload(Shader *s);
+void shader_free_opengl_resources(Shader *s);
+void shader_prepare_for_drawing(Shader *s);
+void shader_draw(Shader *s);
 
 #endif /* SHADER_H */
 

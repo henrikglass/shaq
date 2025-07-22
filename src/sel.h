@@ -28,6 +28,9 @@ typedef enum
     TYPE_IVEC2,
     TYPE_IVEC3,
     TYPE_IVEC4,
+    //TYPE_UVEC2, // TODO
+    //TYPE_UVEC3,
+    //TYPE_UVEC4,
     TYPE_MAT2,
     TYPE_MAT3,
     TYPE_MAT4,
@@ -44,6 +47,12 @@ typedef enum
     QUALIFIER_CONST = (1 << 0), // for constant expression
     QUALIFIER_PURE  = (1 << 1), // for pure functions
 } TypeQualifier;
+
+typedef enum
+{
+    SHADER_INDEX,
+    LOADED_TEXTURE_INDEX,
+} TextureIndexKind;
 
 typedef struct
 {
@@ -114,7 +123,8 @@ typedef struct
     u32 capacity;
     Type type;
     TypeQualifier qualifier;
-    SelValue last_computed_value;
+    SelValue cached_computed_value;
+    b8 has_been_computed_once;
 } ExeExpr;
 
 /*--- Public variables ------------------------------------------------------------------*/
@@ -146,7 +156,7 @@ static const char *const TYPE_TO_STR[] =
 static const u32 TYPE_TO_SIZE[] = 
 {
     [TYPE_NIL]       = 0,
-    [TYPE_BOOL]      = sizeof(bool),
+    [TYPE_BOOL]      = sizeof(i32),
     [TYPE_INT]       = sizeof(i32),
     [TYPE_UINT]      = sizeof(u32),
     [TYPE_FLOAT]     = sizeof(f32),
@@ -172,7 +182,7 @@ ExeExpr *sel_compile(const char *src); // selc.c
 void sel_list_builtins(void); // selc.c
 void sel_print_value(Type t, SelValue v); // selc.c
 
-SelValue sel_run(ExeExpr *exe); // selvm.c
+SelValue sel_eval(ExeExpr *exe, b8 force_recompute); // selvm.c
 
 #endif /* SEL_H */
 

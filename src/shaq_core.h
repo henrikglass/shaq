@@ -28,6 +28,9 @@ f32 shaq_deltatime(void);
 IVec2 shaq_iresolution(void);
 i32 shaq_find_shader_id_by_name(StringView name);
 i32 shaq_load_texture_if_necessary(StringView filepath);
+u32 shaq_get_shader_render_texture_by_index(u32 index);
+u32 shaq_get_loaded_texture_by_index(u32 index);
+
 
 #endif /* SHAQ_CORE_H */
 

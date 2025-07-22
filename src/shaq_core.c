@@ -11,6 +11,8 @@
 #include "util.h"
 #include "io.h"
 
+#include "glad/glad.h"
+
 void *ini_alloc(size_t size);
 void *ini_realloc(void *ptr, size_t size);
 void ini_free(void *ptr);
@@ -24,17 +26,32 @@ void ini_free(void *ptr){ (void) ptr; /*fs_free(g_longterm_fs_allocator, ptr); *
 #include "hgl_ini.h"
 
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <GLFW/glfw3.h>
 
 /*--- Private macros --------------------------------------------------------------------*/
+
+#define RENDERER_ASSERT(cond_, ...)                                   \
+    if (!(cond_)) {                                                   \
+        fprintf(stderr, "[RENDERER] Error: " __VA_ARGS__);            \
+        fprintf(stderr, "\n");                                        \
+        abort();                                                      \
+    }                                                                 \
 
 /*--- Private type definitions ----------------------------------------------------------*/
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
-i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
-void determine_render_order(void);
+static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
+static void determine_render_order(void);
 
-void ini_parse(HglIni *ini);
+static void parse_ini_file(HglIni *ini);
+
+static void opengl_init(void);
+static void debug_draw_frame(void); // DEBUG
+static void fb_resize_callback(GLFWwindow *window, i32 w, i32 h);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -60,7 +77,10 @@ static struct ShaqState {
     f32 last_frame_deltatime_s;
     f32 last_frame_time_s;
     
-    IVec2 iresolution;
+    struct {
+        GLFWwindow *window;
+        IVec2 resolution;
+    } renderer;
 } shaq_state = {0};
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -68,11 +88,13 @@ static struct ShaqState {
 void shaq_begin(const char *ini_filepath)
 {
     alloc_init();
+    opengl_init();
 
     shaq_state.start_timestamp_ns = util_get_time_nanos();
     shaq_state.last_frame_timestamp_ns = shaq_state.start_timestamp_ns;
     shaq_state.ini_filepath = ini_filepath;
     shaq_reload();
+
 }
 
 b8 shaq_needs_reload(void)
@@ -96,16 +118,22 @@ b8 shaq_needs_reload(void)
 b8 shaq_should_close(void)
 {
     if (shaq_state.should_close) printf("should close...\n");
-    return shaq_state.should_close;
+    return shaq_state.should_close || glfwWindowShouldClose(shaq_state.renderer.window);
 }
 
 void shaq_reload(void)
 {
     printf("shaq_reload()\n");
-    shaq_state.ini_modifytime = io_get_file_modify_time(shaq_state.ini_filepath);
-    //if (shaq_state.ini != NULL) {
-    //    hgl_ini_close(shaq_state.ini); // handled implicitly by fs alloc
-    //}
+
+    /* Manually free OpenGL resources */
+    for (u32 i = 0; i < shaq_state.shaders.count; i++) {
+        Shader *s = &shaq_state.shaders.arr[i];
+        shader_free_opengl_resources(s);
+    }
+    for (u32 i = 0; i < shaq_state.loaded_textures.count; i++) {
+        Texture *t = &shaq_state.loaded_textures.arr[i];
+        texture_free_opengl_resources(t);
+    }
 
     /* reset state */
     array_clear(&shaq_state.shaders);
@@ -116,12 +144,24 @@ void shaq_reload(void)
     arena_free_all(g_longterm_arena);
     fs_free_all(g_longterm_fs_allocator);
 
+    /* Reload ini file */
+    shaq_state.ini_modifytime = io_get_file_modify_time(shaq_state.ini_filepath);
     shaq_state.ini = hgl_ini_open(shaq_state.ini_filepath);
     if (shaq_state.ini == NULL) {
         shaq_state.should_close = true;
     }
-    ini_parse(shaq_state.ini);
+
+    /* Parse ini file + recompile simple expressions */
+    parse_ini_file(shaq_state.ini);
+
+    /* Determine render order */
     determine_render_order();
+
+    /* Reload shaders */
+    for (u32 i = 0; i < shaq_state.shaders.count; i++) {
+        Shader *s = &shaq_state.shaders.arr[i];
+        shader_reload(s);
+    }
 
     shaq_state.first_frame = true;
 }
@@ -141,9 +181,13 @@ void shaq_new_frame(void)
     shaq_state.last_frame_deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
     shaq_state.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
 
-    /* TODO ... */
-    struct timespec ts = {.tv_sec = 1, .tv_nsec = 0};
+    /* DEBUG */
+    struct timespec ts = {.tv_sec = 1, .tv_nsec = 166666670};
     nanosleep(&ts, &ts);
+    /* END DEBUG */
+
+
+    /* TODO ... */
     for (u32 i = 0; i < shaq_state.shaders.count; i++) {
         Shader *s  = &shaq_state.shaders.arr[i];
 #if 1
@@ -153,13 +197,7 @@ void shaq_new_frame(void)
 
         for (u32 j = 0; j < s->uniforms.count; j++) {
             Uniform *u = &s->uniforms.arr[j];
-            SelValue r;
-            if (u->exe->qualifier == QUALIFIER_CONST && !shaq_state.first_frame) {
-                r = u->exe->last_computed_value;
-            } else {
-                r = sel_run(u->exe);
-            }
-
+            SelValue r = sel_eval(u->exe, false);
 #if 1
             printf("  uniform[%u] %d " HGL_SV_FMT " = ", j, u->type, HGL_SV_ARG(u->name));
             sel_print_value(u->type, r);
@@ -168,6 +206,8 @@ void shaq_new_frame(void)
 #endif
         } 
     }
+
+    debug_draw_frame();
 
     shaq_state.first_frame = false;
 
@@ -198,7 +238,7 @@ f32 shaq_deltatime(void)
 
 IVec2 shaq_iresolution(void)
 {
-    return shaq_state.iresolution;
+    return shaq_state.renderer.resolution;
 }
 
 i32 shaq_find_shader_id_by_name(StringView name)
@@ -240,9 +280,19 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     return -1; 
 }
 
+u32 shaq_get_shader_render_texture_by_index(u32 index)
+{
+    return shaq_state.shaders.arr[index].render_texture.gl_texture_id;
+}
+
+u32 shaq_get_loaded_texture_by_index(u32 index)
+{
+    return shaq_state.loaded_textures.arr[index].gl_texture_id;
+}
+
 /*--- Private functions -----------------------------------------------------------------*/
 
-i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
+static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
 {
     Shader *s = &shaq_state.shaders.arr[index];
 
@@ -267,7 +317,7 @@ i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
     return 0;
 }
 
-void determine_render_order(void)
+static void determine_render_order(void)
 {
     assert(shaq_state.shaders.count > 0);
     array_clear(&shaq_state.render_order);
@@ -300,7 +350,7 @@ void determine_render_order(void)
     // END DEBUG 
 }
 
-void ini_parse(HglIni *ini)
+static void parse_ini_file(HglIni *ini)
 {
     hgl_ini_reset_section_iterator(ini);
     u32 shader_idx = 0; 
@@ -315,4 +365,57 @@ void ini_parse(HglIni *ini)
     shaq_state.shaders.count = shader_idx;
 }
 
+static void opengl_init()
+{
+    glfwInit();
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    shaq_state.renderer.resolution = ivec2_make(800, 600);
+    shaq_state.renderer.window = glfwCreateWindow(shaq_state.renderer.resolution.x, 
+                                                  shaq_state.renderer.resolution.y, 
+                                                  "Shaq", NULL, NULL);
+
+    if (shaq_state.renderer.window == NULL) {
+        fprintf(stderr, "[RENDERER] Error: Failed to create GLFW window.\n");
+        glfwTerminate();
+        abort();
+    }
+
+    glfwMakeContextCurrent(shaq_state.renderer.window);
+    glfwSetFramebufferSizeCallback(shaq_state.renderer.window, fb_resize_callback);
+    glfwSwapInterval(1);
+
+    i32 err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    if (err <= 0) {
+        fprintf(stderr, "[RENDERER] Error: GLAD Failed to load.\n");
+        glfwTerminate();
+        abort();
+    }
+
+    glViewport(0, 0, shaq_state.renderer.resolution.x, shaq_state.renderer.resolution.y);
+}
+
+static void debug_draw_frame()
+{
+    glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glfwSwapBuffers(shaq_state.renderer.window);
+    glfwPollEvents();
+}
+
+static void fb_resize_callback(GLFWwindow *window, i32 w, i32 h)
+{
+    (void) window;
+    glViewport(0, 0, w, h);
+    shaq_state.renderer.resolution.x = w;
+    shaq_state.renderer.resolution.y = h;
+}
 

@@ -164,6 +164,7 @@ static inline SelValue fn_mat4_mul_scalar_(void *args);
 const Func BUILTIN_FUNCTIONS[] = 
 {
     { .id = HGL_SV_LIT("load_image"), .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_load_image_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture load_image(str filepath)", .desc = "Returns a reference to a texture loaded from `filepath`", },
+    //{ .id = HGL_SV_LIT("load_image_detailed"),  /* ... */ }, // TODO (specify min/mag filter, wrapping, etc.).
     { .id = HGL_SV_LIT("output_of"),  .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_output_of_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader`. Calling this function implicitly defines the render order.", },
 
     { .id = HGL_SV_LIT("int"),        .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
@@ -288,11 +289,17 @@ static struct SVM {
 
 /*--- Public functions ------------------------------------------------------------------*/
 
-SelValue sel_run(ExeExpr *exe)
+SelValue sel_eval(ExeExpr *exe, b8 force_recompute)
 {
     if (exe == NULL) {
         //return (SelValue) {.val_i32 = -1};
         return (SelValue) {0};
+    }
+
+    if ((exe->qualifier & QUALIFIER_CONST) && 
+        (exe->has_been_computed_once) &&
+        (!force_recompute)) {
+        return exe->cached_computed_value;
     }
 
     /* Reset SVM & load program */
@@ -311,7 +318,8 @@ SelValue sel_run(ExeExpr *exe)
     void *raw_result = svm_stack_pop(tsize);
     SelValue result = {0};
     memcpy(&result, raw_result, tsize); // Okay? Otherwise switch on exe->type
-    exe->last_computed_value = result;
+    exe->cached_computed_value = result;
+    exe->has_been_computed_once = true;
 
     return result;
 }
@@ -517,7 +525,7 @@ static inline SelValue fn_load_image_(void *args)
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
-    return (SelValue) { .val_tex = {.kind = 1, .loaded_texture_index = (u32) index}};
+    return (SelValue) { .val_tex = {.kind = LOADED_TEXTURE_INDEX, .loaded_texture_index = (u32) index}};
 }
 
 static inline SelValue fn_output_of_(void *args)
@@ -527,7 +535,7 @@ static inline SelValue fn_output_of_(void *args)
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
-    return (SelValue) { .val_tex = {.kind = 0, .render_texture_index = (u32) index}};
+    return (SelValue) { .val_tex = {.kind = SHADER_INDEX, .render_texture_index = (u32) index}};
 }
 
 /* ----------------------- INT functions -------------------- */
@@ -1024,7 +1032,7 @@ static inline SelValue fn_ivec2_(void *args)
 static inline SelValue fn_iresolution_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_ivec2 = hglm_ivec2_make(-1, -1)}; // TODO shaq_core.c
+    return (SelValue) {.val_ivec2 = shaq_iresolution()}; // TODO shaq_core.c
 }
 
 

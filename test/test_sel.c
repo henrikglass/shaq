@@ -10,6 +10,6 @@ int main(int argc, char *argv[])
     if (e == NULL) return 2;
     printf("type = %d\n", e->type);
     printf("qual = %d\n", e->qualifier);
-    SelValue r = sel_run(e);
+    SelValue r = sel_eval(e, false);
     sel_print_value(e->type, r);
 }

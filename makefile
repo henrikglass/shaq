@@ -11,7 +11,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wno-error=cpp 
 C_INCLUDES := -Iinclude
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -D_DEFAULT_SOURCE -fno-strict-aliasing
-L_FLAGS    := -lm
+L_FLAGS    := -lm -lglfw
 
 
 SOURCES := src/alloc.c 	       \
@@ -24,6 +24,7 @@ SOURCES := src/alloc.c 	       \
 		   src/texture.c       \
 		   src/util.c          \
 		   src/io.c            \
+		   src/glad/glad.c     \
 
 
 all: shaq sel
