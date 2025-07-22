@@ -151,7 +151,7 @@ void shaq_reload(void)
 
 void shaq_new_frame(void)
 {
-    printf("shaq_new_frame()\n");
+    //printf("shaq_new_frame()\n");
     if (shaq.should_close) {
         return;
     }
@@ -197,9 +197,9 @@ void shaq_new_frame(void)
     renderer_display(&shaq.shaders.arr[shaq.shaders.count - 1]);
 
     /* DEBUG */
-    printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
-    printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
-    printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
+    //printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
+    //printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
+    //printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
     /* END DEBUG */
 
     /* collect garbage */

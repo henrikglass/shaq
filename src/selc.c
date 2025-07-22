@@ -228,6 +228,7 @@ static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUI
 
 ExeExpr *sel_compile(const char *src)
 {
+    printf("compiling expression: `%s`\n", src);
     ExeExpr *exe = NULL;
 
     /* lexer + parser step */
@@ -243,6 +244,7 @@ ExeExpr *sel_compile(const char *src)
         goto out;
     }
 
+
     /* DEBUG */
 #if 0
     print_expr(e);
@@ -254,6 +256,8 @@ ExeExpr *sel_compile(const char *src)
 
     /* codegen step. *Should* never fail if the previous steps succeed */
     exe = codegen(e);
+    printf("type: %d\n", e->type);
+    printf("qualifier: %d\n", e->qualifier);
 
 out:
     return exe;
@@ -792,7 +796,7 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
                               TYPE_TO_STR[t.type]);
 
     /* Typecheck right-hand-side expression (tail of argslist)*/
-    return type_and_namecheck_function(e->rhs, f, ++argtypes, t.qualifier == QUALIFIER_CONST);
+    return type_and_namecheck_function(e->rhs, f, ++argtypes, const_args && (t.qualifier == QUALIFIER_CONST));
 
 }
 
