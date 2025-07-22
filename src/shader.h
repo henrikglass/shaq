@@ -39,7 +39,6 @@ void shader_reload(Shader *s);
 void shader_make_last_pass_shader(Shader *s);
 void shader_free_opengl_resources(Shader *s);
 void shader_prepare_for_drawing(Shader *s);
-void shader_draw(Shader *s);
 
 #endif /* SHADER_H */
 

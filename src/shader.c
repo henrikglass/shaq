@@ -32,14 +32,18 @@ const char *const PASS_THROUGH_VERT_SHADER_SOURCE =
 ;
 
 const char *const LAST_PASS_FRAGMENT_SHADER_SOURCE =
-    "#version 450 core\n                          "
-    "\n                                           "
-    "out vec4 frag_color;\n                       "
-    "\n                                           "
-    "void main(void)\n                            "
-    "{\n                                          "
-    "    frag_color = vec4(0.2, 0.5, 0.2, 1.0);\n "
-    "}\n                                          "
+    "#version 450 core\n                                    "
+    "\n                                                     "
+    "out vec4 frag_color;\n                                 "
+    "\n                                                     "
+    "uniform sampler2D tex;\n                               "
+    "uniform ivec2 iresolution;\n                           "
+    "\n                                                     "
+    "void main(void)\n                                      "
+    "{\n                                                    "
+    "    vec2 uv = gl_FragCoord.xy / iresolution;\n         "
+    "    frag_color = vec4(texture(tex, uv).rgb, 1.0);\n    "
+    "}\n                                                    "
 ;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -250,19 +254,19 @@ void shader_prepare_for_drawing(Shader *s)
         SelValue r = sel_eval(u->exe, false);
         //if (u->exe->qualifier == QUALIFIER_CONST) // TODO
         switch (u->type) {
-            case TYPE_BOOL:  {glUniform1i(u->gl_uniform_location,  r.val_bool);} break;
-            case TYPE_INT:   {glUniform1i(u->gl_uniform_location,  r.val_i32);} break;
-            case TYPE_UINT:  {glUniform1ui(u->gl_uniform_location, r.val_u32);} break;
-            case TYPE_FLOAT: {glUniform1f(u->gl_uniform_location,  r.val_f32);} break;
-            case TYPE_VEC2:  {glUniform2fv(u->gl_uniform_location, 1, (f32 *)&r.val_vec2);} break;
-            case TYPE_VEC3:  {glUniform3fv(u->gl_uniform_location, 1, (f32 *)&r.val_vec3);} break;
-            case TYPE_VEC4:  {glUniform4fv(u->gl_uniform_location, 1, (f32 *)&r.val_vec4);} break;
-            case TYPE_IVEC2: {glUniform2iv(u->gl_uniform_location, 1, (i32 *)&r.val_ivec2);} break;
-            case TYPE_IVEC3: {glUniform3iv(u->gl_uniform_location, 1, (i32 *)&r.val_ivec3);} break;
-            case TYPE_IVEC4: {glUniform4iv(u->gl_uniform_location, 1, (i32 *)&r.val_ivec4);} break;
-            case TYPE_MAT2:  {glUniformMatrix2fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat2);} break;
-            case TYPE_MAT3:  {glUniformMatrix3fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat3);} break;
-            case TYPE_MAT4:  {glUniformMatrix4fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat4);} break;
+            case TYPE_BOOL:  glUniform1i(u->gl_uniform_location,  r.val_bool); break;
+            case TYPE_INT:   glUniform1i(u->gl_uniform_location,  r.val_i32); break;
+            case TYPE_UINT:  glUniform1ui(u->gl_uniform_location, r.val_u32); break;
+            case TYPE_FLOAT: glUniform1f(u->gl_uniform_location,  r.val_f32); break;
+            case TYPE_VEC2:  glUniform2fv(u->gl_uniform_location, 1, (f32 *)&r.val_vec2); break;
+            case TYPE_VEC3:  glUniform3fv(u->gl_uniform_location, 1, (f32 *)&r.val_vec3); break;
+            case TYPE_VEC4:  glUniform4fv(u->gl_uniform_location, 1, (f32 *)&r.val_vec4); break;
+            case TYPE_IVEC2: glUniform2iv(u->gl_uniform_location, 1, (i32 *)&r.val_ivec2); break;
+            case TYPE_IVEC3: glUniform3iv(u->gl_uniform_location, 1, (i32 *)&r.val_ivec3); break;
+            case TYPE_IVEC4: glUniform4iv(u->gl_uniform_location, 1, (i32 *)&r.val_ivec4); break;
+            case TYPE_MAT2:  glUniformMatrix2fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat2); break;
+            case TYPE_MAT3:  glUniformMatrix3fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat3); break;
+            case TYPE_MAT4:  glUniformMatrix4fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat4); break;
             case TYPE_TEXTURE: {
                 TextureIndex idx = r.val_tex;
                 glActiveTexture(GL_TEXTURE0 + texture_unit);
@@ -283,15 +287,6 @@ void shader_prepare_for_drawing(Shader *s)
         }
     }
 }
-
-void shader_draw(Shader *s)
-{
-    if (s->gl_shader_program_id == 0) {
-        return;
-    }
-    glUseProgram(s->gl_shader_program_id);
-}
-
 
 /*--- Private functions -----------------------------------------------------------------*/
 

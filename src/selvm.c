@@ -2,6 +2,7 @@
 
 #include "sel.h"
 #include "shaq_core.h"
+#include "renderer.h"
 
 #include <time.h>
 
@@ -1032,7 +1033,7 @@ static inline SelValue fn_ivec2_(void *args)
 static inline SelValue fn_iresolution_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_ivec2 = shaq_iresolution()}; // TODO shaq_core.c
+    return (SelValue) {.val_ivec2 = renderer_iresolution()};
 }
 
 

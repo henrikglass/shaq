@@ -11,7 +11,10 @@ uniform vec4 color;
 void main()
 {
     // (-1, -1) to (1, 1)
-    vec2 uv = 2.0*(gl_FragCoord.xy - 0.5*iresolution)/iresolution.y;
+    //vec2 uv = 2.0*(gl_FragCoord.xy - 0.5*iresolution)/iresolution.y;
+    ivec2 irr = ivec2(800, 600);
+    vec2 uv = 2.0*(gl_FragCoord.xy - 0.5*irr)/irr.y;
+    //vec2 uv = gl_FragCoord.xy / iresolution;
     frag_color = vec4(0.118, 0.118, 0.118, 1.0);
    
     float slow_time = 0.3 * time;
