@@ -10,15 +10,6 @@
 
 /*--- Private macros --------------------------------------------------------------------*/
 
-#define GL_ERROR_CHECK(...) \
-    do { \
-        if(glGetError() != GL_NO_ERROR) {\
-            fprintf(stderr, "OpenGL error <%s:%d>", __FILE__, __LINE__);  \
-            fprintf(stderr, "" __VA_ARGS__);  \
-            fprintf(stderr, "\n");  \
-        } \
-    } while (0)
-
 /*--- Private type definitions ----------------------------------------------------------*/
 
 /*--- Private function prototypes -------------------------------------------------------*/
@@ -29,7 +20,7 @@ u32 make_shader_program(u8 *frag_shader_src);
 
 /*--- Private variables -----------------------------------------------------------------*/
 
-const char *const VERT_SHADER_SOURCE =
+const char *const PASS_THROUGH_VERT_SHADER_SOURCE =
     "#version 450 core\n                        "
     "\n                                         "
     "layout (location = 0) in vec2 in_xy;\n     "
@@ -38,6 +29,17 @@ const char *const VERT_SHADER_SOURCE =
     "{\n                                        "
     "    gl_Position = vec4(in_xy, 0.0, 1.0);\n "
     "}\n                                        "
+;
+
+const char *const LAST_PASS_FRAGMENT_SHADER_SOURCE =
+    "#version 450 core\n                          "
+    "\n                                           "
+    "out vec4 frag_color;\n                       "
+    "\n                                           "
+    "void main(void)\n                            "
+    "{\n                                          "
+    "    frag_color = vec4(0.2, 0.5, 0.2, 1.0);\n "
+    "}\n                                          "
 ;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -131,13 +133,14 @@ void shader_reload(Shader *s)
         glDeleteProgram(s->gl_shader_program_id);
         s->gl_shader_program_id = 0;
     }
+    texture_free_opengl_resources(&s->render_texture);
 
     u32 vert_shader = glCreateShader(GL_VERTEX_SHADER);
     u32 frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
     u32 shader_program = glCreateProgram();
 
     i32 size = (i32) s->frag_shader_src_size;
-    glShaderSource(vert_shader, 1, &VERT_SHADER_SOURCE, NULL);
+    glShaderSource(vert_shader, 1, &PASS_THROUGH_VERT_SHADER_SOURCE, NULL);
     glShaderSource(frag_shader, 1, (const char * const *)&s->frag_shader_src, &size);
     glCompileShader(vert_shader);
     glCompileShader(frag_shader);
@@ -166,14 +169,56 @@ void shader_reload(Shader *s)
         return;
     }
 
-    printf("sucessfully compiled shader program.\n");
     s->gl_shader_program_id = shader_program;
+
+    s->render_texture = texture_make_empty();
 
     glUseProgram(s->gl_shader_program_id); // necessary?
     for (u32 i = 0; i < s->uniforms.count; i++) {
         Uniform *u = &s->uniforms.arr[i];
         uniform_determine_location_in_shader_program(u, s->gl_shader_program_id);
     }
+}
+
+void shader_make_last_pass_shader(Shader *s)
+{
+    u32 vert_shader = glCreateShader(GL_VERTEX_SHADER);
+    u32 frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    u32 shader_program = glCreateProgram();
+
+    glShaderSource(vert_shader, 1, &PASS_THROUGH_VERT_SHADER_SOURCE, NULL);
+    glShaderSource(frag_shader, 1, &LAST_PASS_FRAGMENT_SHADER_SOURCE, NULL);
+    glCompileShader(vert_shader);
+    glCompileShader(frag_shader);
+    glAttachShader(shader_program, vert_shader);
+    glAttachShader(shader_program, frag_shader);
+    glLinkProgram(shader_program);
+    
+    i32 vert_success, frag_success, link_success;
+    glGetShaderiv(vert_shader, GL_COMPILE_STATUS, &vert_success);
+    glGetShaderiv(frag_shader, GL_COMPILE_STATUS, &frag_success);
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &link_success);
+
+    glDeleteShader(vert_shader);
+    glDeleteShader(frag_shader);
+
+    // TODO better error handling
+    if (!(vert_success & frag_success & link_success))
+    {
+        char log[512];
+        glGetShaderInfoLog(vert_shader, 512, NULL, log);
+        fprintf(stderr, "Vertex shader error: %s\n", log);
+        glGetShaderInfoLog(frag_shader, 512, NULL, log);
+        fprintf(stderr, "Fragment shader error: %s\n", log);
+        glGetProgramInfoLog(shader_program, 512, NULL, log);
+        fprintf(stderr, "Linking error: %s\n", log);
+        return;
+    }
+
+    s->name = HGL_SV_LIT("LAST-PASS");
+    s->gl_shader_program_id = shader_program;
+    s->uniforms.count = 0;
+    s->shader_depends.count = 0;
 }
 
 void shader_free_opengl_resources(Shader *s)

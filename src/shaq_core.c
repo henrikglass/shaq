@@ -10,6 +10,7 @@
 #include "texture.h"
 #include "util.h"
 #include "io.h"
+#include "gl_util.h"
 
 #include "glad/glad.h"
 
@@ -49,7 +50,8 @@ static void determine_render_order(void);
 
 static void parse_ini_file(HglIni *ini);
 
-static void opengl_init(void);
+static void renderer_init(void);
+//static void renderer_draw(void);
 static void debug_draw_frame(void); // DEBUG
 static void fb_resize_callback(GLFWwindow *window, i32 w, i32 h);
 
@@ -57,10 +59,10 @@ static void fb_resize_callback(GLFWwindow *window, i32 w, i32 h);
 
 /*--- Private variables -----------------------------------------------------------------*/
 
-typedef Array(Shader, SHAQ_MAX_N_SHADERS) Shaders;
-typedef Array(u32, SHAQ_MAX_N_UNIFORMS) ShaderIndices;
+//typedef Array(Shader, SHAQ_MAX_N_SHADERS) Shaders;
+//typedef Array(u32, SHAQ_MAX_N_UNIFORMS) ShaderIndices;
 
-static struct ShaqState {
+static struct {
 
     HglIni *ini; 
     const char *ini_filepath;
@@ -80,6 +82,9 @@ static struct ShaqState {
     struct {
         GLFWwindow *window;
         IVec2 resolution;
+        Shader last_pass_shader;
+        u32 VBO;
+        u32 VAO;
     } renderer;
 } shaq_state = {0};
 
@@ -88,11 +93,12 @@ static struct ShaqState {
 void shaq_begin(const char *ini_filepath)
 {
     alloc_init();
-    opengl_init();
+    renderer_init();
 
     shaq_state.start_timestamp_ns = util_get_time_nanos();
     shaq_state.last_frame_timestamp_ns = shaq_state.start_timestamp_ns;
     shaq_state.ini_filepath = ini_filepath;
+
     shaq_reload();
 
 }
@@ -117,8 +123,9 @@ b8 shaq_needs_reload(void)
 
 b8 shaq_should_close(void)
 {
-    if (shaq_state.should_close) printf("should close...\n");
-    return shaq_state.should_close || glfwWindowShouldClose(shaq_state.renderer.window);
+    //return shaq_state.should_close || glfwWindowShouldClose(shaq_state.renderer.window);
+    return shaq_state.should_close || 
+           renderer_should_close();
 }
 
 void shaq_reload(void)
@@ -365,7 +372,7 @@ static void parse_ini_file(HglIni *ini)
     shaq_state.shaders.count = shader_idx;
 }
 
-static void opengl_init()
+static void renderer_init()
 {
     glfwInit();
 
@@ -399,13 +406,37 @@ static void opengl_init()
         abort();
     }
 
+    glGenVertexArrays(1, &shaq_state.renderer.VAO);
+    glBindVertexArray(shaq_state.renderer.VAO);
+    static Vec2 fullscreen_tri_verts[3] = {
+        (Vec2){.x = -0.5f, .y = -0.5f},
+        (Vec2){.x =  0.5f, .y = -0.5f},
+        (Vec2){.x =  0.0f, .y =  0.5f},
+    }; 
+    glGenBuffers(1, &shaq_state.renderer.VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, shaq_state.renderer.VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(fullscreen_tri_verts), fullscreen_tri_verts, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vec2), (void *)0);
+    glEnableVertexAttribArray(0);
+    shader_make_last_pass_shader(&shaq_state.renderer.last_pass_shader);
+    glDisable(GL_CULL_FACE);
     glViewport(0, 0, shaq_state.renderer.resolution.x, shaq_state.renderer.resolution.y);
+
+    if (gl_check_errors() != 0) {
+        fprintf(stderr, "[RENDERER] Failed to setup one or more OpenGL-intrinsic things.\n");
+        abort();
+    }
 }
 
 static void debug_draw_frame()
 {
-    glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+    glClearColor(0.3f, 0.5f, 0.8f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    shader_prepare_for_drawing(&shaq_state.renderer.last_pass_shader);
+    shader_draw(&shaq_state.renderer.last_pass_shader);
+    glBindBuffer(GL_ARRAY_BUFFER, shaq_state.renderer.VBO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glfwSwapBuffers(shaq_state.renderer.window);
     glfwPollEvents();

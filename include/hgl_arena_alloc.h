@@ -46,8 +46,9 @@
  *
  * HglArena hgl_arena_make(size_t arena_size)
  * void *hgl_arena_alloc(HglArena *arena, size_t alloc_size)
- * void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size);
+ * void *hgl_arena_realloc(HglArena *arena, void *ptr, size_t alloc_size)
  * void hgl_arena_free_all(HglArena *arena)
+ * void hgl_arena_free(HglArena *arena)
  * void hgl_arena_destroy(HglArena *arena)
  *
  * hgl_arena_alloc allows the user to define the alignment of allocations from an arena by
@@ -74,12 +75,12 @@
 #endif
 
 
-#define HGL_ARENA_INITIALIZER(s)     \
+#define HGL_ARENA_STATIC(s)          \
     {                                \
         .memory = (uint8_t[(s)]){0}, \
         .head = 0,                   \
         .size = (s),                 \
-        .backend = HGL_ARENA_STATIC, \
+        .kind = HGL_ARENA_STATIC,    \
         .last_alloc = 0,             \
     }
 
@@ -96,34 +97,28 @@ typedef enum
 {
     HGL_ARENA_MALLOC,
     HGL_ARENA_MMAP,
+    HGL_ARENA_MMAP_HUGEPAGE,
+    HGL_ARENA_MMAP_HUGEPAGE_2MB,
+    HGL_ARENA_MMAP_HUGEPAGE_1GB,
     HGL_ARENA_STATIC,
-} HglArenaBackend;
+} HglArenaKind;
 
 typedef struct
 {
     uint8_t *memory;
     size_t head;
     size_t size;
-    HglArenaBackend backend;
     void *last_alloc;
+    HglArenaKind kind;
 } HglArena;
 
 /**
- * Create an arena of size `arena_size`.
+ * Create an arena of size `size` and kind `kind`. If `kind` is 
+ * HGL_ARENA_STATIC, then `buffer` must point to a backing buffer 
+ * to be used for all allocations inside the arena. The buffer 
+ * pointed to by `buffer` must be at least `size` bytes big.
  */
-HglArena hgl_arena_make(size_t arena_size);
-
-#ifdef _DEFAULT_SOURCE
-/**
- * Create an arena of size `arena_size` using an anonymous private mmap-mapping.
- */
-HglArena hgl_arena_make_mmap(size_t arena_size);
-#endif
-
-/**
- * Create an arena of `buf_size` from a preallocated buffer `buf`.
- */
-HglArena hgl_arena_make_from_buffer(void *buf, size_t buf_size);
+HglArena hgl_arena_make(size_t size, HglArenaKind kind, void *buffer);
 
 /**
  * Allocate a chunk of `alloc_size` bytes from `arena`.
@@ -175,46 +170,51 @@ void hgl_arena_destroy(HglArena *arena);
 
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <linux/mman.h>
 
-HglArena hgl_arena_make(size_t arena_size)
+HglArena hgl_arena_make(size_t size, HglArenaKind kind, void *buffer)
 {
-    void *mem = aligned_alloc(HGL_ARENA_ALIGNMENT, arena_size);
-    return (HglArena) {
-        .memory = mem,
+    HglArena arena = {
         .head = 0,
-        .size = (mem == NULL) ? 0 : arena_size,
-        .backend = HGL_ARENA_MALLOC,
+        .kind = kind,
         .last_alloc = 0,
     };
-}
+    switch (kind) {
+        case HGL_ARENA_MALLOC: {
+            arena.memory = aligned_alloc(HGL_ARENA_ALIGNMENT, size);
+            arena.size = (arena.memory == NULL) ? 0 : size;
+        } break;
 
-#ifdef _DEFAULT_SOURCE
-HglArena hgl_arena_make_mmap(size_t arena_size)
-{
-    void *mem = mmap(NULL, arena_size, 
-                     PROT_READ | PROT_WRITE, 
-                     MAP_PRIVATE | MAP_ANONYMOUS,
-                     -1, 0);
-    if (mem == MAP_FAILED) {
-        mem = NULL;
+        case HGL_ARENA_MMAP:
+        case HGL_ARENA_MMAP_HUGEPAGE:
+        case HGL_ARENA_MMAP_HUGEPAGE_2MB:
+        case HGL_ARENA_MMAP_HUGEPAGE_1GB: {
+            int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS; 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+            switch (kind) {
+                case HGL_ARENA_MMAP_HUGEPAGE:     mmap_flags |= MAP_HUGETLB; break;
+                case HGL_ARENA_MMAP_HUGEPAGE_2MB: mmap_flags |= MAP_HUGETLB | MAP_HUGE_2MB; break;
+                case HGL_ARENA_MMAP_HUGEPAGE_1GB: mmap_flags |= MAP_HUGETLB | MAP_HUGE_1GB; break;
+                default: break;
+            }
+#pragma GCC diagnostic pop
+            arena.memory = mmap(NULL, size, PROT_READ | PROT_WRITE, mmap_flags, -1, 0);
+            if (arena.memory == MAP_FAILED) {
+                fprintf(stderr, "hgl_arena_alloc.h] Call to `mmap()` failed.\n");
+                arena.memory = NULL;
+            }
+            arena.size = (arena.memory == NULL) ? 0 : size;
+        } break;
+
+        case HGL_ARENA_STATIC: {
+            assert(buffer != NULL);    
+            arena.memory = buffer;
+            arena.size = size;
+        } break;
     }
-    return (HglArena) {
-        .memory = mem,
-        .head = 0,
-        .size = (mem == NULL) ? 0 : arena_size,
-        .backend = HGL_ARENA_MMAP,
-        .last_alloc = 0,
-    };
-}
-#endif
 
-HglArena hgl_arena_make_from_buffer(void *buf, size_t buf_size)
-{
-    return (HglArena) {
-        .memory = (uint8_t *) buf,
-        .head = 0,
-        .size = buf_size,
-    };
+    return arena;
 }
 
 void *hgl_arena_alloc(HglArena *arena, size_t alloc_size)
@@ -274,6 +274,7 @@ void hgl_arena_free_last(HglArena *arena, void *ptr)
     }
 
     arena->head = (uint8_t*)ptr - arena->memory;
+    arena->last_alloc = 0;
 }
 
 void hgl_arena_free_all(HglArena *arena)
@@ -290,9 +291,12 @@ void hgl_arena_print_usage(HglArena *arena)
 
 void hgl_arena_destroy(HglArena *arena)
 {
-    switch (arena->backend) {
+    switch (arena->kind) {
         case HGL_ARENA_MALLOC: free(arena->memory); break;
-        case HGL_ARENA_MMAP:   munmap(arena->memory, arena->size); break;
+        case HGL_ARENA_MMAP:
+        case HGL_ARENA_MMAP_HUGEPAGE:
+        case HGL_ARENA_MMAP_HUGEPAGE_2MB:
+        case HGL_ARENA_MMAP_HUGEPAGE_1GB: munmap(arena->memory, arena->size); break;
         case HGL_ARENA_STATIC: break;
     }
 }

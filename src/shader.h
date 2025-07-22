@@ -36,6 +36,7 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s);
 void shader_determine_dependencies(Shader *s);
 b8 shader_needs_reload(Shader *s);
 void shader_reload(Shader *s);
+void shader_make_last_pass_shader(Shader *s);
 void shader_free_opengl_resources(Shader *s);
 void shader_prepare_for_drawing(Shader *s);
 void shader_draw(Shader *s);
