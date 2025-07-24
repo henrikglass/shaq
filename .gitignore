@@ -2,3 +2,5 @@ shaq
 sel
 *.swp
 tags
+*.o
+lib/

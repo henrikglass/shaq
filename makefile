@@ -1,6 +1,6 @@
 MAKEFLAGS += "-j $(shell nproc)"
 
-.PHONY: shaq sel clean
+.PHONY: shaq sel clean cleaner
 
 C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
@@ -11,7 +11,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			  -Wno-error=cpp 
 C_INCLUDES := -Iinclude
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -D_DEFAULT_SOURCE -fno-strict-aliasing
-L_FLAGS    := -lm -lglfw
+L_FLAGS    := -Llib -lm -lglfw -limgui -lstdc++
 
 
 SOURCES := src/alloc.c 	       \
@@ -29,16 +29,32 @@ SOURCES := src/alloc.c 	       \
 		   src/renderer.c      \
 		   src/log.c      	   \
 
-
 all: shaq sel
 
-shaq:
-	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq $(L_FLAGS)
+shaq: lib/libimgui.a
+	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/gui.cpp -o gui.o
+	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq gui.o $(L_FLAGS)
+	-rm gui.o
 
-sel:
-	gcc $(C_FLAGS) -Isrc test/test_sel.c $(SOURCES) -o sel $(L_FLAGS)
+#sel: lib/libimgui.a
+#	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/gui.cpp -o gui.o
+#	gcc $(C_FLAGS) -Isrc test/test_sel.c $(SOURCES) -o sel gui.o $(L_FLAGS)
+#	rm gui.o
+
+lib/libimgui.a:
+	-mkdir lib
+	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -Isrc/imgui -c src/imgui/*.cpp
+	ar cr libimgui.a *.o
+	-rm *.o
+	mv libimgui.a lib
 
 clean:
+	-rm shaq
+	-rm sel
+
+cleaner:
+	-rm lib/*
+	-rmdir lib
 	-rm shaq
 	-rm sel
 

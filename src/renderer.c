@@ -6,6 +6,7 @@
 #include "glad/glad.h"
 #include "gl_util.h"
 #include "log.h"
+#include "gui.h"
 
 #include <GLFW/glfw3.h>
 
@@ -97,6 +98,8 @@ void renderer_init()
 
     shader_make_last_pass_shader(&renderer.last_pass_shader);
 
+    gui_init(renderer.window);
+
     if (gl_check_errors() != 0) {
         log_error("Failed to setup one or more OpenGL-intrinsic things.");
         exit(1);
@@ -148,6 +151,7 @@ void renderer_display_output_of_shader(Shader *s)
 
 void renderer_end_final_pass()
 {
+    gui_draw_test();
     glfwSwapBuffers(renderer.window);
     glfwPollEvents();
 }

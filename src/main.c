@@ -45,7 +45,6 @@ int main(int argc, char *argv[])
         shaq_new_frame();
     }
     shaq_end();
-
 }
 
 // TODO SEL: Better error handling & error messages
