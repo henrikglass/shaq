@@ -11,6 +11,7 @@
 #include "util.h"
 #include "io.h"
 #include "renderer.h"
+#include "log.h"
 
 //#include "glad/glad.h"
 
@@ -38,9 +39,12 @@ void ini_free(void *ptr){ (void) ptr; /*fs_free(g_longterm_fs_allocator, ptr); *
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
+static b8 reload_needed(void);
+static void reload_all(void);
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
 static void determine_render_order(void);
-static void parse_ini_file(HglIni *ini);
+static void load_state_from_ini(HglIni *ini); // TODO better name
+static void shaq_atexit_(void);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -58,8 +62,6 @@ static struct {
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
     Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) loaded_textures;
 
-    b8 should_close;
-
     u64 start_timestamp_ns;
     u64 last_frame_timestamp_ns;
     f32 last_frame_deltatime_s;
@@ -70,6 +72,8 @@ static struct {
 
 void shaq_begin(const char *ini_filepath)
 {
+    atexit(shaq_atexit_);
+
     alloc_init();
     renderer_init();
 
@@ -77,83 +81,18 @@ void shaq_begin(const char *ini_filepath)
     shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
     shaq.ini_filepath = ini_filepath;
 
-    shaq_reload();
-}
-
-b8 shaq_needs_reload(void)
-{
-    i64 ts = io_get_file_modify_time(shaq.ini_filepath);
-    if (ts == -1) {
-        return false; // File is probably in the process of being saved. Hold off for a bit.
-    } else if (shaq.ini_modifytime != ts) {
-        return true;
-    }
-
-    for (u32 i = 0; i < shaq.shaders.count; i++) {
-        if (shader_needs_reload(&shaq.shaders.arr[i])) {
-            return true;
-        }
-    }
-
-    return false;
+    reload_all();
 }
 
 b8 shaq_should_close(void)
 {
-    //return shaq.should_close || glfwWindowShouldClose(shaq.renderer.window);
-    return shaq.should_close || 
-           renderer_should_close();
-}
-
-void shaq_reload(void)
-{
-    printf("shaq_reload()\n");
-
-    /* Manually free OpenGL resources */
-    for (u32 i = 0; i < shaq.shaders.count; i++) {
-        Shader *s = &shaq.shaders.arr[i];
-        shader_free_opengl_resources(s);
-    }
-    for (u32 i = 0; i < shaq.loaded_textures.count; i++) {
-        Texture *t = &shaq.loaded_textures.arr[i];
-        texture_free_opengl_resources(t);
-    }
-
-    /* reset state */
-    array_clear(&shaq.shaders);
-    array_clear(&shaq.render_order);
-    array_clear(&shaq.loaded_textures);
-
-    /* collect garbage */
-    arena_free_all(g_longterm_arena);
-    fs_free_all(g_longterm_fs_allocator);
-
-    /* Reload ini file */
-    shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath);
-    shaq.ini = hgl_ini_open(shaq.ini_filepath);
-    if (shaq.ini == NULL) {
-        shaq.should_close = true;
-    }
-
-    /* Parse ini file + recompile simple expressions */
-    parse_ini_file(shaq.ini);
-
-    /* Determine render order */
-    determine_render_order();
-
-    /* Reload shaders */
-    for (u32 i = 0; i < shaq.shaders.count; i++) {
-        Shader *s = &shaq.shaders.arr[i];
-        shader_reload(s);
-    }
-
+    return renderer_should_close();
 }
 
 void shaq_new_frame(void)
 {
-    //printf("shaq_new_frame()\n");
-    if (shaq.should_close) {
-        return;
+    if (reload_needed()) {
+        reload_all();
     }
 
     /* compute time */
@@ -164,43 +103,21 @@ void shaq_new_frame(void)
     shaq.last_frame_deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
     shaq.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
 
-    /* DEBUG */
-    //struct timespec ts = {.tv_sec = 1, .tv_nsec = 166666670};
-    //nanosleep(&ts, &ts);
-    /* END DEBUG */
-
-
-    /* TODO ... */
+    /* Draw individual shaders onto individual offscreen framebuffer textures */
+    renderer_begin_new_frame();
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
         Shader *s  = &shaq.shaders.arr[index];
         assert(s != NULL);
-        renderer_draw_shader(s);
-//#if 1
-//        printf("shader[%u] = \"" HGL_SV_FMT "\"\n", i, HGL_SV_ARG(s->name));
-//        printf("  filepath = " HGL_SV_FMT "\n", HGL_SV_ARG(s->filepath));
-//#endif
-//
-//        for (u32 j = 0; j < s->uniforms.count; j++) {
-//            Uniform *u = &s->uniforms.arr[j];
-//            SelValue r = sel_eval(u->exe, false);
-//#if 1
-//            printf("  uniform[%u] %d " HGL_SV_FMT " = ", j, u->type, HGL_SV_ARG(u->name));
-//            sel_print_value(u->type, r);
-//#else
-//            (void) r;
-//#endif
-//        } 
+        renderer_do_shader_pass(s);
     }
 
-    /* TODO ... */
-    renderer_display(&shaq.shaders.arr[shaq.shaders.count - 1]);
-
-    /* DEBUG */
-    //printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
-    //printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
-    //printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
-    /* END DEBUG */
+    /* Draw final pass onto visible framebuffer */
+    renderer_begin_final_pass();
+    if (shaq.shaders.count > 0) {
+         renderer_display_output_of_shader(&shaq.shaders.arr[shaq.shaders.count - 1]);
+    }
+    renderer_end_final_pass();
 
     /* collect garbage */
     arena_free_all(g_frame_arena);
@@ -232,7 +149,8 @@ i32 shaq_find_shader_id_by_name(StringView name)
     }
 
     /* no shader with name `name` found */
-    fprintf(stderr, "[SHAQ] Error: No shader with name \"" HGL_SV_FMT "\" found.\n", HGL_SV_ARG(name));
+    //fprintf(stderr, "[SHAQ] Error: No shader with name \"" HGL_SV_FMT "\" found.\n", HGL_SV_ARG(name));
+    log_error("No shader with name \"" HGL_SV_FMT "\" found.\n", HGL_SV_ARG(name));
     return -1;    
 }
 
@@ -256,7 +174,8 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     }
 
     /* Unable to load texture */
-    fprintf(stderr, "[SHAQ] Error: Unable to load texture from \"" HGL_SV_FMT "\".\n", HGL_SV_ARG(filepath));
+    //fprintf(stderr, "[SHAQ] Error: Unable to load texture from \"" HGL_SV_FMT "\".\n", HGL_SV_ARG(filepath));
+    log_error("Unable to load texture from \"" HGL_SV_FMT "\".\n", HGL_SV_ARG(filepath));
     return -1; 
 }
 
@@ -272,13 +191,88 @@ u32 shaq_get_loaded_texture_by_index(u32 index)
 
 /*--- Private functions -----------------------------------------------------------------*/
 
+static b8 reload_needed()
+{
+    i64 ts = io_get_file_modify_time(shaq.ini_filepath, true);
+    if (ts == -1) {
+        return false; // File is probably in the process of being saved. Hold off for a bit.
+    } else if (shaq.ini_modifytime != ts) {
+        return true;
+    }
+
+    for (u32 i = 0; i < shaq.shaders.count; i++) {
+        if (shader_was_modified(&shaq.shaders.arr[i])) {
+            return true;
+        }
+    }
+
+    if (renderer_window_was_resized()) {
+        return true;
+    }
+
+    return false;
+}
+
+static void reload_all()
+{
+    /* Manually free OpenGL resources */
+    for (u32 i = 0; i < shaq.shaders.count; i++) {
+        Shader *s = &shaq.shaders.arr[i];
+        shader_free_opengl_resources(s);
+    }
+    for (u32 i = 0; i < shaq.loaded_textures.count; i++) {
+        Texture *t = &shaq.loaded_textures.arr[i];
+        texture_free_opengl_resources(t);
+    }
+
+    /* reset state */
+    array_clear(&shaq.shaders);
+    array_clear(&shaq.render_order);
+    array_clear(&shaq.loaded_textures);
+    log_clear_all_logs();
+    log_info("Reload");
+
+    /* collect garbage */
+    /* DEBUG */
+    printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
+    printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
+    printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
+    /* END DEBUG */
+    arena_free_all(g_longterm_arena);
+    fs_free_all(g_longterm_fs_allocator);
+
+    /* Reload ini file */
+    shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath, false);
+    shaq.ini = hgl_ini_open(shaq.ini_filepath);
+    if (shaq.ini == NULL) {
+        //fprintf(stderr, "[SHAQ] Error: Failed to open or parse *.ini file.\n");
+        log_error("Failed to open or parse *.ini file.");
+    } else {
+        /* Parse ini file + recompile simple expressions */
+        load_state_from_ini(shaq.ini);
+
+        /* Determine render order */
+        determine_render_order();
+
+        /* Reload shaders */
+        for (u32 i = 0; i < shaq.shaders.count; i++) {
+            Shader *s = &shaq.shaders.arr[i];
+            shader_reload(s);
+        }
+    }
+
+    log_print_info_log();
+    log_print_error_log();
+}
+
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
 {
     Shader *s = &shaq.shaders.arr[index];
 
     /* recursed more times than there are shaders defined - guranteed cyclic dependency */
     if (depth > shaq.shaders.count + 1) {
-        fprintf(stderr, "[SHAQ] Error: cyclic dependency between shaders.\n");
+        //fprintf(stderr, "[SHAQ] Error: cyclic dependency between shaders.\n");
+        log_error("Cyclic dependency between shaders.");
         return -1;
     }
 
@@ -311,8 +305,10 @@ static void determine_render_order(void)
     for (u32 i = 0; i < shaq.shaders.count; i++) {
         i32 err = satisfy_dependencies_for_shader(i, 0);
         if (err != 0) {
-            fprintf(stderr, "[SHAQ] Error: Could not determine a render order for shader \"" 
-                    HGL_SV_FMT "\".\n", HGL_SV_ARG(shaq.shaders.arr[i].name));
+            //fprintf(stderr, "[SHAQ] Error: Could not determine a render order for shader \"" 
+            //        HGL_SV_FMT "\".\n", HGL_SV_ARG(shaq.shaders.arr[i].name));
+            log_error("Could not determine a render order for shader \"" 
+                      HGL_SV_FMT "\".\n", HGL_SV_ARG(shaq.shaders.arr[i].name));
         }
     }
 
@@ -330,18 +326,27 @@ static void determine_render_order(void)
     // END DEBUG 
 }
 
-static void parse_ini_file(HglIni *ini)
+static void load_state_from_ini(HglIni *ini)
 {
     hgl_ini_reset_section_iterator(ini);
-    u32 shader_idx = 0; 
+    u32 shader_count = 0; 
     while (true) {
         HglIniSection *s = hgl_ini_next_section(ini);
         if(s == NULL) {
             break;
         }
-        shader_parse_from_ini_section(&shaq.shaders.arr[shader_idx], s);
-        shader_idx++;
+        int err = shader_parse_from_ini_section(&shaq.shaders.arr[shader_count], s);
+        if (err == 0) {
+            shader_count++;
+        }
+        //printf("\n\n");
     }
-    shaq.shaders.count = shader_idx;
+    shaq.shaders.count = shader_count;
+    //printf("# shaders = %zu\n", shaq.shaders.count);
 }
 
+static void shaq_atexit_(void)
+{
+    log_print_info_log();
+    log_print_error_log();
+}

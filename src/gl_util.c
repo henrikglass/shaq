@@ -25,7 +25,7 @@ i32 gl_check_errors_(const char *file, i32 line)
     while ((errorCode = glGetError()) != GL_NO_ERROR)
     {
         had_error = true;
-        const char *error;
+        const char *error = NULL;
         switch (errorCode)
         {
             case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;

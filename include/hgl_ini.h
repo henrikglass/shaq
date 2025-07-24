@@ -268,6 +268,7 @@ typedef struct
 {
     const char *ptr;
     const char *const eof;
+    int line_nr;
 } HglIniCursor;
 
 static char *str_duplicate(const char *str)
@@ -287,6 +288,7 @@ static bool cursor_reached_eof(HglIniCursor *cursor)
 
 static int step_cursor(HglIniCursor *cursor)
 {
+    if (*cursor->ptr == '\n') cursor->line_nr++;
     if (!cursor_reached_eof(cursor)) {
         cursor->ptr++;
         return 0;
@@ -383,8 +385,8 @@ HglIni *hgl_ini_open(const char *filepath)
 
     /* get file size */
     struct stat sb;
-    fstat(fd, &sb);
-    if (fd == -1) {
+    int err = fstat(fd, &sb);
+    if (err == -1) {
         fprintf(stderr, "[hgl_ini_open] Error: errno=%s\n", strerror(errno));
         goto out_error;
     }
@@ -407,17 +409,19 @@ HglIni *hgl_ini_open(const char *filepath)
     HglIniCursor cursor = {
         .ptr = data,
         .eof = data + file_size,
+        .line_nr = 1,
     };
-    int line_nr = 1;
     while (!cursor_reached_eof(&cursor)) {
         switch (*cursor.ptr) {
 
             case '[': {
+                int line_nr = cursor.line_nr;
                 step_cursor(&cursor);
                 const char *start = cursor.ptr;
-                eat_string_until(&cursor, ']');
+                eat_string_until_in_line(&cursor, ']'); // TODO --> fix bug. eat_string_until_in_line
                 const char *end = cursor.ptr;
-                if (cursor_reached_eof(&cursor)) {
+                if (*cursor.ptr != ']' || cursor_reached_eof(&cursor)) {
+                    fprintf(stderr, "[hgl_ini_open] Error: Expected \']\' on line %d.\n", line_nr);
                     goto out_error;
                 }
                 step_cursor(&cursor);
@@ -429,21 +433,16 @@ HglIni *hgl_ini_open(const char *filepath)
             } break;
 
             case  '\0': {
-                fprintf(stderr, "[hgl_ini_open] Warning: Encountered \'\\0\' byte on line %d.\n", line_nr);
+                fprintf(stderr, "[hgl_ini_open] Warning: Encountered \'\\0\' byte on line %d.\n", cursor.line_nr);
                 goto out_error;
             } break;
 
-            case '\n': {
-                step_cursor(&cursor);
-                line_nr++;
-            } break;
-
             case  ' ': case '\r': case '\v':
-            case '\t': case '\f': {
+            case '\t': case '\f': case '\n': {
                 step_cursor(&cursor);
             } break;
 
-            case  ';': {
+            case  ';': case '#': {
                 eat_string_until(&cursor, '\n');
             } break;
 
@@ -452,7 +451,7 @@ HglIni *hgl_ini_open(const char *filepath)
                 const char *key_start = cursor.ptr;
                 eat_string_until_in_line(&cursor, '=');
                 if (*cursor.ptr != '=') {
-                    fprintf(stderr, "[hgl_ini_open] Error: Expected \'=\' on line %d.\n", line_nr);
+                    fprintf(stderr, "[hgl_ini_open] Error: Expected \'=\' on line %d.\n", cursor.line_nr);
                     goto out_error;
                 }
                 const char *key_end = cursor.ptr;
@@ -756,4 +755,5 @@ void hgl_ini_fprint(FILE *stream, HglIni *ini)
 }
 
 #endif
+
 

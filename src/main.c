@@ -38,12 +38,8 @@ int main(int argc, char *argv[])
     shaq_begin(*opt_input);
     while (true) {
         if (shaq_should_close()) {
-            printf("shaq should close!\n");
+            printf("Main: got \"shaq should close\"!\n");
             break;
-        }
-
-        if (shaq_needs_reload()) {
-            shaq_reload();
         }
 
         shaq_new_frame();

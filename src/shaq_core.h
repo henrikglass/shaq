@@ -17,9 +17,7 @@
 /*--- Public function prototypes --------------------------------------------------------*/
 
 void shaq_begin(const char *ini_filepath);
-b8 shaq_needs_reload(void);
 b8 shaq_should_close(void);
-void shaq_reload(void);
 void shaq_new_frame(void);
 void shaq_end(void);
 

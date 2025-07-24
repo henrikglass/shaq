@@ -27,6 +27,7 @@ SOURCES := src/alloc.c 	       \
 		   src/glad/glad.c     \
 		   src/gl_util.c       \
 		   src/renderer.c      \
+		   src/log.c      	   \
 
 
 all: shaq sel

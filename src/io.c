@@ -7,9 +7,11 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <sys/stat.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 /*--- Private macros --------------------------------------------------------------------*/
 
@@ -23,16 +25,55 @@
 
 /*--- Public functions ------------------------------------------------------------------*/
 
-i64 io_get_file_modify_time(const char *filepath)
+i64 io_get_file_modify_time(const char *filepath, bool retry_on_failure)
 {
-    struct stat statbuf;
-    int err = stat(filepath, &statbuf);
-    if (err != 0) {
-        fprintf(stderr, "error trying to get modify-time for `%s`. Errno = %s\n", 
-                filepath, strerror(errno));
-        return -1;
+    //struct stat statbuf;
+    //int err = stat(filepath, &statbuf);
+    //if (err != 0) {
+    //    printf("WALLAHIII               errno = %s\n", strerror(errno));
+    //    return -1;
+    //}
+
+    i64 ret = -1;
+
+    /*
+     * What the fuck is this, you may ask?
+     *
+     * Explanation: `open()` will fail with errno = "No such file or directory" 
+     * very briefly after the file at `filepath` has been modified (at least by 
+     * vim).
+     *
+     * Workaround: Retry a couple times during a short period (< 1s), otherwise
+     * fail.
+     *
+     * TODO: Figure out a better solution.
+     */
+    i32 fd = open(filepath, O_RDONLY);
+    if (retry_on_failure) {
+        i32 n_retries_left = 10;
+        while (fd == -1 && n_retries_left > 0) {
+            struct timespec ts = {.tv_sec = 0, .tv_nsec = 16666667};
+            nanosleep(&ts, &ts);
+            fd = open(filepath, O_RDONLY);
+            n_retries_left--;
+        }
     }
-    return (i64) statbuf.st_mtime;
+    if (fd == -1) {
+        goto out;
+    }
+
+    struct stat statbuf;
+    i32 err = fstat(fd, &statbuf);
+    if (err == -1) {
+        goto out;
+    }
+    
+    ret = (i64) statbuf.st_mtime;
+out:
+    if (fd != -1) {
+        close(fd);
+    }
+    return ret;
 }
 
 u8 *io_read_entire_file(const char *filepath, size_t *size)

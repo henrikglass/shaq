@@ -2,6 +2,7 @@
 
 #include "uniform.h"
 #include "alloc.h"
+#include "log.h"
 
 #include "glad/glad.h"
 
@@ -28,7 +29,7 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
 
         /* expect whitespace */
         if (!sv_starts_with_lexeme(&k, whitespace_lexeme)) {
-            fprintf(stderr, "[SHAQ] Error: Malformed left-hand-side expression: `%s`.\n", kv->key);
+            log_error("Malformed left-hand-side expression: `%s`.", kv->key);
             return -1;
         }
 
@@ -49,13 +50,13 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
         else if (sv_starts_with_lchop(&k, "mat4"))      { u->type = TYPE_MAT4;    }
         else if (sv_starts_with_lchop(&k, "sampler2D")) { u->type = TYPE_TEXTURE; }
         else {
-            fprintf(stderr, "[SHAQ] Error: Unknown or unsupported type in lhs expression: `%s`.\n", kv->key);
+            log_error("[SHAQ] Error: Unknown or unsupported type in left-hand-side expression: `%s`.", kv->key);
             return -1;
         }
 
         /* expect whitespace */
         if (!sv_starts_with_lexeme(&k, whitespace_lexeme)) {
-            fprintf(stderr, "[SHAQ] Error: Malformed left-hand-side expression: `%s`.\n", kv->key);
+            log_error("Malformed left-hand-side expression: `%s`.", kv->key);
             return -1;
         }
 
@@ -63,20 +64,20 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
         k = sv_ltrim(k);
         u->name = sv_lchop_lexeme(&k, identifier_lexeme);
         if (u->name.length == 0) {
-            fprintf(stderr, "[SHAQ] Error: Malformed left-hand-side expression: `%s`.\n", kv->key);
+            log_error("Malformed left-hand-side expression: `%s`.", kv->key);
             return -1;
         }
 
         u->exe = sel_compile(kv->val);
 
         if (u->exe == NULL) {
-            fprintf(stderr, "[SHAQ] Error: Could not compile expression: `%s`.\n", kv->val);
+            log_error("Could not compile expression: `%s`.", kv->val);
             return -1;
         }
 
         if (u->exe->type != u->type) {
-            fprintf(stderr, "[SHAQ] Error: The expression `%s` has type `%s` which does not match the specified "
-                    "uniform type `%s`.\n", kv->val, TYPE_TO_STR[u->exe->type], TYPE_TO_STR[u->type]);
+            log_error("The expression `%s` has type `%s` which does not match the specified uniform type `%s`.", 
+                      kv->val, TYPE_TO_STR[u->exe->type], TYPE_TO_STR[u->type]);
             return -1;
         }
 
@@ -92,7 +93,6 @@ void uniform_determine_location_in_shader_program(Uniform *u, u32 shader_program
     memcpy(name_cstr, u->name.start, u->name.length);
     name_cstr[u->name.length] = '\0';
     u->gl_uniform_location = glGetUniformLocation(shader_program, name_cstr);
-    printf(HGL_SV_FMT " found location: %d\n", HGL_SV_ARG(u->name), u->gl_uniform_location);
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

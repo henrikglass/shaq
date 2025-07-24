@@ -1,11 +1,9 @@
-#ifndef IO_H
-#define IO_H
+#ifndef LOG_H
+#define LOG_H
 
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include "hgl_int.h"
-
-#include <stddef.h>
+#include <stdarg.h>
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -15,8 +13,13 @@
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-i64 io_get_file_modify_time(const char *filepath, bool retry_on_failure);
-u8 *io_read_entire_file(const char *filepath, size_t *size);
+void log_info(const char *fmt, ...);
+void log_error(const char *fmt, ...);
+void log_clear_all_logs(void);
+void log_print_info_log(void);
+void log_print_error_log(void);
+const char *log_get_info_log(void);
+const char *log_get_error_log(void);
 
-#endif /* IO_H */
+#endif /* LOG_H */
 

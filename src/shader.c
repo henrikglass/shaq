@@ -4,6 +4,8 @@
 #include "io.h"
 #include "glad/glad.h"
 #include "shaq_core.h"
+#include "renderer.h"
+#include "log.h"
 
 #include <errno.h>
 #include <string.h>
@@ -56,10 +58,12 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     array_clear(&sh->shader_depends); // not necessary
 
     /* parse name + source + etc. */ 
+    //printf("PARSING SECTION: %s\n", s->name);
     sh->name = sv_from_cstr(s->name);
     const char *tmp = hgl_ini_get_in_section(s, "source");
     if (tmp == NULL) {
-        fprintf(stderr, "[SHAQ] Error: Shader %s: missing `source` entry.\n", s->name);
+        //fprintf(stderr, "[SHAQ] Error: Shader %s: missing `source` entry.\n", s->name);
+        log_error("Shader \"%s\" is missing a `source` entry.", s->name);
         return -1;
     } else {
         sh->filepath = sv_from_cstr(tmp);
@@ -68,14 +72,18 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     /* load source. */ 
     sh->frag_shader_src = io_read_entire_file(sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
     if (sh->frag_shader_src == NULL) {
-        fprintf(stderr, "[SHAQ] Error: Shader %s: unable to load source file `" HGL_SV_FMT "`. "
-                "Errno = %s.\n", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
+        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to load source file `" HGL_SV_FMT "`. "
+        //        "Errno = %s.\n", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
+        log_error("Shader \"%s\": unable to load source file `" HGL_SV_FMT "`. "
+                  "Errno = %s.", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
         return -1;
     }
-    sh->modifytime = io_get_file_modify_time(sh->filepath.start); 
+    sh->modifytime = io_get_file_modify_time(sh->filepath.start, true); 
     if (sh->modifytime == -1) {
-        fprintf(stderr, "[SHAQ] Error: Shader %s: unable to get modifytime for `" HGL_SV_FMT "`. "
-                "Errno = %s.\n", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
+        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to get modifytime for `" HGL_SV_FMT "`. "
+        //        "Errno = %s.\n", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
+        log_error("Shader \"%s\": unable to get modifytime for `" HGL_SV_FMT "`. "
+                  "Errno = %s.", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
         return -1;
     }
 
@@ -98,9 +106,6 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
 
 void shader_determine_dependencies(Shader *s)
 {
-    printf(HGL_SV_FMT "\n", HGL_SV_ARG(s->name));
-    printf("%zu\n", s->uniforms.count);
-
     array_clear(&s->shader_depends);
     for (u32 i = 0; i < s->uniforms.count; i++) {
         Uniform *u = &s->uniforms.arr[i];
@@ -113,17 +118,17 @@ void shader_determine_dependencies(Shader *s)
         }
     } 
 
-    printf("[" HGL_SV_FMT "] deps: ", HGL_SV_ARG(s->name));
-    for (u32 i = 0; i < s->shader_depends.count; i++) {
-        printf("%u ", s->shader_depends.arr[i]);
-    }
-    printf("\n");
+    //printf("[" HGL_SV_FMT "] deps: ", HGL_SV_ARG(s->name));
+    //for (u32 i = 0; i < s->shader_depends.count; i++) {
+    //    printf("%u ", s->shader_depends.arr[i]);
+    //}
+    //printf("\n");
 
 }
 
-b8 shader_needs_reload(Shader *s)
+b8 shader_was_modified(Shader *s)
 {
-    i64 modifytime = io_get_file_modify_time(s->filepath.start); 
+    i64 modifytime = io_get_file_modify_time(s->filepath.start, true); 
     if (s->modifytime == -1) {
         return false; // File was probably moved, deleted, or in the processs of being modified. 
                       // Don't immediately ruin everything for the user.
@@ -163,19 +168,19 @@ void shader_reload(Shader *s)
     // TODO better error handling
     if (!(vert_success & frag_success & link_success))
     {
-        char log[512];
-        glGetShaderInfoLog(vert_shader, 512, NULL, log);
-        fprintf(stderr, "Vertex shader error: %s\n", log);
-        glGetShaderInfoLog(frag_shader, 512, NULL, log);
-        fprintf(stderr, "Fragment shader error: %s\n", log);
-        glGetProgramInfoLog(shader_program, 512, NULL, log);
-        fprintf(stderr, "Linking error: %s\n", log);
+        char log[4096];
+        log_error("Failed to compile shader `" HGL_SV_FMT "`.", HGL_SV_ARG(s->name));
+        glGetShaderInfoLog(vert_shader, 4096, NULL, log);
+        log_error("Vertex shader error(s):\n%s", log);
+        glGetShaderInfoLog(frag_shader, 4096, NULL, log);
+        log_error("Fragment shader error(s):\n%s", log);
+        glGetProgramInfoLog(shader_program, 4096, NULL, log);
+        log_error("Linking error(s):\n%s", log);
         return;
     }
 
     s->gl_shader_program_id = shader_program;
-
-    s->render_texture = texture_make_empty();
+    s->render_texture = texture_make_empty(renderer_iresolution());
 
     glUseProgram(s->gl_shader_program_id); // necessary?
     for (u32 i = 0; i < s->uniforms.count; i++) {
@@ -209,13 +214,14 @@ void shader_make_last_pass_shader(Shader *s)
     // TODO better error handling
     if (!(vert_success & frag_success & link_success))
     {
-        char log[512];
-        glGetShaderInfoLog(vert_shader, 512, NULL, log);
-        fprintf(stderr, "Vertex shader error: %s\n", log);
-        glGetShaderInfoLog(frag_shader, 512, NULL, log);
-        fprintf(stderr, "Fragment shader error: %s\n", log);
-        glGetProgramInfoLog(shader_program, 512, NULL, log);
-        fprintf(stderr, "Linking error: %s\n", log);
+        char log[4096];
+        log_error("Failed to compile shader `" HGL_SV_FMT "`.", HGL_SV_ARG(s->name));
+        glGetShaderInfoLog(vert_shader, 4096, NULL, log);
+        log_error("Vertex shader error(s):\n%s", log);
+        glGetShaderInfoLog(frag_shader, 4096, NULL, log);
+        log_error("Fragment shader error(s):\n%s", log);
+        glGetProgramInfoLog(shader_program, 4096, NULL, log);
+        log_error("Linking error(s):\n%s", log);
         return;
     }
 
@@ -283,7 +289,7 @@ void shader_prepare_for_drawing(Shader *s)
             case TYPE_NIL:
             case TYPE_AND_NAMECHECKER_ERROR_:
             case N_TYPES:
-                fprintf(stderr, "whoopsie... logic error...\n");
+                log_error("Strange logic error that shouldn't happen<%s:%d>", __FILE__, __LINE__);
         }
     }
 }

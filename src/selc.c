@@ -3,59 +3,55 @@
 #include "sel.h"
 #include "alloc.h"
 #include "glad/glad.h"
+#include "log.h"
 
 #include <assert.h>
 #include <stdio.h>
 
 /*--- Private macros --------------------------------------------------------------------*/
 
-#define TRY(expr_)                                                    \
-    do {                                                              \
-        i32 err_ = (i32) (expr_);                                     \
-        if (err_ != 0) {                                              \
-            return err_;                                              \
-        }                                                             \
+#define TRY(expr_)                                         \
+    do {                                                   \
+        i32 err_ = (i32) (expr_);                          \
+        if (err_ != 0) {                                   \
+            return err_;                                   \
+        }                                                  \
     } while (0)
 
-#define LEXER_ASSERT(cond_, ...)                                      \
-    if (!(cond_)) {                                                   \
-        fprintf(stderr, "[SEL] Lexer error: " __VA_ARGS__);           \
-        fprintf(stderr, "\n");                                        \
-        return (Token) {.kind = LEXER_ERROR_};                        \
-    }                                                                 \
+#define LEXER_ASSERT(cond_, ...)                           \
+    if (!(cond_)) {                                        \
+        log_error("Lexer error: " __VA_ARGS__);            \
+        return (Token) {.kind = LEXER_ERROR_};             \
+    }                                                      \
 
-#define PARSER_ERROR(...)                                             \
-    do {                                                              \
-        fprintf(stderr, "[SEL] Parser error: " __VA_ARGS__);          \
-        fprintf(stderr, "\n");                                        \
-        return -1;                                                    \
-    } while (0)                                                       \
+#define PARSER_ERROR(...)                                  \
+    do {                                                   \
+        log_error("Parser error: " __VA_ARGS__);           \
+        return -1;                                         \
+    } while (0)                                            \
 
-#define PARSER_ASSERT(cond_, ...)                                     \
-    if (!(cond_)) {                                                   \
-        fprintf(stderr, "[SEL] Parser error: " __VA_ARGS__);          \
-        fprintf(stderr, "\n");                                        \
-        return -1;                                                    \
-    }                                                                 \
+#define PARSER_ASSERT(cond_, ...)                          \
+    if (!(cond_)) {                                        \
+        log_error("Parser error: " __VA_ARGS__);           \
+        return -1;                                         \
+    }                                                      \
 
-#define TYPE_AND_NAMECHECK_ERROR(...)                                 \
-    do {                                                              \
-        fprintf(stderr, "[SEL] Type-/namecheck error: " __VA_ARGS__); \
-        fprintf(stderr, "\n");                                        \
-        return (TypeAndQualifier) {                                   \
-            TYPE_AND_NAMECHECKER_ERROR_,                              \
-            QUALIFIER_NONE                                            \
-        };                                                            \
+#define TYPE_AND_NAMECHECK_ERROR(...)                      \
+    do {                                                   \
+        log_error("Type-/namecheck error: " __VA_ARGS__);  \
+        return (TypeAndQualifier) {                        \
+            TYPE_AND_NAMECHECKER_ERROR_,                   \
+            QUALIFIER_NONE                                 \
+        };                                                 \
     } while (0)
 
-#define TYPE_AND_NAMECHECK_ASSERT(cond_, ...)                         \
-    if (!(cond_)) {                                                   \
-        fprintf(stderr, "[SEL] Type-/namecheck error: " __VA_ARGS__); \
-        fprintf(stderr, "\n");                                        \
-        return (TypeAndQualifier) {                                   \
-            TYPE_AND_NAMECHECKER_ERROR_,                              \
-            QUALIFIER_NONE                                            \
-        };                                                            \
+#define TYPE_AND_NAMECHECK_ASSERT(cond_, ...)              \
+    if (!(cond_)) {                                        \
+        log_error("Type-/namecheck error: " __VA_ARGS__);  \
+        return (TypeAndQualifier) {                        \
+            TYPE_AND_NAMECHECKER_ERROR_,                   \
+            QUALIFIER_NONE                                 \
+        };                                                 \
     }
 
 
@@ -228,7 +224,6 @@ static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUI
 
 ExeExpr *sel_compile(const char *src)
 {
-    printf("compiling expression: `%s`\n", src);
     ExeExpr *exe = NULL;
 
     /* lexer + parser step */
@@ -244,20 +239,8 @@ ExeExpr *sel_compile(const char *src)
         goto out;
     }
 
-
-    /* DEBUG */
-#if 0
-    print_expr(e);
-    printf("\n");
-    print_expr_tree(e);
-    printf("\n");
-#endif
-    /* END DEBUG */
-
     /* codegen step. *Should* never fail if the previous steps succeed */
     exe = codegen(e);
-    printf("type: %d\n", e->type);
-    printf("qualifier: %d\n", e->qualifier);
 
 out:
     return exe;
@@ -467,8 +450,10 @@ static ExprTree *parse_expr(const char *str)
         return NULL;
     }
     if (lexer_peek(&l).kind != EOF_TOKEN_) {
-        fprintf(stderr, "[SEL] Parser error: Trailing characters at end of complete "
-                "expression: `" HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
+        log_error("Parser error: Trailing characters at end of complete expression: `" 
+                  HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
+        //fprintf(stderr, "[SEL] Parser error: Trailing characters at end of complete "
+        //        "expression: `" HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
         return NULL;
     }
 

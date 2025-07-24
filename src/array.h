@@ -1,6 +1,8 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#include <sys/types.h>
+
 #define Array(T, N)        \
     struct {               \
         T arr[N];          \

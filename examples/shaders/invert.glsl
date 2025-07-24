@@ -12,4 +12,5 @@ void main()
     //frag_color = vec4(uv, 0.0, 1.0);
     vec4 texture_color = texture(input_color_tex, uv);
     frag_color = vec4(vec3(1.0 - texture_color), 1.0);
+    //frag_color = vec4();
 }
