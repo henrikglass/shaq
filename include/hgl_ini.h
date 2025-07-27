@@ -438,12 +438,12 @@ HglIni *hgl_ini_open(const char *filepath)
                     goto out_error;
                 }
                 step_cursor(&cursor);
-                //eat_string_until(&cursor, '\n');
-                //const char *eol = cursor.ptr;
-                //if (eol != (end + 1) && !is_all_whitespace(end + 1, eol)) {
-                //    fprintf(stderr, "[hgl_ini_open] Error: Expected `\\n` after \']\' on line %d.\n", cursor.line_nr);
-                //    goto out_error;
-                //}
+                eat_string_until(&cursor, '\n');
+                const char *eol = cursor.ptr;
+                if (eol != (end + 1) && !is_all_whitespace(end + 1, eol)) {
+                    fprintf(stderr, "[hgl_ini_open] Error: Expected `\\n` after \']\' on line %d.\n", cursor.line_nr);
+                    goto out_error;
+                } 
                 HglIniSection section = {0};
                 section.name = HGL_INI_ALLOC(end - start + 1);
                 memcpy(section.name, start, end - start);
