@@ -243,9 +243,13 @@ static void toggle_fullscreen(GLFWwindow *window)
         renderer.is_fullscreen = false;
     } else {
         printf("toggle fullscreen ON\n");
+        GLFWmonitor *monitor = get_current_monitor(window);
+        const GLFWvidmode *mode = glfwGetVideoMode(monitor);
         old_resolution = renderer.resolution;
         glfwGetWindowPos(window, &old_position.x, &old_position.y);
-        glfwSetWindowMonitor(window, get_current_monitor(window), 0, 0, 
+        renderer.resolution.x = mode->width;
+        renderer.resolution.y = mode->height;
+        glfwSetWindowMonitor(window, monitor, 0, 0, 
                              renderer.resolution.x, renderer.resolution.y, 
                              GLFW_DONT_CARE);
         renderer.is_fullscreen = true;
