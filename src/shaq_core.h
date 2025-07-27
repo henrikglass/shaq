@@ -16,7 +16,7 @@
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-void shaq_begin(const char *ini_filepath);
+void shaq_begin(const char *ini_filepath, bool quiet);
 b8 shaq_should_close(void);
 void shaq_new_frame(void);
 void shaq_end(void);

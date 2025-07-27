@@ -137,8 +137,6 @@ void renderer_do_shader_pass(Shader *s)
 void renderer_do_final_pass(Shader *s)
 {
     glUseProgram(renderer.last_pass_shader.gl_shader_program_id); // TODO update tex uniform 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
     glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
     glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 1, (i32 *)&renderer.resolution); 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -149,6 +147,8 @@ void renderer_do_final_pass(Shader *s)
         return;
     }
 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 

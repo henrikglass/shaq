@@ -63,6 +63,7 @@ static struct {
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
     Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) loaded_textures;
     i32 visible_shader_idx;
+    b8 quiet;
 
     u64 start_timestamp_ns;
     u64 last_frame_timestamp_ns;
@@ -72,7 +73,7 @@ static struct {
 
 /*--- Public functions ------------------------------------------------------------------*/
 
-void shaq_begin(const char *ini_filepath)
+void shaq_begin(const char *ini_filepath, bool quiet)
 {
     atexit(shaq_atexit_);
 
@@ -83,6 +84,7 @@ void shaq_begin(const char *ini_filepath)
     shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
     shaq.ini_filepath = ini_filepath;
     shaq.visible_shader_idx = (u32) -1;
+    shaq.quiet = quiet;
 
     reload_all();
 }
@@ -175,8 +177,8 @@ i32 shaq_find_shader_id_by_name(StringView name)
     }
 
     /* no shader with name `name` found */
-    //fprintf(stderr, "[SHAQ] Error: No shader with name \"" HGL_SV_FMT "\" found.\n", HGL_SV_ARG(name));
-    log_error("No shader with name \"" HGL_SV_FMT "\" found.\n", HGL_SV_ARG(name));
+    //fprintf(stderr, "[SHAQ] Error: No shader with name \"" SV_FMT "\" found.\n", SV_ARG(name));
+    log_error("No shader with name \"" SV_FMT "\" found.\n", SV_ARG(name));
     return -1;    
 }
 
@@ -198,7 +200,7 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     }
 
     /* Unable to load texture */
-    log_error("Unable to load texture from \"" HGL_SV_FMT "\".\n", HGL_SV_ARG(filepath));
+    log_error("Unable to load texture from \"" SV_FMT "\".\n", SV_ARG(filepath));
     return -1; 
 }
 
@@ -256,11 +258,11 @@ static void reload_all()
     log_info("Reloaded");
 
     /* collect garbage */
-    /* DEBUG */
+#if 0
     printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
     printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
     printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
-    /* END DEBUG */
+#endif
     arena_free_all(g_longterm_arena);
     fs_free_all(g_longterm_fs_allocator);
 
@@ -270,6 +272,9 @@ static void reload_all()
     if (shaq.ini == NULL) {
         //fprintf(stderr, "[SHAQ] Error: Failed to open or parse *.ini file.\n");
         log_error("Failed to open or parse *.ini file.");
+        shaq.visible_shader_idx = -1;
+    } else if (shaq.shaders.count == 0) {
+        log_error("No shaders :c");
         shaq.visible_shader_idx = -1;
     } else {
         /* Parse ini file + recompile simple expressions */
@@ -291,8 +296,10 @@ static void reload_all()
         }
     }
 
-    log_print_info_log();
-    log_print_error_log();
+    if (!shaq.quiet) {
+        log_print_info_log();
+        log_print_error_log();
+    }
 }
 
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
@@ -323,7 +330,6 @@ static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
 
 static void determine_render_order(void)
 {
-    assert(shaq.shaders.count > 0);
     array_clear(&shaq.render_order);
 
     /* determine per-shader dependencies (on other shaders) */
@@ -336,9 +342,9 @@ static void determine_render_order(void)
         i32 err = satisfy_dependencies_for_shader(i, 0);
         if (err != 0) {
             //fprintf(stderr, "[SHAQ] Error: Could not determine a render order for shader \"" 
-            //        HGL_SV_FMT "\".\n", HGL_SV_ARG(shaq.shaders.arr[i].name));
+            //        SV_FMT "\".\n", SV_ARG(shaq.shaders.arr[i].name));
             log_error("Could not determine a render order for shader \"" 
-                      HGL_SV_FMT "\".\n", HGL_SV_ARG(shaq.shaders.arr[i].name));
+                      SV_FMT "\".\n", SV_ARG(shaq.shaders.arr[i].name));
         }
     }
 
@@ -349,7 +355,7 @@ static void determine_render_order(void)
     log_info("render order: ");
     for (u32 j = 0; j < shaq.render_order.count; j++) {
         u32 idx = shaq.render_order.arr[j];
-        log_info(HGL_SV_FMT " ", HGL_SV_ARG(shaq.shaders.arr[idx].name));
+        log_info(SV_FMT " ", SV_ARG(shaq.shaders.arr[idx].name));
     }
 #endif
     // END DEBUG 

@@ -34,7 +34,7 @@ SOURCES := src/alloc.c 	       \
 all: shaq sel
 
 shaq: lib/libimgui.a
-	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/imguic.cpp -o imguic.o
+	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -O2 -c src/imguic.cpp -o imguic.o
 	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
 	-rm imguic.o
 
@@ -45,7 +45,7 @@ shaq: lib/libimgui.a
 
 lib/libimgui.a:
 	-mkdir lib
-	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -Isrc/imgui -c src/imgui/*.cpp
+	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -Isrc/imgui -O2 -c src/imgui/*.cpp
 	ar cr libimgui.a *.o
 	-rm *.o
 	mv libimgui.a lib

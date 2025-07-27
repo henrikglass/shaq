@@ -207,16 +207,16 @@ static const char *const TOKEN_TO_STR[] =
 
 const Const BUILTIN_CONSTANTS[] = 
 {
-    {.id = HGL_SV_LIT("PI"),                 .type = TYPE_FLOAT, .value.val_f32 =     3.1415926535},
-    {.id = HGL_SV_LIT("TAU"),                .type = TYPE_FLOAT, .value.val_f32 = 2.0*3.1415926535},
-    {.id = HGL_SV_LIT("PHI"),                .type = TYPE_FLOAT, .value.val_f32 =     1.6180339887},
-    {.id = HGL_SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32 =     2.7182818284},
-    {.id = HGL_SV_LIT("GL_NEAREST"),         .type = TYPE_UINT,  .value.val_f32 = GL_NEAREST },
-    {.id = HGL_SV_LIT("GL_LINEAR"),          .type = TYPE_UINT,  .value.val_f32 = GL_LINEAR },
-    {.id = HGL_SV_LIT("GL_REPEAT"),          .type = TYPE_UINT,  .value.val_f32 = GL_REPEAT },
-    {.id = HGL_SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_UINT,  .value.val_f32 = GL_MIRRORED_REPEAT },
-    {.id = HGL_SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_EDGE },
-    {.id = HGL_SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_BORDER },
+    {.id = SV_LIT("PI"),                 .type = TYPE_FLOAT, .value.val_f32 =     3.1415926535},
+    {.id = SV_LIT("TAU"),                .type = TYPE_FLOAT, .value.val_f32 = 2.0*3.1415926535},
+    {.id = SV_LIT("PHI"),                .type = TYPE_FLOAT, .value.val_f32 =     1.6180339887},
+    {.id = SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32 =     2.7182818284},
+    {.id = SV_LIT("GL_NEAREST"),         .type = TYPE_UINT,  .value.val_f32 = GL_NEAREST },
+    {.id = SV_LIT("GL_LINEAR"),          .type = TYPE_UINT,  .value.val_f32 = GL_LINEAR },
+    {.id = SV_LIT("GL_REPEAT"),          .type = TYPE_UINT,  .value.val_f32 = GL_REPEAT },
+    {.id = SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_UINT,  .value.val_f32 = GL_MIRRORED_REPEAT },
+    {.id = SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_EDGE },
+    {.id = SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_BORDER },
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
@@ -253,7 +253,7 @@ void sel_list_builtins(void) {
     printf("Constants:\n");
     for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
         printf("  %-80.*s TYPE: %s\n", 
-               HGL_SV_ARG(BUILTIN_CONSTANTS[i].id), 
+               SV_ARG(BUILTIN_CONSTANTS[i].id), 
                TYPE_TO_STR[BUILTIN_CONSTANTS[i].type]);
     }
 
@@ -281,7 +281,7 @@ void sel_print_value(Type t, SelValue v)
         case TYPE_MAT2:    mat2_print(v.val_mat2); break;
         case TYPE_MAT3:    mat3_print(v.val_mat3); break;
         case TYPE_MAT4:    mat4_print(v.val_mat4); break;
-        case TYPE_STR:     printf("\""HGL_SV_FMT"\"" "\n", HGL_SV_ARG(v.val_str)); break;
+        case TYPE_STR:     printf("\""SV_FMT"\"" "\n", SV_ARG(v.val_str)); break;
         case TYPE_TEXTURE: {
             if (v.val_tex.error) printf("ERROR\n"); 
             else if (v.val_tex.kind == SHADER_INDEX) printf("render texture: %u\n", v.val_tex.render_texture_index); 
@@ -364,8 +364,8 @@ static Token lexer_peek(Lexer *l)
             StringView s = sv_substr(l->buf, 0, i);
 
             /* boolean literal? */
-            if (sv_equals(s, HGL_SV_LIT("true")) ||
-                sv_equals(s, HGL_SV_LIT("false"))) {
+            if (sv_equals(s, SV_LIT("true")) ||
+                sv_equals(s, SV_LIT("false"))) {
                 return (Token) {
                     .kind = TOK_BOOL_LITERAL, 
                     .text = s,
@@ -454,9 +454,9 @@ static ExprTree *parse_expr(const char *str)
     }
     if (lexer_peek(&l).kind != EOF_TOKEN_) {
         log_error("Parser error: Trailing characters at end of complete expression: `" 
-                  HGL_SV_FMT "`", HGL_SV_ARG(lexer_peek(&l).text));
+                  SV_FMT "`", SV_ARG(lexer_peek(&l).text));
         //fprintf(stderr, "[SEL] Parser error: Trailing characters at end of complete "
-        //        "expression: `" HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
+        //        "expression: `" SV_FMT "`\n", SV_ARG(lexer_peek(&l).text));
         return NULL;
     }
 
@@ -556,7 +556,7 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
         } break;
 
         case LEXER_ERROR_: {
-            PARSER_ERROR("Failed to tokenize: `" HGL_SV_FMT "`.", HGL_SV_ARG(t.text));
+            PARSER_ERROR("Failed to tokenize: `" SV_FMT "`.", SV_ARG(t.text));
         } break;
 
         case EOF_TOKEN_: {
@@ -708,7 +708,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
                     goto out;
                 } 
             }
-            TYPE_AND_NAMECHECK_ERROR("No such function: `" HGL_SV_FMT "(..)`.", HGL_SV_ARG(e->token.text));
+            TYPE_AND_NAMECHECK_ERROR("No such function: `" SV_FMT "(..)`.", SV_ARG(e->token.text));
         } break;
         
         case EXPR_ARGLIST: {
@@ -739,7 +739,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
                     goto out;
                 } 
             }
-            TYPE_AND_NAMECHECK_ERROR("No such constant: `" HGL_SV_FMT "`.", HGL_SV_ARG(e->token.text));
+            TYPE_AND_NAMECHECK_ERROR("No such constant: `" SV_FMT "`.", SV_ARG(e->token.text));
         } break;
 
         case N_EXPR_KINDS: {
@@ -860,7 +860,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .argsize = sizeof(u32),
             });
             exe_append_u32(exe, i);
-            //printf("FUNC: " HGL_SV_FMT "\n", HGL_SV_ARG(e->token.text));
+            //printf("FUNC: " SV_FMT "\n", SV_ARG(e->token.text));
         } break;
 
         case EXPR_ARGLIST: {
@@ -875,7 +875,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .argsize = TYPE_TO_SIZE[e->type],
             });
             if (e->type == TYPE_BOOL) {
-                i32 val = sv_equals(e->token.text, HGL_SV_LIT("true")) ? 1 : 0;
+                i32 val = sv_equals(e->token.text, SV_LIT("true")) ? 1 : 0;
                 exe_append_i32(exe, val);
             } else if (e->type == TYPE_INT) {
                 i32 val = (i32) sv_to_i64(e->token.text);
@@ -959,7 +959,7 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size)
 
 static void token_print(Token *token)
 {
-    printf(HGL_SV_FMT, HGL_SV_ARG(token->text));
+    printf(SV_FMT, SV_ARG(token->text));
 }
 
 static b8 is_identifier_char(i32 c)
@@ -1064,7 +1064,7 @@ static void print_expr_tree_helper(ExprTree *e, i32 indent)
                            print_expr_tree_helper(e->child, indent + 1); 
                            printf("%*s)\n", pad, ""); 
                            break;
-        case EXPR_FUNC:    printf("%*s" HGL_SV_FMT "\n", pad, "", HGL_SV_ARG(e->token.text)); 
+        case EXPR_FUNC:    printf("%*s" SV_FMT "\n", pad, "", SV_ARG(e->token.text)); 
                            printf("%*s(\n", pad, ""); 
                            print_expr_tree_helper(e->child, indent + 1); 
                            printf("%*s)\n", pad, ""); 

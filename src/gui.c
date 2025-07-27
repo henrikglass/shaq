@@ -94,8 +94,8 @@ i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_sha
 
 void gui_draw_shader(const Shader *s)
 {
-    imgui_textf("[" HGL_SV_FMT "]\n    source = " HGL_SV_FMT , 
-                HGL_SV_ARG(s->name), HGL_SV_ARG(s->filepath));
+    imgui_textf("[" SV_FMT "]\n    source = " SV_FMT , 
+                SV_ARG(s->name), SV_ARG(s->filepath));
     imgui_newline();
 
     imgui_begin_table(" ", 2);
@@ -283,8 +283,8 @@ static inline void draw_uniform(const Uniform *u)
 {
     imgui_table_next_row();
     imgui_table_next_col();
-    imgui_textf("    uniform %s " HGL_SV_FMT, 
-                TYPE_TO_STR[u->type], HGL_SV_ARG(u->name));
+    imgui_textf("    uniform %s " SV_FMT, 
+                TYPE_TO_STR[u->type], SV_ARG(u->name));
     imgui_table_next_col();
     SelValue v = u->exe->cached_computed_value;
     switch (u->type) {

@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
     const char **opt_input = hgl_flags_add_str("-i,--input", "The input project (.ini) file to run", NULL, 0);
     u64 *opt_rng_seed = hgl_flags_add_u64("-s,--seed", "`srand()` seed (defaults to `time(NULL)`)", 0, 0);
     bool *opt_list_builtins = hgl_flags_add_bool("-l,--list-builtins", "List the built-in functions and constants in the Simple Expression Language (SEL)", false, 0);
+    bool *opt_quiet = hgl_flags_add_bool("-q,--quiet", "Less verbose log messages on stdout/stderr", false, 0);
     bool *opt_help = hgl_flags_add_bool("-help,--help", "Display this message", false, 0);
 
     i32 err = hgl_flags_parse(argc, argv);
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
 
     srand(*opt_rng_seed == 0 ? (u64)time(NULL): *opt_rng_seed);
 
-    shaq_begin(*opt_input);
+    shaq_begin(*opt_input, *opt_quiet);
     while (true) {
         if (shaq_should_close()) {
             printf("Main: got \"shaq should close\"!\n");

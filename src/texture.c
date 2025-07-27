@@ -60,8 +60,8 @@ Texture texture_load_from_file(StringView filepath)
         case 1: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.w, tex.h, 0, GL_RED, GL_UNSIGNED_BYTE, tex.data); break;
         case 3: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.w, tex.h, 0, GL_RGB, GL_UNSIGNED_BYTE, tex.data); break;
         case 4: glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.w, tex.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.data); break;
-        default: log_error("Texture loaded from `" HGL_SV_FMT "` has %d channels, for some reason?",
-                           HGL_SV_ARG(filepath), tex.n_channels);
+        default: log_error("Texture loaded from `" SV_FMT "` has %d channels, for some reason?",
+                           SV_ARG(filepath), tex.n_channels);
     }
 
     return tex;

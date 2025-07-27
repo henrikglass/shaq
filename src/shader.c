@@ -73,18 +73,18 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     /* load source. */ 
     sh->frag_shader_src = io_read_entire_file(sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
     if (sh->frag_shader_src == NULL) {
-        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to load source file `" HGL_SV_FMT "`. "
-        //        "Errno = %s.\n", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
-        log_error("Shader \"%s\": unable to load source file `" HGL_SV_FMT "`. "
-                  "Errno = %s.", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
+        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to load source file `" SV_FMT "`. "
+        //        "Errno = %s.\n", s->name, SV_ARG(sh->filepath), strerror(errno));
+        log_error("Shader \"%s\": unable to load source file `" SV_FMT "`. "
+                  "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
         return -1;
     }
     sh->modifytime = io_get_file_modify_time(sh->filepath.start, true); 
     if (sh->modifytime == -1) {
-        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to get modifytime for `" HGL_SV_FMT "`. "
-        //        "Errno = %s.\n", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
-        log_error("Shader \"%s\": unable to get modifytime for `" HGL_SV_FMT "`. "
-                  "Errno = %s.", s->name, HGL_SV_ARG(sh->filepath), strerror(errno));
+        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to get modifytime for `" SV_FMT "`. "
+        //        "Errno = %s.\n", s->name, SV_ARG(sh->filepath), strerror(errno));
+        log_error("Shader \"%s\": unable to get modifytime for `" SV_FMT "`. "
+                  "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
         return -1;
     }
 
@@ -119,7 +119,7 @@ void shader_determine_dependencies(Shader *s)
         }
     } 
 
-    //printf("[" HGL_SV_FMT "] deps: ", HGL_SV_ARG(s->name));
+    //printf("[" SV_FMT "] deps: ", SV_ARG(s->name));
     //for (u32 i = 0; i < s->shader_depends.count; i++) {
     //    printf("%u ", s->shader_depends.arr[i]);
     //}
@@ -170,7 +170,7 @@ void shader_reload(Shader *s)
     if (!(vert_success & frag_success & link_success))
     {
         char log[4096];
-        log_error("Failed to compile shader `" HGL_SV_FMT "`.", HGL_SV_ARG(s->name));
+        log_error("Failed to compile shader `" SV_FMT "`.", SV_ARG(s->name));
         glGetShaderInfoLog(vert_shader, 4096, NULL, log);
         log_error("Vertex shader error(s):\n%s", log);
         glGetShaderInfoLog(frag_shader, 4096, NULL, log);
@@ -216,7 +216,7 @@ void shader_make_last_pass_shader(Shader *s)
     if (!(vert_success & frag_success & link_success))
     {
         char log[4096];
-        log_error("Failed to compile shader `" HGL_SV_FMT "`.", HGL_SV_ARG(s->name));
+        log_error("Failed to compile shader `" SV_FMT "`.", SV_ARG(s->name));
         glGetShaderInfoLog(vert_shader, 4096, NULL, log);
         log_error("Vertex shader error(s):\n%s", log);
         glGetShaderInfoLog(frag_shader, 4096, NULL, log);
@@ -226,7 +226,7 @@ void shader_make_last_pass_shader(Shader *s)
         return;
     }
 
-    s->name = HGL_SV_LIT("LAST-PASS");
+    s->name = SV_LIT("LAST-PASS");
     s->gl_shader_program_id = shader_program;
     s->uniforms.count = 0;
     s->shader_depends.count = 0;
