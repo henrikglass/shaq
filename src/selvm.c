@@ -3,6 +3,7 @@
 #include "sel.h"
 #include "shaq_core.h"
 #include "renderer.h"
+#include "gui.h"
 
 #include <time.h>
 
@@ -161,6 +162,14 @@ static inline SelValue fn_mat4_mul_mat4_(void *args);
 static inline SelValue fn_mat4_mul_vec4_(void *args);
 static inline SelValue fn_mat4_mul_scalar_(void *args);
 
+static inline SelValue fn_input_float_(void *args);
+static inline SelValue fn_slider_float_(void *args);
+static inline SelValue fn_slider_float_log_(void *args);
+static inline SelValue fn_input_vec2_(void *args);
+static inline SelValue fn_input_vec3_(void *args);
+static inline SelValue fn_input_vec4_(void *args);
+static inline SelValue fn_color_picker_(void *args);
+
 /*--- Public variables ------------------------------------------------------------------*/
 
 const Func BUILTIN_FUNCTIONS[] = 
@@ -276,7 +285,13 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = HGL_SV_LIT("mat4_mul_vec4"),         .type = TYPE_VEC4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_vec4_,         .argtypes = {TYPE_MAT4, TYPE_VEC4, TYPE_NIL},                       .synopsis = "vec4 mat4_mul_vec4(mat4 m, vec4 v)",                   .desc = NULL, },
     { .id = HGL_SV_LIT("mat4_mul_scalar"),       .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_scalar_,       .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_NIL},                      .synopsis = "mat4 mat4_mul_scalar(mat4 m, float s)",                .desc = NULL, },
 
-
+    { .id = HGL_SV_LIT("input_float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_input_float_,      .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float input_float(str label, float default)", .desc = "desc.: TODO", },
+    { .id = HGL_SV_LIT("slider_float"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_,     .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float(str label, float min, float max, float default)", .desc = "desc.: TODO", },
+    { .id = HGL_SV_LIT("slider_float_log"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_log_, .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float_log(str label, float min, float max, float default)", .desc = "desc.: TODO", },
+    { .id = HGL_SV_LIT("input_vec2"),       .type = TYPE_VEC2, .qualifier = QUALIFIER_NONE, .impl = fn_input_vec2_,       .argtypes = {TYPE_STR, TYPE_VEC2, TYPE_NIL}, .synopsis = "vec2 input_vec2(str label, vec2 default)", .desc = "desc.: TODO", },
+    { .id = HGL_SV_LIT("input_vec3"),       .type = TYPE_VEC3, .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "desc.: TODO", },
+    { .id = HGL_SV_LIT("input_vec4"),       .type = TYPE_VEC4, .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "desc.: TODO", },
+    { .id = HGL_SV_LIT("color_picker"),     .type = TYPE_VEC4, .qualifier = QUALIFIER_NONE, .impl = fn_color_picker_,     .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 color_picker(str label, vec4 default)", .desc = "desc.: TODO", },
 };
 const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -1170,6 +1185,67 @@ static inline SelValue fn_mat4_mul_scalar_(void *args)
     Mat4 *args_m4 = (Mat4 *) args;
     return (SelValue) {.val_mat4 = hglm_mat4_mul_scalar(args_m4[0], *(f32*)&args_m4[1])};
 }  
+
+
+/* ---------------------- GUI functions --------------------- */
+
+static inline SelValue fn_input_float_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, INPUT_FLOAT, secondary_args, 1*sizeof(f32));
+}
+
+static inline SelValue fn_slider_float_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, SLIDER_FLOAT, secondary_args, 3*sizeof(f32));
+}
+
+static inline SelValue fn_slider_float_log_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, SLIDER_FLOAT_LOG, secondary_args, 3*sizeof(f32));
+}
+
+static inline SelValue fn_input_vec2_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, INPUT_VEC2, secondary_args, sizeof(Vec2));
+}
+
+static inline SelValue fn_input_vec3_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, INPUT_VEC3, secondary_args, sizeof(Vec3));
+}
+
+static inline SelValue fn_input_vec4_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, INPUT_VEC4, secondary_args, sizeof(Vec4));
+}
+
+static inline SelValue fn_color_picker_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, COLOR_PICKER, secondary_args, sizeof(Vec4));
+}
+
+
 
 
 

@@ -242,6 +242,9 @@ ExeExpr *sel_compile(const char *src)
     /* codegen step. *Should* never fail if the previous steps succeed */
     exe = codegen(e);
 
+    /* Attach source code reference */
+    exe->source_code = src;
+
 out:
     return exe;
 }
@@ -451,7 +454,7 @@ static ExprTree *parse_expr(const char *str)
     }
     if (lexer_peek(&l).kind != EOF_TOKEN_) {
         log_error("Parser error: Trailing characters at end of complete expression: `" 
-                  HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
+                  HGL_SV_FMT "`", HGL_SV_ARG(lexer_peek(&l).text));
         //fprintf(stderr, "[SEL] Parser error: Trailing characters at end of complete "
         //        "expression: `" HGL_SV_FMT "`\n", HGL_SV_ARG(lexer_peek(&l).text));
         return NULL;

@@ -2,6 +2,10 @@
 typedef HglStringView StringView;
 typedef HglStringBuilder StringBuilder;
 
+#define SV_LIT HGL_SV_LIT
+#define SV_FMT HGL_SV_FMT
+#define SV_ARG HGL_SV_ARG
+
 #define sv_from                  hgl_sv_from
 #define sv_from_sb               hgl_sv_from_sb
 #define sv_from_cstr             hgl_sv_from_cstr

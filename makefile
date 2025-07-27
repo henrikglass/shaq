@@ -27,19 +27,21 @@ SOURCES := src/alloc.c 	       \
 		   src/glad/glad.c     \
 		   src/gl_util.c       \
 		   src/renderer.c      \
+		   src/gui.c   		   \
 		   src/log.c      	   \
+
 
 all: shaq sel
 
 shaq: lib/libimgui.a
-	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/gui.cpp -o gui.o
-	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq gui.o $(L_FLAGS)
-	-rm gui.o
+	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/imguic.cpp -o imguic.o
+	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
+	-rm imguic.o
 
 #sel: lib/libimgui.a
-#	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/gui.cpp -o gui.o
-#	gcc $(C_FLAGS) -Isrc test/test_sel.c $(SOURCES) -o sel gui.o $(L_FLAGS)
-#	rm gui.o
+#	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/imguic.cpp -o imguic.o
+#	gcc $(C_FLAGS) -Isrc test/test_sel.c $(SOURCES) -o sel imguic.o $(L_FLAGS)
+#	rm imguic.o
 
 lib/libimgui.a:
 	-mkdir lib

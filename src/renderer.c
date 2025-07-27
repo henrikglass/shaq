@@ -1,14 +1,15 @@
 /*--- Include files ---------------------------------------------------------------------*/
 
 #include "renderer.h"
+
 #include "hgl_int.h"
 #include "vecmath.h"
-#include "glad/glad.h"
 #include "gl_util.h"
 #include "log.h"
+#include "glad/glad.h"
 #include "gui.h"
-
 #include <GLFW/glfw3.h>
+#include "imguic.h"
 
 /*--- Private macros --------------------------------------------------------------------*/
 
@@ -39,6 +40,7 @@ static struct {
 
     b8 window_was_resized_this_frame;
     b8 is_fullscreen;
+    b8 hide_gui;
 } renderer;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -57,6 +59,7 @@ void renderer_init()
 
     renderer.window_was_resized_this_frame = false;
     renderer.is_fullscreen = false;
+    renderer.hide_gui = false;
     renderer.resolution = ivec2_make(1280, 720);
     renderer.window = glfwCreateWindow(renderer.resolution.x, 
                                        renderer.resolution.y, 
@@ -97,8 +100,7 @@ void renderer_init()
     glClearColor(0.117f, 0.117f, 0.117f, 1.0f);
 
     shader_make_last_pass_shader(&renderer.last_pass_shader);
-
-    gui_init(renderer.window);
+    imgui_init(renderer.window);
 
     if (gl_check_errors() != 0) {
         log_error("Failed to setup one or more OpenGL-intrinsic things.");
@@ -106,7 +108,7 @@ void renderer_init()
     }
 }
 
-void renderer_begin_new_frame(void)
+void renderer_begin_frame(void)
 {
     renderer.window_was_resized_this_frame = false;
 }
@@ -132,7 +134,7 @@ void renderer_do_shader_pass(Shader *s)
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void renderer_begin_final_pass()
+void renderer_do_final_pass(Shader *s)
 {
     glUseProgram(renderer.last_pass_shader.gl_shader_program_id); // TODO update tex uniform 
     glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), GL_TEXTURE0); // TODO cache
@@ -140,36 +142,47 @@ void renderer_begin_final_pass()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     glClear(GL_COLOR_BUFFER_BIT);
-}
 
-void renderer_display_output_of_shader(Shader *s)
-{
+    if (s == NULL) {
+        return;
+    }
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void renderer_end_final_pass()
+void renderer_end_frame()
 {
-    gui_draw_test();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glfwSwapBuffers(renderer.window);
     glfwPollEvents();
 }
 
-IVec2 renderer_iresolution(void)
-{
-    return renderer.resolution;
-}
-
-b8 renderer_should_close(void)
+b8 renderer_should_close()
 {
     return glfwWindowShouldClose(renderer.window);
 }
 
-b8 renderer_window_was_resized(void)
+b8 renderer_should_hide_gui(void)
+{
+    return renderer.hide_gui;
+}
+
+b8 renderer_window_was_resized()
 {
     return renderer.window_was_resized_this_frame;
 }
+
+IVec2 renderer_iresolution()
+{
+    return renderer.resolution;
+}
+
+//GLFWwindow *renderer_get_window()
+//{
+//    return renderer.window;
+//}
 
 /*--- Private functions -----------------------------------------------------------------*/
 
@@ -188,16 +201,28 @@ static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, 
     (void) mods;
 
     switch (key) {
-        case GLFW_KEY_Q: 
-        case GLFW_KEY_ESCAPE: {
+        case GLFW_KEY_D: {
             if (action == GLFW_PRESS) {
-                glfwSetWindowShouldClose(window, true);
+                gui_toggle_darkmode();
             }
         } break;
 
         case GLFW_KEY_F: {
             if (action == GLFW_PRESS) {
                 toggle_fullscreen(window);
+            }
+        } break;
+
+        case GLFW_KEY_H: {
+            if (action == GLFW_PRESS) {
+                renderer.hide_gui = !renderer.hide_gui;
+            }
+        } break;
+
+        case GLFW_KEY_Q: 
+        case GLFW_KEY_ESCAPE: {
+            if (action == GLFW_PRESS) {
+                glfwSetWindowShouldClose(window, true);
             }
         } break;
     }

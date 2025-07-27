@@ -5,6 +5,7 @@
 #include "glad/glad.h"
 #include "shaq_core.h"
 #include "renderer.h"
+#include "gui.h"
 #include "log.h"
 
 #include <errno.h>
@@ -258,7 +259,7 @@ void shader_prepare_for_drawing(Shader *s)
         }
 
         SelValue r = sel_eval(u->exe, false);
-        //if (u->exe->qualifier == QUALIFIER_CONST) // TODO
+
         switch (u->type) {
             case TYPE_BOOL:  glUniform1i(u->gl_uniform_location,  r.val_bool); break;
             case TYPE_INT:   glUniform1i(u->gl_uniform_location,  r.val_i32); break;

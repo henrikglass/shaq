@@ -43,6 +43,10 @@ Texture texture_load_from_file(StringView filepath)
     stbi_set_flip_vertically_on_load(1);
     tex.data = stbi_load(filepath_cstr, &tex.w, &tex.h, &tex.n_channels, 0);
 
+    if (tex.data == NULL) {
+        return tex;
+    }
+
     glGenTextures(1, &tex.gl_texture_id); 
     glBindTexture(GL_TEXTURE_2D, tex.gl_texture_id);
 

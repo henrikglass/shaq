@@ -11,6 +11,7 @@
 #include "util.h"
 #include "io.h"
 #include "renderer.h"
+#include "gui.h"
 #include "log.h"
 
 //#include "glad/glad.h"
@@ -76,6 +77,7 @@ void shaq_begin(const char *ini_filepath)
 
     alloc_init();
     renderer_init();
+    //gui_init();
 
     shaq.start_timestamp_ns = util_get_time_nanos();
     shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
@@ -103,8 +105,10 @@ void shaq_new_frame(void)
     shaq.last_frame_deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
     shaq.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
 
+    /* begin frame */
+    renderer_begin_frame();
+
     /* Draw individual shaders onto individual offscreen framebuffer textures */
-    renderer_begin_new_frame();
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
         Shader *s  = &shaq.shaders.arr[index];
@@ -113,11 +117,27 @@ void shaq_new_frame(void)
     }
 
     /* Draw final pass onto visible framebuffer */
-    renderer_begin_final_pass();
-    if (shaq.shaders.count > 0) {
-         renderer_display_output_of_shader(&shaq.shaders.arr[shaq.shaders.count - 1]);
+    renderer_do_final_pass(&shaq.shaders.arr[shaq.shaders.count - 1]);
+
+    /* draw GUI */
+    if (!renderer_should_hide_gui()) {
+        gui_begin_frame();
+        gui_begin_main_window();
+        gui_draw_key_controls();
+        gui_draw_shader_display_selector(shaq.shaders.arr, shaq.shaders.count);
+        gui_draw_dymanic_gui_items();
+        for (u32 i = 0; i < shaq.render_order.count; i++) {
+            Shader *s  = &shaq.shaders.arr[i];
+            assert(s != NULL);
+            gui_draw_shader(s);
+        }
+        gui_draw_log();
+        gui_end_main_window();
+        gui_end_frame();
     }
-    renderer_end_final_pass();
+
+    /* end frame */
+    renderer_end_frame();
 
     /* collect garbage */
     arena_free_all(g_frame_arena);
@@ -230,7 +250,7 @@ static void reload_all()
     array_clear(&shaq.render_order);
     array_clear(&shaq.loaded_textures);
     log_clear_all_logs();
-    log_info("Reload");
+    log_info("Reloaded");
 
     /* collect garbage */
     /* DEBUG */

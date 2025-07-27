@@ -316,6 +316,19 @@ static void rtrim(const char **str_end)
     }
 }
 
+static bool is_all_whitespace(const char *str_start, const char *str_end)
+{
+    for (ssize_t i = 0; i < str_end - str_start; i++) {
+        char c = str_start[i];
+        if (c == ' '  || c == '\t' || c == '\n' ||
+            c == '\r' || c == '\v' || c == '\f') {
+            continue;
+        }
+        return false;
+    }
+    return true;
+}
+
 static void eat_string_until(HglIniCursor *cursor, char end_char)
 {
     while (*cursor->ptr != end_char) {
@@ -461,6 +474,10 @@ HglIni *hgl_ini_open(const char *filepath)
                 const char *val_start = cursor.ptr;
                 eat_string_until(&cursor, '\n');
                 const char *val_end = cursor.ptr;
+                if (val_start == val_end || is_all_whitespace(val_start, val_end)) {
+                    fprintf(stderr, "[hgl_ini_open] Error: Expected value after \'=\' on line %d.\n", cursor.line_nr);
+                    goto out_error;
+                }
                 step_cursor(&cursor);
 
                 /* trim whitespace */

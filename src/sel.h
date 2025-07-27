@@ -125,6 +125,7 @@ typedef struct
     TypeQualifier qualifier;
     SelValue cached_computed_value;
     b8 has_been_computed_once;
+    const char *source_code;
 } ExeExpr;
 
 /*--- Public variables ------------------------------------------------------------------*/
