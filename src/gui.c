@@ -53,7 +53,7 @@ void gui_begin_main_window()
                              0.03f*shaq_deltatime();
     imgui_begin("##Main window");
     imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
-    imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime)); imgui_newline();
+    imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
     imgui_separator();
     imgui_textf("Controls:"); imgui_newline();
     imgui_textf("d      -  toggle light/dark mode"); imgui_newline();

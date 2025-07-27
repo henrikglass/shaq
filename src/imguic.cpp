@@ -42,6 +42,7 @@ void imgui_init(GLFWwindow *window)
     style.PopupRounding = 10.0f;
     style.ScrollbarRounding = 10.0f;
     style.TabRounding = 10.0f;
+    style.GrabRounding = 10.0f;
     ImGui::StyleColorsLight();
 }
 
@@ -197,7 +198,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
