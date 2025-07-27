@@ -2,6 +2,7 @@
 
 #include "gui.h"
 #include "imguic.h"
+#include "shaq_core.h"
 #include "alloc.h"
 #include "constants.h"
 #include "array.h"
@@ -36,6 +37,7 @@ static struct
 {
     Array(DynamicGuiItem, SHAQ_MAX_N_DYNAMIC_GUI_ITEMS) dynamic_items;
     b8 dark_mode;
+    float smoothed_deltatime;
 } gui;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -47,27 +49,47 @@ void gui_begin_frame()
 
 void gui_begin_main_window()
 {
-    imgui_begin(" ");
-}
-
-void gui_draw_key_controls()
-{
+    gui.smoothed_deltatime = 0.97f*gui.smoothed_deltatime +
+                             0.03f*shaq_deltatime();
+    imgui_begin("##Main window");
+    imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
+    imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime)); imgui_newline();
+    imgui_separator();
     imgui_textf("Controls:"); imgui_newline();
-    imgui_textf("f      -  toggle fullscreen"); imgui_newline();
-    imgui_textf("h      -  toggle GUI"); imgui_newline();
     imgui_textf("d      -  toggle light/dark mode"); imgui_newline();
+    imgui_textf("f      -  toggle fullscreen"); imgui_newline();
+    imgui_textf("h      -  hide/show GUI "); imgui_newline();
     imgui_textf("esq/q  -  exit"); imgui_newline();
     imgui_separator();
 }
 
-u32 gui_draw_shader_display_selector(Shader *shaders, u32 n_shaders)
+i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_shaders)
 {
-    for (u32 i = 0; i < n_shaders; i++) {
-        Shader *s = &shaders[i];
-        imgui_textf(SV_FMT, SV_ARG(s->name)); imgui_newline();
+    Shader *current = &shaders[current_idx];
+    char *current_name_cstr = arena_alloc(g_frame_arena, current->name.length + 1);
+    memcpy(current_name_cstr, current->name.start, current->name.length);
+    current_name_cstr[current->name.length] = '\0';
+
+    if (imgui_begin_combo("Visible Shader", current_name_cstr)) {
+        for (u32 i = 0; i < n_shaders; i++) {
+            Shader *s = &shaders[i];
+            b8 is_selected = (current == s);
+
+            char *s_name_cstr = arena_alloc(g_frame_arena, s->name.length + 1);
+            memcpy(s_name_cstr, s->name.start, s->name.length);
+            s_name_cstr[s->name.length] = '\0';
+
+            if (imgui_selectable(s_name_cstr, is_selected)) {
+                current_idx = (i32)i; 
+            }
+            if (is_selected) {
+                imgui_set_item_default_focus();
+            }
+        }
+        imgui_end_combo();
     }
     imgui_separator();
-    return 0;
+    return current_idx;
 }
 
 void gui_draw_shader(const Shader *s)

@@ -80,6 +80,11 @@ void imgui_begin_table(const char *label, i32 n_cols)
     ImGui::BeginTable(label, n_cols);
 }
 
+bool imgui_begin_combo(const char *label, const char *preview_value)
+{
+    return ImGui::BeginCombo(label, preview_value);
+}
+
 void imgui_table_next_row(void)
 {
     ImGui::TableNextRow();
@@ -157,6 +162,21 @@ void imgui_slider_float(const char *label, float *v, float min, float max, bool 
 void imgui_color_picker(const char *label, float *v)
 {
     ImGui::ColorEdit4(label, v);
+}
+
+bool imgui_selectable(const char *label, bool is_selected)
+{
+    return ImGui::Selectable(label, is_selected);
+}
+
+void imgui_set_item_default_focus(void)
+{
+    ImGui::SetItemDefaultFocus();
+}
+
+void imgui_end_combo(void)
+{
+    ImGui::EndCombo();
 }
 
 void imgui_end_table()

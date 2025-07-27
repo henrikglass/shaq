@@ -60,7 +60,7 @@ void renderer_init()
     renderer.window_was_resized_this_frame = false;
     renderer.is_fullscreen = false;
     renderer.hide_gui = false;
-    renderer.resolution = ivec2_make(1280, 720);
+    renderer.resolution = ivec2_make(1680, 1050);
     renderer.window = glfwCreateWindow(renderer.resolution.x, 
                                        renderer.resolution.y, 
                                        "Shaq", NULL, NULL);
@@ -74,7 +74,7 @@ void renderer_init()
     glfwMakeContextCurrent(renderer.window);
     glfwSetFramebufferSizeCallback(renderer.window, resize_callback);
     glfwSetKeyCallback(renderer.window, key_callback);
-    //glfwSwapInterval(1);
+    glfwSwapInterval(1);
 
     i32 err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     if (err <= 0) {
@@ -137,7 +137,9 @@ void renderer_do_shader_pass(Shader *s)
 void renderer_do_final_pass(Shader *s)
 {
     glUseProgram(renderer.last_pass_shader.gl_shader_program_id); // TODO update tex uniform 
-    glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), GL_TEXTURE0); // TODO cache
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
+    glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
     glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 1, (i32 *)&renderer.resolution); 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
@@ -147,8 +149,6 @@ void renderer_do_final_pass(Shader *s)
         return;
     }
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -157,6 +157,7 @@ void renderer_end_frame()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glfwSwapBuffers(renderer.window);
     glfwPollEvents();
+    gl_check_errors();
 }
 
 b8 renderer_should_close()

@@ -62,6 +62,7 @@ static struct {
     Array(Shader, SHAQ_MAX_N_SHADERS) shaders;
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
     Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) loaded_textures;
+    i32 visible_shader_idx;
 
     u64 start_timestamp_ns;
     u64 last_frame_timestamp_ns;
@@ -77,11 +78,11 @@ void shaq_begin(const char *ini_filepath)
 
     alloc_init();
     renderer_init();
-    //gui_init();
 
     shaq.start_timestamp_ns = util_get_time_nanos();
     shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
     shaq.ini_filepath = ini_filepath;
+    shaq.visible_shader_idx = (u32) -1;
 
     reload_all();
 }
@@ -117,14 +118,19 @@ void shaq_new_frame(void)
     }
 
     /* Draw final pass onto visible framebuffer */
-    renderer_do_final_pass(&shaq.shaders.arr[shaq.shaders.count - 1]);
+    if (shaq.visible_shader_idx != -1) {
+        renderer_do_final_pass(&shaq.shaders.arr[shaq.visible_shader_idx]);
+    } else {
+        renderer_do_final_pass(NULL);
+    }
 
     /* draw GUI */
     if (!renderer_should_hide_gui()) {
         gui_begin_frame();
         gui_begin_main_window();
-        gui_draw_key_controls();
-        gui_draw_shader_display_selector(shaq.shaders.arr, shaq.shaders.count);
+        shaq.visible_shader_idx = gui_draw_shader_display_selector(shaq.visible_shader_idx, 
+                                                                   shaq.shaders.arr, 
+                                                                   shaq.shaders.count);
         gui_draw_dymanic_gui_items();
         for (u32 i = 0; i < shaq.render_order.count; i++) {
             Shader *s  = &shaq.shaders.arr[i];
@@ -180,7 +186,6 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     for (u32 i = 0; i < shaq.loaded_textures.count; i++) {
         Texture *t  = &shaq.loaded_textures.arr[i];
         if (sv_equals(t->filepath, filepath)) {
-            //printf("FOUND TEXTURE: " HGL_SV_FMT "\n", HGL_SV_ARG(filepath));
             return i;
         }
     }
@@ -188,13 +193,11 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     /* not found? load it.*/
     Texture t = texture_load_from_file(filepath);
     if (t.data != NULL) {
-        //printf("LOADED TEXTURE: " HGL_SV_FMT "\n", HGL_SV_ARG(filepath));
         array_push(&shaq.loaded_textures, t);
         return shaq.loaded_textures.count - 1;
     }
 
     /* Unable to load texture */
-    //fprintf(stderr, "[SHAQ] Error: Unable to load texture from \"" HGL_SV_FMT "\".\n", HGL_SV_ARG(filepath));
     log_error("Unable to load texture from \"" HGL_SV_FMT "\".\n", HGL_SV_ARG(filepath));
     return -1; 
 }
@@ -267,6 +270,7 @@ static void reload_all()
     if (shaq.ini == NULL) {
         //fprintf(stderr, "[SHAQ] Error: Failed to open or parse *.ini file.\n");
         log_error("Failed to open or parse *.ini file.");
+        shaq.visible_shader_idx = -1;
     } else {
         /* Parse ini file + recompile simple expressions */
         load_state_from_ini(shaq.ini);
@@ -278,6 +282,12 @@ static void reload_all()
         for (u32 i = 0; i < shaq.shaders.count; i++) {
             Shader *s = &shaq.shaders.arr[i];
             shader_reload(s);
+        }
+
+        /* Reset visible shader idx if necessary */
+        if ((shaq.visible_shader_idx >= (i32)shaq.shaders.count) ||
+            (shaq.visible_shader_idx == -1)) {
+            shaq.visible_shader_idx = shaq.render_order.arr[shaq.shaders.count - 1];
         }
     }
 
@@ -335,13 +345,12 @@ static void determine_render_order(void)
     //assert(shaq.render_order.count == shaq.shaders.count);
    
     // DEBUG 
-#if 0
-    printf("render order: ");
+#if 1
+    log_info("render order: ");
     for (u32 j = 0; j < shaq.render_order.count; j++) {
         u32 idx = shaq.render_order.arr[j];
-        printf(HGL_SV_FMT " ", HGL_SV_ARG(shaq.shaders.arr[idx].name));
+        log_info(HGL_SV_FMT " ", HGL_SV_ARG(shaq.shaders.arr[idx].name));
     }
-    printf("\n");
 #endif
     // END DEBUG 
 }
@@ -359,10 +368,8 @@ static void load_state_from_ini(HglIni *ini)
         if (err == 0) {
             shader_count++;
         }
-        //printf("\n\n");
     }
     shaq.shaders.count = shader_count;
-    //printf("# shaders = %zu\n", shaq.shaders.count);
 }
 
 static void shaq_atexit_(void)
