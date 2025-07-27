@@ -14,8 +14,6 @@
 #include "gui.h"
 #include "log.h"
 
-//#include "glad/glad.h"
-
 void *ini_alloc(size_t size);
 void *ini_realloc(void *ptr, size_t size);
 void ini_free(void *ptr);
@@ -44,15 +42,12 @@ static b8 reload_needed(void);
 static void reload_all(void);
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
 static void determine_render_order(void);
-static void load_state_from_ini(HglIni *ini); // TODO better name
+static i32 load_state_from_ini(HglIni *ini); // TODO better name
 static void shaq_atexit_(void);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Private variables -----------------------------------------------------------------*/
-
-//typedef Array(Shader, SHAQ_MAX_N_SHADERS) Shaders;
-//typedef Array(u32, SHAQ_MAX_N_UNIFORMS) ShaderIndices;
 
 static struct {
 
@@ -177,7 +172,6 @@ i32 shaq_find_shader_id_by_name(StringView name)
     }
 
     /* no shader with name `name` found */
-    //fprintf(stderr, "[SHAQ] Error: No shader with name \"" SV_FMT "\" found.\n", SV_ARG(name));
     log_error("No shader with name \"" SV_FMT "\" found.\n", SV_ARG(name));
     return -1;    
 }
@@ -258,44 +252,52 @@ static void reload_all()
     log_info("Reloaded");
 
     /* collect garbage */
+    arena_free_all(g_longterm_arena);
+    fs_free_all(g_longterm_fs_allocator);
 #if 0
     printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
     printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
     printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
 #endif
-    arena_free_all(g_longterm_arena);
-    fs_free_all(g_longterm_fs_allocator);
 
     /* Reload ini file */
     shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath, false);
     shaq.ini = hgl_ini_open(shaq.ini_filepath);
+
     if (shaq.ini == NULL) {
-        //fprintf(stderr, "[SHAQ] Error: Failed to open or parse *.ini file.\n");
         log_error("Failed to open or parse *.ini file.");
-        shaq.visible_shader_idx = -1;
-    } else if (shaq.shaders.count == 0) {
-        log_error("No shaders :c");
-        shaq.visible_shader_idx = -1;
-    } else {
-        /* Parse ini file + recompile simple expressions */
-        load_state_from_ini(shaq.ini);
-
-        /* Determine render order */
-        determine_render_order();
-
-        /* Reload shaders */
-        for (u32 i = 0; i < shaq.shaders.count; i++) {
-            Shader *s = &shaq.shaders.arr[i];
-            shader_reload(s);
-        }
-
-        /* Reset visible shader idx if necessary */
-        if ((shaq.visible_shader_idx >= (i32)shaq.shaders.count) ||
-            (shaq.visible_shader_idx == -1)) {
-            shaq.visible_shader_idx = shaq.render_order.arr[shaq.shaders.count - 1];
-        }
+        goto out_error;
     }
 
+    /* Parse ini file contents + recompile simple expressions */
+    i32 err = load_state_from_ini(shaq.ini);
+    if (err != 0) {
+        log_error("Failed to load anything meaningful from *.ini file.");
+        goto out_error;
+    }
+
+    /* Determine render order */
+    determine_render_order(); // TODO return err?
+
+    /* Reload shaders */
+    for (u32 i = 0; i < shaq.shaders.count; i++) {
+        Shader *s = &shaq.shaders.arr[i];
+        shader_reload(s);
+    }
+
+    /* Reset visible shader idx if necessary */
+    if ((shaq.visible_shader_idx >= (i32)shaq.shaders.count) ||
+        (shaq.visible_shader_idx == -1)) {
+        shaq.visible_shader_idx = shaq.render_order.arr[shaq.shaders.count - 1];
+    }
+    if (!shaq.quiet) {
+        log_print_info_log();
+        log_print_error_log();
+    }
+    return;
+
+out_error:
+    shaq.visible_shader_idx = -1;
     if (!shaq.quiet) {
         log_print_info_log();
         log_print_error_log();
@@ -308,7 +310,6 @@ static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
 
     /* recursed more times than there are shaders defined - guranteed cyclic dependency */
     if (depth > shaq.shaders.count + 1) {
-        //fprintf(stderr, "[SHAQ] Error: cyclic dependency between shaders.\n");
         log_error("Cyclic dependency between shaders.");
         return -1;
     }
@@ -341,27 +342,16 @@ static void determine_render_order(void)
     for (u32 i = 0; i < shaq.shaders.count; i++) {
         i32 err = satisfy_dependencies_for_shader(i, 0);
         if (err != 0) {
-            //fprintf(stderr, "[SHAQ] Error: Could not determine a render order for shader \"" 
-            //        SV_FMT "\".\n", SV_ARG(shaq.shaders.arr[i].name));
-            log_error("Could not determine a render order for shader \"" 
-                      SV_FMT "\".\n", SV_ARG(shaq.shaders.arr[i].name));
+            log_error("Could not determine a render order for shader: " 
+                      SV_FMT ".", SV_ARG(shaq.shaders.arr[i].name));
+        } else {
+            log_info("Succesfully dermined render order for shader: " 
+                     SV_FMT ".", SV_ARG(shaq.shaders.arr[i].name));
         }
     }
-
-    //assert(shaq.render_order.count == shaq.shaders.count);
-   
-    // DEBUG 
-#if 1
-    log_info("render order: ");
-    for (u32 j = 0; j < shaq.render_order.count; j++) {
-        u32 idx = shaq.render_order.arr[j];
-        log_info(SV_FMT " ", SV_ARG(shaq.shaders.arr[idx].name));
-    }
-#endif
-    // END DEBUG 
 }
 
-static void load_state_from_ini(HglIni *ini)
+static i32 load_state_from_ini(HglIni *ini)
 {
     hgl_ini_reset_section_iterator(ini);
     u32 shader_count = 0; 
@@ -376,6 +366,7 @@ static void load_state_from_ini(HglIni *ini)
         }
     }
     shaq.shaders.count = shader_count;
+    return (shaq.shaders.count != 0) ? 0 : -1;
 }
 
 static void shaq_atexit_(void)
