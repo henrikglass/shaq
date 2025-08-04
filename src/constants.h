@@ -1,10 +1,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define SHAQ_MAX_N_SHADERS 64
-#define SHAQ_MAX_N_UNIFORMS 64
-#define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS 64
-#define SHAQ_MAX_N_LOADED_TEXTURES 16
+#define SHAQ_MAX_N_SHADERS            64
+#define SHAQ_MAX_N_UNIFORMS           64
+#define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS  64
+#define SHAQ_MAX_N_LOADED_TEXTURES    16
+#define SHAQ_ENABLE_VSYNC              1
 
 #endif /* CONSTANTS_H */
 

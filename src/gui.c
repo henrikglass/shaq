@@ -47,11 +47,14 @@ void gui_begin_frame()
     imgui_begin_frame();
 }
 
-void gui_begin_main_window()
+b8 gui_begin_main_window()
 {
     gui.smoothed_deltatime = 0.97f*gui.smoothed_deltatime +
                              0.03f*shaq_deltatime();
-    imgui_begin("##Main window");
+    if (!imgui_begin("##Main window")) {
+        return false;
+    }
+
     imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
     imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
     imgui_separator();
@@ -61,6 +64,7 @@ void gui_begin_main_window()
     imgui_textf("h      -  hide/show GUI "); imgui_newline();
     imgui_textf("esq/q  -  exit"); imgui_newline();
     imgui_separator();
+    return true;
 }
 
 i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_shaders)

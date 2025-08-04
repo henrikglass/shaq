@@ -62,9 +62,9 @@ void imgui_begin_frame()
     ImGui::NewFrame();
 }
 
-void imgui_begin(const char *str)
+b8 imgui_begin(const char *str)
 {
-    ImGui::Begin(str);
+    return ImGui::Begin(str);
 }
 
 void imgui_begin_child(const char *label, u32 color)

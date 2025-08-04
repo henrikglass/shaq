@@ -2,6 +2,7 @@
 
 #include "renderer.h"
 
+#include "constants.h"
 #include "hgl_int.h"
 #include "vecmath.h"
 #include "gl_util.h"
@@ -74,7 +75,7 @@ void renderer_init()
     glfwMakeContextCurrent(renderer.window);
     glfwSetFramebufferSizeCallback(renderer.window, resize_callback);
     glfwSetKeyCallback(renderer.window, key_callback);
-    glfwSwapInterval(1);
+    glfwSwapInterval(SHAQ_ENABLE_VSYNC ? 1 : 0);
 
     i32 err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     if (err <= 0) {

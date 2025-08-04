@@ -2,17 +2,18 @@ MAKEFLAGS += "-j $(shell nproc)"
 
 .PHONY: shaq sel clean cleaner
 
-C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
-			  -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
-			  -Wshadow -Wpointer-arith -Wcast-qual -Winit-self -Wuninitialized \
-			  -Wcast-align -Wstrict-aliasing -Wformat=2 -Wmissing-declarations \
-			  -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
-			  -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
-			  -Wno-error=cpp 
-C_INCLUDES := -Iinclude
-C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -O0 -ggdb3 -D_DEFAULT_SOURCE -fno-strict-aliasing
-L_FLAGS    := -Llib -lm -lglfw -limgui -lstdc++
-
+C_WARNINGS     := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
+			      -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
+			      -Wshadow -Wpointer-arith -Wcast-qual -Winit-self -Wuninitialized \
+			      -Wcast-align -Wstrict-aliasing -Wformat=2 -Wmissing-declarations \
+			      -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
+			      -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
+			      -Wno-error=cpp 
+C_INCLUDES     := -Iinclude
+C_FLAGS        := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing
+DEBUG_FLAGS    := -O0 -ggdb3
+RELEASE_FLAGS  := -O2 -march=native
+L_FLAGS        := -Llib -lm -lglfw -limgui -lstdc++
 
 SOURCES := src/alloc.c 	       \
 		   src/str.c           \
@@ -31,11 +32,16 @@ SOURCES := src/alloc.c 	       \
 		   src/log.c      	   \
 
 
-all: shaq sel
+all: debug sel
 
-shaq: lib/libimgui.a
+debug: lib/libimgui.a
 	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -O2 -c src/imguic.cpp -o imguic.o
-	gcc $(C_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
+	gcc $(C_FLAGS) $(DEBUG_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
+	-rm imguic.o
+
+release: lib/libimgui.a
+	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -O2 -c src/imguic.cpp -o imguic.o
+	gcc $(C_FLAGS) $(RELEASE_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
 	-rm imguic.o
 
 #sel: lib/libimgui.a

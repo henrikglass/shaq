@@ -124,17 +124,18 @@ void shaq_new_frame(void)
     /* draw GUI */
     if (!renderer_should_hide_gui()) {
         gui_begin_frame();
-        gui_begin_main_window();
-        shaq.visible_shader_idx = gui_draw_shader_display_selector(shaq.visible_shader_idx, 
-                                                                   shaq.shaders.arr, 
-                                                                   shaq.shaders.count);
-        gui_draw_dymanic_gui_items();
-        for (u32 i = 0; i < shaq.render_order.count; i++) {
-            Shader *s  = &shaq.shaders.arr[i];
-            assert(s != NULL);
-            gui_draw_shader(s);
+        if (gui_begin_main_window()) {
+            shaq.visible_shader_idx = gui_draw_shader_display_selector(shaq.visible_shader_idx, 
+                                                                       shaq.shaders.arr, 
+                                                                       shaq.shaders.count);
+            gui_draw_dymanic_gui_items();
+            for (u32 i = 0; i < shaq.render_order.count; i++) {
+                Shader *s  = &shaq.shaders.arr[i];
+                assert(s != NULL);
+                gui_draw_shader(s);
+            }
+            gui_draw_log();
         }
-        gui_draw_log();
         gui_end_main_window();
         gui_end_frame();
     }

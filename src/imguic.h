@@ -30,7 +30,7 @@ extern "C" {
 void imgui_init(GLFWwindow *window);
 void imgui_set_darkmode(bool enable);
 void imgui_begin_frame(void);
-void imgui_begin(const char *str);
+b8 imgui_begin(const char *str);
 void imgui_begin_child(const char *label, u32 color);
 void imgui_begin_table(const char *label, i32 n_cols);
 bool imgui_begin_combo(const char *label, const char *preview_value);
