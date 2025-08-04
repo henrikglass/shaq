@@ -31,6 +31,8 @@ int main(int argc, char *argv[])
    
     if (*opt_input == NULL) {
         fprintf(stderr, "No input file (*.ini) provided.\n");
+        printf("Usage: %s [Options]\n", argv[0]);
+        hgl_flags_print();
         return 1;
     }
 

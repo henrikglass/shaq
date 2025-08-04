@@ -17,9 +17,9 @@
 void *ini_alloc(size_t size);
 void *ini_realloc(void *ptr, size_t size);
 void ini_free(void *ptr);
-void *ini_alloc(size_t size){ return fs_alloc(g_longterm_fs_allocator, size);}
-void *ini_realloc(void *ptr, size_t size){ return fs_realloc(g_longterm_fs_allocator, ptr, size);}
-void ini_free(void *ptr){ (void) ptr; /*fs_free(g_longterm_fs_allocator, ptr); */}
+void *ini_alloc(size_t size){ return fs_alloc(g_session_fs_allocator, size);}
+void *ini_realloc(void *ptr, size_t size){ return fs_realloc(g_session_fs_allocator, ptr, size);}
+void ini_free(void *ptr){ (void) ptr; /*fs_free(g_session_fs_allocator, ptr); */}
 #define HGL_INI_ALLOC ini_alloc
 #define HGL_INI_REALLOC ini_realloc
 #define HGL_INI_FREE ini_free
@@ -38,8 +38,8 @@ void ini_free(void *ptr){ (void) ptr; /*fs_free(g_longterm_fs_allocator, ptr); *
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
-static b8 reload_needed(void);
-static void reload_all(void);
+static b8 session_reload_needed(void);
+static void reload_session(void);
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
 static void determine_render_order(void);
 static i32 load_state_from_ini(HglIni *ini); // TODO better name
@@ -81,7 +81,7 @@ void shaq_begin(const char *ini_filepath, bool quiet)
     shaq.visible_shader_idx = (u32) -1;
     shaq.quiet = quiet;
 
-    reload_all();
+    reload_session();
 }
 
 b8 shaq_should_close(void)
@@ -91,8 +91,8 @@ b8 shaq_should_close(void)
 
 void shaq_new_frame(void)
 {
-    if (reload_needed()) {
-        reload_all();
+    if (session_reload_needed()) {
+        reload_session();
     }
 
     /* compute time */
@@ -211,7 +211,7 @@ u32 shaq_get_loaded_texture_by_index(u32 index)
 
 /*--- Private functions -----------------------------------------------------------------*/
 
-static b8 reload_needed()
+static b8 session_reload_needed()
 {
     i64 ts = io_get_file_modify_time(shaq.ini_filepath, true);
     if (ts == -1) {
@@ -233,7 +233,7 @@ static b8 reload_needed()
     return false;
 }
 
-static void reload_all()
+static void reload_session()
 {
     /* Manually free OpenGL resources */
     for (u32 i = 0; i < shaq.shaders.count; i++) {
@@ -253,12 +253,12 @@ static void reload_all()
     log_info("Reloaded");
 
     /* collect garbage */
-    arena_free_all(g_longterm_arena);
-    fs_free_all(g_longterm_fs_allocator);
+    arena_free_all(g_session_arena);
+    fs_free_all(g_session_fs_allocator);
 #if 0
-    printf("frame arena           -- "); hgl_arena_print_usage(g_frame_arena);
-    printf("longterm arena        -- "); hgl_arena_print_usage(g_longterm_arena);
-    printf("longterm fs allocator -- "); hgl_fs_print_usage(g_longterm_fs_allocator);
+    printf("frame arena          -- "); hgl_arena_print_usage(g_frame_arena);
+    printf("session arena        -- "); hgl_arena_print_usage(g_session_arena);
+    printf("session fs allocator -- "); hgl_fs_print_usage(g_session_fs_allocator);
 #endif
 
     /* Reload ini file */

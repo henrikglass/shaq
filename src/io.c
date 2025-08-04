@@ -96,7 +96,7 @@ u8 *io_read_entire_file(const char *filepath, size_t *size)
     }
 
     /* allocate memory for data */
-    u8 *file_data = fs_alloc(g_longterm_fs_allocator, file_size);
+    u8 *file_data = fs_alloc(g_session_fs_allocator, file_size);
     if (file_data == NULL) {
         goto out;
     }
@@ -104,7 +104,7 @@ u8 *io_read_entire_file(const char *filepath, size_t *size)
     /* read file */
     ssize_t n_read_bytes = fread(file_data, 1, file_size, fp);
     if (n_read_bytes != file_size) {
-        fs_free(g_longterm_fs_allocator, file_data);
+        fs_free(g_session_fs_allocator, file_data);
         goto out;
     }
 

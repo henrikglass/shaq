@@ -24,8 +24,8 @@
 #define fs_free_all hgl_fs_free_all
 
 extern Arena *g_frame_arena;
-extern Arena *g_longterm_arena;
-extern FsAllocator *g_longterm_fs_allocator;
+extern Arena *g_session_arena;
+extern FsAllocator *g_session_fs_allocator;
 
 void alloc_init(void);
 

@@ -793,7 +793,7 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 
 static ExeExpr *codegen(const ExprTree *e)
 {
-    ExeExpr *exe = arena_alloc(g_longterm_arena, sizeof(ExeExpr));
+    ExeExpr *exe = arena_alloc(g_session_arena, sizeof(ExeExpr));
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
     exe->qualifier = e->qualifier;
@@ -942,13 +942,13 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size)
     if (exe->code == NULL) {
         exe->size = 0;
         exe->capacity = 64;
-        exe->code = arena_alloc(g_longterm_arena, exe->capacity * sizeof(*exe->code));
+        exe->code = arena_alloc(g_session_arena, exe->capacity * sizeof(*exe->code));
     } 
     if (exe->capacity < exe->size + size) {
         while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
-        exe->code = arena_realloc(g_longterm_arena, exe->code, exe->capacity * sizeof(*exe->code));
+        exe->code = arena_realloc(g_session_arena, exe->code, exe->capacity * sizeof(*exe->code));
     }
     assert(exe->code != NULL && "eexe_allocator alloc failed");
     memcpy(&exe->code[exe->size], val, size);
