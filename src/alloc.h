@@ -28,6 +28,7 @@ extern Arena *g_session_arena;
 extern FsAllocator *g_session_fs_allocator;
 
 void alloc_init(void);
+void *alloc_temp(size_t size);
 
 #endif /* ALLOC_H */
 

@@ -4,7 +4,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2024 Henrik A. Glass
+ * Copyright (c) 2025 Henrik A. Glass
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,18 +39,29 @@
  *     #include "hgl_memdbg.h"
  *
  * HGL_STRING_IMPLEMENTATION must only be defined once, in a single compilation unit.
- * hgl_string allows the default allocator, reallocator and free function to be
+ *
+ * hgl_string.h implements two types: HglStringBuilder and HglStringView. HglStringBuilder
+ * is a mutable null-terminated string type. HglStringView is an immutable optionally
+ * null-terminated string type (although the "immutable" part should be taking with a
+ * grain of salt - this is still C).
+ *
+ * hgl_string.h allows the default allocator, reallocator and free function to be
  * overridden by redefining the following defines before including hgl_string.h:
  *
  *     #define HGL_STRING_ALLOC    malloc
  *     #define HGL_STRING_REALLOC  realloc
  *     #define HGL_STRING_FREE     free
  *
- * hgl_string implements two types: HglStringBuilder and HglStringView. HglStringBuilder
- * is a mutable null-terminated string type. HglStringView is an immutable optionally
- * null-terminated string type (although the "immutable" part should be taking with a
- * grain of salt - this is still C).
+ * Allocator functions may also be overridden per-object in the case of HglStringBuilder
+ * by passing them as arguments in the hgl_sb_make() macro, as such:
  *
+ *     HglStringBuilder sb = hgl_sb_make(.mem_alloc   = my_alloc,
+ *                                       .mem_realloc = my_realloc,
+ *                                       .mem_free    = my_free);
+ *
+ * Allocators not specified in the arguments to `hgl_sb_make` inhertit from the respective
+ * HGL_STRING_ALLOC, HGL_STRING_REALLOC, and HGL_STRING_FREE macros. It's is completely
+ * legal to specify only one or two of these functions, but some operations may break.
  *
  * EXAMPLE:
  *
@@ -58,7 +69,7 @@
  * string builder, split the contents by line, and print out the number of occurances
  * of the word "glass" on each line:
  *
- *     HglStringBuilder sb = hgl_sb_make("", 0);
+ *     HglStringBuilder sb = hgl_sb_make(.initial_capacity = 4096); // alt. only `hgl_sb_make()` is enough.
  *     hgl_sb_append_file(&sb, "assets/glassigt_lyrics.txt");
  *     HglStringView sv = hgl_sv_from_sb(&sb);
  *
@@ -113,6 +124,14 @@
 #define HGL_SB_FMT "%.*s"
 #define HGL_SB_ARG(sb) (int) (sb).length, (sb).cstr
 
+#if !defined(HGL_STRING_ALLOC) &&   \
+    !defined(HGL_STRING_REALLOC) && \
+    !defined(HGL_STRING_FREE)
+#define HGL_STRING_ALLOC malloc
+#define HGL_STRING_REALLOC realloc
+#define HGL_STRING_FREE free
+#endif
+
 /*--- Public type definitions -----------------------------------------------------------*/
 
 typedef enum {
@@ -120,11 +139,21 @@ typedef enum {
     HGL_SB_GROWTH_POLICY_TO_FIT,
 } HglStringGrowthPolicy;
 
+typedef struct {
+    size_t initial_capacity;
+    void *(*mem_alloc)(size_t);
+    void *(*mem_realloc)(void *, size_t);
+    void (*mem_free)(void *);
+} HglStringBuilderConfig;
+
 /* mutable string type. Owns the underlying `cstr`. */
 typedef struct {
-    char *cstr;          /* null-terminated string */
-    size_t length;       /* length of `cstr` excluding null terminator */
-    size_t capacity;     /* total capacity, including null terminator */
+    char *cstr;                       /* null-terminated string */
+    size_t length;                    /* length of `cstr` excluding null terminator */
+    size_t capacity;                  /* total capacity, including null terminator */
+    void *(*mem_alloc)(size_t);           /* optional allocator function (Overrides HGL_STRING_ALLOC) */
+    void *(*mem_realloc)(void *, size_t); /* optional reallocator function (Overrides HGL_STRING_REALLOC) */
+    void (*mem_free)(void *);             /* optional allocator function (Overrides HGL_STRING_FREE) */
 } HglStringBuilder;
 
 /* immutable (const) string type. Does not own the underlying `start`. */
@@ -154,9 +183,12 @@ HglStringView hgl_sv_from_sb(HglStringBuilder *sb);
 HglStringView hgl_sv_from_cstr(const char *cstr);
 
 /**
- * Create NULL-terminated `cstr` from `sv`. Must be freed after use.
+ * Create NULL-terminated `cstr` from `sv`. If `mem_alloc` is not NULL, then
+ * it is used to allocate memory for the cstr copy, otherwise HGL_STRING_ALLOC
+ * is used. The caller should ensure that the returned string is freed
+ * correctly after use.
  */
-char *hgl_sv_make_cstr_copy(HglStringView sv);
+char *hgl_sv_make_cstr_copy(HglStringView sv, void *(*mem_alloc)(size_t));
 
 /**
  * (Re-)Start a reentrant string view operation (I.e. functions that have "next"
@@ -329,11 +361,25 @@ bool hgl_sv_equals(HglStringView a, HglStringView b);
 /*=======================================================================================*/
 
 /**
- * Makes a new string builder from an initial (optional) c-string `cstr`, and a
- * suggested initial capacity `initial_capacity`. The actual initial capacity
- * is calculated as `max(strlen(cstr), initial_capacity)`.
+ * Creates a new stringbuilder object.
+ *
+ * With the default configuration (i.e. if no arguments are passed) this creates
+ * a stringbuilder with an initial capacity of 64 characters; the allocator
+ * functions are inherited from HGL_STRING_ALLOC, HGL_STRING_REALLOC, and
+ * HGL_STRING_FREE. The caller may override none, parts of, or all of default
+ * configuration by passing them as variadic arguments, e.g.:
+ *
+ *     HglStringBuilder sb = hgl_sb_make(.initial_capacity = 1024,
+ *                                       .mem_alloc        = my_alloc,
+ *                                       .mem_realloc      = my_realloc,
+ *                                       .mem_free         = my_free);
  */
-HglStringBuilder hgl_sb_make(const char *cstr, size_t initial_capacity);
+#define hgl_sb_make(...) hgl_sb_make_((HglStringBuilderConfig){.initial_capacity = 64,                 \
+                                                               .mem_alloc        = HGL_STRING_ALLOC,   \
+                                                               .mem_realloc      = HGL_STRING_REALLOC, \
+                                                               .mem_free         = HGL_STRING_FREE,    \
+                                                               __VA_ARGS__})
+HglStringBuilder hgl_sb_make_(HglStringBuilderConfig config);
 
 /**
  * Makes a new copy of an existing string builder `sb`.
@@ -449,14 +495,6 @@ void hgl_sb_rchop(HglStringBuilder *sb, size_t n);
 
 /*--- impl. macros ----------------------------------------------------------------------*/
 
-#if !defined(HGL_STRING_ALLOC) &&   \
-    !defined(HGL_STRING_REALLOC) && \
-    !defined(HGL_STRING_FREE)
-#define HGL_STRING_ALLOC malloc
-#define HGL_STRING_REALLOC realloc
-#define HGL_STRING_FREE free
-#endif
-
 /* CONFIGURABLE: HGL_SB_DEFAULT_GROWTH_POLICY */
 #ifndef HGL_SB_DEFAULT_GROWTH_POLICY
 #define HGL_SB_DEFAULT_GROWTH_POLICY HGL_SB_GROWTH_POLICY_DOUBLE
@@ -486,9 +524,10 @@ HglStringView hgl_sv_from_cstr(const char *cstr)
     };
 }
 
-char *hgl_sv_make_cstr_copy(HglStringView sv)
+char *hgl_sv_make_cstr_copy(HglStringView sv, void *(*mem_alloc)(size_t))
 {
-    char *cstr = HGL_STRING_ALLOC(sv.length + 1);
+    char *cstr = (mem_alloc != NULL) ? mem_alloc(sv.length + 1)
+                                     : HGL_STRING_ALLOC(sv.length + 1);
     memcpy(cstr, sv.start, sv.length);
     cstr[sv.length] = '\0';
     return cstr;
@@ -850,37 +889,39 @@ bool hgl_sv_equals(HglStringView a, HglStringView b)
     return 0 == hgl_sv_compare(a, b);
 }
 
-HglStringBuilder hgl_sb_make(const char *cstr, size_t initial_capacity)
+HglStringBuilder hgl_sb_make_(HglStringBuilderConfig config)
 {
-    size_t len = strlen(cstr);
-    if ((len + 1) > initial_capacity) {
-        initial_capacity = len + 1;
-    }
+    assert(config.initial_capacity > 0);
 
-    char *data = HGL_STRING_ALLOC(initial_capacity);
-    memcpy(data, cstr, len);
-    data[len] = '\0';
-
-    return (HglStringBuilder) {
-        .cstr     = data,
-        .length   = len,
-        .capacity = initial_capacity,
+    HglStringBuilder sb = {
+        .cstr         = config.mem_alloc(config.initial_capacity),
+        .length       = 0,
+        .capacity     = config.initial_capacity,
+        .mem_alloc    = config.mem_alloc,
+        .mem_realloc  = config.mem_realloc,
+        .mem_free     = config.mem_free,
     };
+
+    sb.cstr[0] = '\0';
+    return sb;
 }
 
 HglStringBuilder hgl_sb_make_copy(HglStringBuilder *sb)
 {
     HglStringBuilder copy;
-    copy.length = sb->length,
-    copy.capacity = sb->capacity,
-    copy.cstr = HGL_STRING_ALLOC(sb->capacity),
+    copy.length       = sb->length,
+    copy.capacity     = sb->capacity,
+    copy.mem_alloc    = sb->mem_alloc;
+    copy.mem_realloc  = sb->mem_realloc;
+    copy.mem_free     = sb->mem_free;
+    copy.cstr         = sb->mem_alloc(sb->capacity),
     memcpy(copy.cstr, sb->cstr, sb->length);
     return copy;
 }
 
 void hgl_sb_destroy(HglStringBuilder *sb)
 {
-    HGL_STRING_FREE(sb->cstr);
+    sb->mem_free(sb->cstr);
     sb->cstr     = NULL;
     sb->length   = 0;
     sb->capacity = 0;
@@ -898,7 +939,7 @@ void hgl_sb_grow(HglStringBuilder *sb, size_t new_capacity)
         return;
     }
 
-    sb->cstr = HGL_STRING_REALLOC(sb->cstr, new_capacity);
+    sb->cstr = sb->mem_realloc(sb->cstr, new_capacity);
     sb->capacity = new_capacity;
 }
 
@@ -924,7 +965,7 @@ void hgl_sb_grow_by_policy(HglStringBuilder *sb,
         default: assert(0 && "unreachable"); break;
     }
 
-    sb->cstr = HGL_STRING_REALLOC(sb->cstr, new_capacity);
+    sb->cstr = sb->mem_realloc(sb->cstr, new_capacity);
     sb->capacity = new_capacity;
 }
 
@@ -935,7 +976,7 @@ void hgl_sb_shrink_to_fit(HglStringBuilder *sb)
     }
 
     sb->capacity = sb->length + 1;
-    sb->cstr = HGL_STRING_REALLOC(sb->cstr, sb->capacity);
+    sb->cstr = sb->mem_realloc(sb->cstr, sb->capacity);
 }
 
 void hgl_sb_append(HglStringBuilder *sb, const char *src, size_t length)

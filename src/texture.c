@@ -36,7 +36,7 @@ void stbi_free(void *ptr){ /*(void) ptr;*/ fs_free(g_session_fs_allocator, ptr);
 
 Texture texture_load_from_file(StringView filepath)
 {
-    const char *filepath_cstr = sv_make_cstr_copy(filepath);
+    const char *filepath_cstr = sv_make_cstr_copy(filepath, alloc_temp);
     Texture tex = {
         .filepath = filepath,
     };

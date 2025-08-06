@@ -39,3 +39,8 @@ void alloc_init()
     g_session_fs_allocator = &session_fs_allocator_internal_;
 }
 
+void *alloc_temp(size_t size)
+{
+    return arena_alloc(g_frame_arena, size);    
+}
+
