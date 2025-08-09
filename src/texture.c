@@ -5,12 +5,12 @@
 #include "log.h"
 #include "glad/glad.h"
 
-void *stbi_alloc(size_t size);
-void *stbi_realloc(void *ptr, size_t size);
-void stbi_free(void *ptr);
-void *stbi_alloc(size_t size){ return fs_alloc(g_session_fs_allocator, size);}
-void *stbi_realloc(void *ptr, size_t size){ return fs_realloc(g_session_fs_allocator, ptr, size);}
-void stbi_free(void *ptr){ /*(void) ptr;*/ fs_free(g_session_fs_allocator, ptr); }
+static inline void *stbi_alloc(size_t size);
+static inline void *stbi_realloc(void *ptr, size_t size);
+static inline void stbi_free(void *ptr);
+static inline void *stbi_alloc(size_t size){ return hgl_alloc(g_session_fs_allocator, size);}
+static inline void *stbi_realloc(void *ptr, size_t size){ return hgl_realloc(g_session_fs_allocator, ptr, size);}
+static inline void stbi_free(void *ptr){ /*(void) ptr;*/ hgl_free(g_session_fs_allocator, ptr); }
 #define STBI_MALLOC stbi_alloc
 #define STBI_REALLOC stbi_realloc
 #define STBI_FREE stbi_free

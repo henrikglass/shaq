@@ -598,7 +598,7 @@ static i32 parse_arglist_expr(ExprTree **e, Lexer *l)
 
 static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, ExprTree *rhs)
 {
-    ExprTree *e = arena_alloc(g_frame_arena, sizeof(ExprTree));
+    ExprTree *e = hgl_alloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     e->lhs = lhs;
@@ -608,7 +608,7 @@ static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, Expr
 
 static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child)
 {
-    ExprTree *e = arena_alloc(g_frame_arena, sizeof(ExprTree));
+    ExprTree *e = hgl_alloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     e->child = child;
@@ -617,7 +617,7 @@ static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child)
 
 static ExprTree *new_atom_expr(ExprKind kind, Token token)
 {
-    ExprTree *e = arena_alloc(g_frame_arena, sizeof(ExprTree));
+    ExprTree *e = hgl_alloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     return e;
@@ -793,7 +793,7 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 
 static ExeExpr *codegen(const ExprTree *e)
 {
-    ExeExpr *exe = arena_alloc(g_session_arena, sizeof(ExeExpr));
+    ExeExpr *exe = hgl_alloc(g_session_arena, sizeof(ExeExpr));
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
     exe->qualifier = e->qualifier;
@@ -942,13 +942,13 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size)
     if (exe->code == NULL) {
         exe->size = 0;
         exe->capacity = 64;
-        exe->code = arena_alloc(g_session_arena, exe->capacity * sizeof(*exe->code));
+        exe->code = hgl_alloc(g_session_arena, exe->capacity * sizeof(*exe->code));
     } 
     if (exe->capacity < exe->size + size) {
         while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
-        exe->code = arena_realloc(g_session_arena, exe->code, exe->capacity * sizeof(*exe->code));
+        exe->code = hgl_realloc(g_session_arena, exe->code, exe->capacity * sizeof(*exe->code));
     }
     assert(exe->code != NULL && "eexe_allocator alloc failed");
     memcpy(&exe->code[exe->size], val, size);

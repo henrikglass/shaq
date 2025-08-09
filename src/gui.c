@@ -70,16 +70,14 @@ b8 gui_begin_main_window()
 i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_shaders)
 {
     Shader *current = &shaders[current_idx];
-    char *current_name_cstr = arena_alloc(g_frame_arena, current->name.length + 1);
-    memcpy(current_name_cstr, current->name.start, current->name.length);
-    current_name_cstr[current->name.length] = '\0';
+    char *current_name_cstr = hgl_sv_make_cstr_copy(current->name, alloc_temp);
 
-    if (imgui_begin_combo("Visible Shader", current_name_cstr)) {
+    if (imgui_begin_combo("Show", current_name_cstr)) {
         for (u32 i = 0; i < n_shaders; i++) {
             Shader *s = &shaders[i];
             b8 is_selected = (current == s);
 
-            char *s_name_cstr = arena_alloc(g_frame_arena, s->name.length + 1);
+            char *s_name_cstr = hgl_alloc(g_frame_arena, s->name.length + 1);
             memcpy(s_name_cstr, s->name.start, s->name.length);
             s_name_cstr[s->name.length] = '\0';
 
@@ -219,9 +217,7 @@ SelValue gui_get_dynamic_item_value(StringView label,
 
 static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
 {
-    char *label_cstr = arena_alloc(g_frame_arena, item->label.length + 1);
-    memcpy(label_cstr, item->label.start, item->label.length);
-    label_cstr[item->label.length] = '\0';
+    char *label_cstr = hgl_sv_make_cstr_copy(item->label, alloc_temp);
 
     switch (item->kind) {
         case INPUT_FLOAT: {

@@ -17,8 +17,8 @@
 void *ini_alloc(size_t size);
 void *ini_realloc(void *ptr, size_t size);
 void ini_free(void *ptr);
-void *ini_alloc(size_t size){ return fs_alloc(g_session_fs_allocator, size);}
-void *ini_realloc(void *ptr, size_t size){ return fs_realloc(g_session_fs_allocator, ptr, size);}
+void *ini_alloc(size_t size){ return hgl_alloc(g_session_fs_allocator, size);}
+void *ini_realloc(void *ptr, size_t size){ return hgl_realloc(g_session_fs_allocator, ptr, size);}
 void ini_free(void *ptr){ (void) ptr; /*fs_free(g_session_fs_allocator, ptr); */}
 #define HGL_INI_ALLOC ini_alloc
 #define HGL_INI_REALLOC ini_realloc
@@ -144,7 +144,7 @@ void shaq_new_frame(void)
     renderer_end_frame();
 
     /* collect garbage */
-    arena_free_all(g_frame_arena);
+    hgl_free_all(g_frame_arena);
 }
 
 void shaq_end(void)
@@ -253,8 +253,8 @@ static void reload_session()
     log_info("Reloaded");
 
     /* collect garbage */
-    arena_free_all(g_session_arena);
-    fs_free_all(g_session_fs_allocator);
+    hgl_free_all(g_session_arena);
+    hgl_free_all(g_session_fs_allocator);
 #if 0
     printf("frame arena          -- "); hgl_arena_print_usage(g_frame_arena);
     printf("session arena        -- "); hgl_arena_print_usage(g_session_arena);

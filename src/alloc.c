@@ -4,33 +4,26 @@
 
 #include "hgl_int.h"
 
-#define HGL_ARENA_ALLOC_DEBUG_PRINTS
-#define HGL_ARENA_ALLOC_IMPLEMENTATION
-#include "hgl_arena_alloc.h"
+#define HGL_ALLOC_IMPLEMENTATION
+#include "hgl_alloc.h"
 
-#define HGL_FS_ALLOC_IMPLEMENTATION
-#include "hgl_fs_alloc.h"
+static HglAllocator frame_arena_internal_ = {0};
+static HglAllocator session_arena_internal_ = {0};
+static HglAllocator session_fs_allocator_internal_ = {0};
 
-#define SESSION_FS_ALLOCATOR_BUFFER_SIZE          (256*1024*1024) // 256 MiB
-#define SESSION_FS_ALLOCATOR_FREE_STACK_CAPACITY         (4*1024)
-
-static u8 session_fs_allocator_buffer_[SESSION_FS_ALLOCATOR_BUFFER_SIZE];
-
-static Arena frame_arena_internal_ = {0};
-static Arena session_arena_internal_ = {0};
-static FsAllocator session_fs_allocator_internal_ = {0};
-
-Arena *g_frame_arena                = NULL;
-Arena *g_session_arena              = NULL;
-FsAllocator *g_session_fs_allocator = NULL;
+HglAllocator *g_frame_arena          = NULL;
+HglAllocator *g_session_arena        = NULL;
+HglAllocator *g_session_fs_allocator = NULL;
 
 void alloc_init()
 {
-    frame_arena_internal_          = hgl_arena_make(.kind = HGL_ARENA_BUMP_ALLOCATOR,  .size = 1024*1024);    //   1 MiB
-    session_arena_internal_        = hgl_arena_make(.kind = HGL_ARENA_STACK_ALLOCATOR, .size = 16*1024*1024); //  16 MiB
-    session_fs_allocator_internal_ = hgl_fs_make_from_buffer(session_fs_allocator_buffer_,
-                                                             SESSION_FS_ALLOCATOR_BUFFER_SIZE,
-                                                             SESSION_FS_ALLOCATOR_FREE_STACK_CAPACITY);
+    frame_arena_internal_          = hgl_alloc_make(.kind = HGL_BUMP_ARENA, 
+                                                    .size = 1024*1024);    //   1 MiB
+    session_arena_internal_        = hgl_alloc_make(.kind = HGL_STACK_ARENA, 
+                                                    .size = 16*1024*1024); //  16 MiB
+    session_fs_allocator_internal_ = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
+                                                    .size = 256*1024*1024, // 256 MiB
+                                                    .free_stack_capacity = 1024);
 
     assert(session_fs_allocator_internal_.memory != NULL);
 
@@ -41,6 +34,6 @@ void alloc_init()
 
 void *alloc_temp(size_t size)
 {
-    return arena_alloc(g_frame_arena, size);    
+    return hgl_alloc(g_frame_arena, size);    
 }
 
