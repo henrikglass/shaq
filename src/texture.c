@@ -36,7 +36,7 @@ static inline void stbi_free(void *ptr){ /*(void) ptr;*/ hgl_free(g_session_fs_a
 
 Texture texture_load_from_file(StringView filepath)
 {
-    const char *filepath_cstr = sv_make_cstr_copy(filepath, alloc_temp);
+    const char *filepath_cstr = sv_make_cstr_copy(filepath, frame_arena_alloc);
     Texture tex = {
         .filepath = filepath,
     };

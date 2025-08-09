@@ -14,15 +14,9 @@
 #include "gui.h"
 #include "log.h"
 
-void *ini_alloc(size_t size);
-void *ini_realloc(void *ptr, size_t size);
-void ini_free(void *ptr);
-void *ini_alloc(size_t size){ return hgl_alloc(g_session_fs_allocator, size);}
-void *ini_realloc(void *ptr, size_t size){ return hgl_realloc(g_session_fs_allocator, ptr, size);}
-void ini_free(void *ptr){ (void) ptr; /*fs_free(g_session_fs_allocator, ptr); */}
-#define HGL_INI_ALLOC ini_alloc
-#define HGL_INI_REALLOC ini_realloc
-#define HGL_INI_FREE ini_free
+#define HGL_INI_ALLOC session_fs_alloc
+#define HGL_INI_REALLOC session_fs_realloc
+#define HGL_INI_FREE dummy_free /* handled by call to `hgl_free_all(g_session_fs_allocator)` */
 #define HGL_INI_IMPLEMENTATION
 #include "hgl_ini.h"
 
@@ -255,11 +249,6 @@ static void reload_session()
     /* collect garbage */
     hgl_free_all(g_session_arena);
     hgl_free_all(g_session_fs_allocator);
-#if 0
-    printf("frame arena          -- "); hgl_arena_print_usage(g_frame_arena);
-    printf("session arena        -- "); hgl_arena_print_usage(g_session_arena);
-    printf("session fs allocator -- "); hgl_fs_print_usage(g_session_fs_allocator);
-#endif
 
     /* Reload ini file */
     shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath, false);
@@ -295,6 +284,13 @@ static void reload_session()
         log_print_info_log();
         log_print_error_log();
     }
+
+#if 1
+    printf("frame arena          -- "); hgl_alloc_print_usage(g_frame_arena);
+    printf("session arena        -- "); hgl_alloc_print_usage(g_session_arena);
+    printf("session fs allocator -- "); hgl_alloc_print_usage(g_session_fs_allocator);
+#endif
+
     return;
 
 out_error:
@@ -374,4 +370,7 @@ static void shaq_atexit_(void)
 {
     log_print_info_log();
     log_print_error_log();
+
+    renderer_final();
+    alloc_final();
 }

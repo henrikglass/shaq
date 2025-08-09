@@ -109,7 +109,13 @@ void renderer_init()
     }
 }
 
-void renderer_begin_frame(void)
+void renderer_final()
+{
+    imgui_final();
+    glfwTerminate();
+}
+
+void renderer_begin_frame()
 {
     renderer.window_was_resized_this_frame = false;
 }

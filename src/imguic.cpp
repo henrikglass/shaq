@@ -46,6 +46,13 @@ void imgui_init(GLFWwindow *window)
     ImGui::StyleColorsLight();
 }
 
+void imgui_final()
+{
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
 void imgui_set_darkmode(bool enable)
 {
     if (enable) {

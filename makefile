@@ -11,7 +11,7 @@ C_WARNINGS     := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 				  -Wno-override-init \
 			      -Wno-error=cpp 
 C_INCLUDES     := -Iinclude
-C_FLAGS        := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing
+C_FLAGS        := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
 DEBUG_FLAGS    := -O0 -ggdb3
 RELEASE_FLAGS  := -O2 -march=native
 L_FLAGS        := -Llib -lm -lglfw -limgui -lstdc++

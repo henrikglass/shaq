@@ -28,6 +28,7 @@ extern "C" {
 #endif
 
 void imgui_init(GLFWwindow *window);
+void imgui_final(void);
 void imgui_set_darkmode(bool enable);
 void imgui_begin_frame(void);
 b8 imgui_begin(const char *str);

@@ -15,6 +15,7 @@
 /*--- Public function prototypes --------------------------------------------------------*/
 
 void renderer_init(void);
+void renderer_final(void);
 void renderer_begin_frame(void);
 void renderer_do_shader_pass(Shader *s);
 void renderer_do_final_pass(Shader *s);

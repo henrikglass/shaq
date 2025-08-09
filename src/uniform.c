@@ -89,7 +89,7 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
 
 void uniform_determine_location_in_shader_program(Uniform *u, u32 shader_program)
 {
-    char *name_cstr = hgl_sv_make_cstr_copy(u->name, alloc_temp);
+    char *name_cstr = hgl_sv_make_cstr_copy(u->name, frame_arena_alloc);
     u->gl_uniform_location = glGetUniformLocation(shader_program, name_cstr);
 }
 
