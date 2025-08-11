@@ -31,14 +31,25 @@
  * hgl_alloc.h implements a collection of simple to use allocators, through a common
  * API. hgl_alloc.h supports the following types of allocators:
  *
- *     - Bump allocator (arena allocator with push-only semantics)
- *     - Stack allocator (arena allocator with push-and-pop semantics)
- *     - Free stack allocator (General purpose allocator similar to a free-list allocator) 
+ *     - Arena allocator (linear/bump allocator with push-only semantics)
+ *     - Stack allocator (linear/bump allocator with push-and-pop semantics)
+ *     - Scratch allocator (linear/bump allocator with automatic wrap-around semantics)
+ *     - Free stack allocator (General purpose allocator similar to a free-list allocator).
+ *       This allocator uses a first-fit strategy. Neighbouring chunks of free memory are
+ *       lazily coalesced upon calls to `hgl_free`. I do not recommend using this allocator
+ *       for anything more than short to medium lifetime allocations, because of the poor
+ *       fragmentation properties.
  *     - Pool allocator (Allocator with fixed size chunks)
+ *     - Lifetime managed malloc allocator (General purpose allocator with 'free all'-support).
+ *       This allocator is a wrapper around the 'malloc' family of functions. Lifetimes are
+ *       managed by constructing a doubly-linked list containing all allocations which may be
+ *       free'd all at once using `hgl_free_all`.
  *
- * Planned:
+ * Maybe planned:
  *
- *     - Free list allocator
+ *     - hgl_alloc_defrag?
+ *     - Buddy allocator
+ *     - Selectable first-fit/best-fit strategies for the free stack allocator
  *
  *
  * USAGE:
@@ -72,7 +83,7 @@
 #define HGL_ALLOC_BUMP_ARENA_INITIALIZER(s, ...)  \
     {                                             \
         .config =  {                              \
-            .kind = HGL_BUMP_ARENA,               \
+            .kind = HGL_ARENA_ALLOCATOR,          \
             .backend = HGL_BUFFER_BACKED,         \
             .alignment = 16,                      \
             .size = (s),                          \
@@ -85,7 +96,7 @@
 #define HGL_ALLOC_STACK_ARENA_INITIALIZER(s, ...) \
     {                                             \
         .config =  {                              \
-            .kind = HGL_STACK_ARENA,              \
+            .kind = HGL_STACK_ALLOCATOR,          \
             .backend = HGL_BUFFER_BACKED,         \
             .alignment = 16,                      \
             .size = (s),                          \
@@ -94,6 +105,11 @@
         .memory = (uint8_t[(s)]){0},              \
         .head = 0,                                \
     }
+
+#define HGL_ALLOC_DEFAULT_KIND       HGL_ARENA_ALLOCATOR
+#define HGL_ALLOC_DEFAULT_BACKEND    HGL_MMAP
+#define HGL_ALLOC_DEFAULT_ALIGNMENT  16
+#define HGL_ALLOC_DEFAULT_SIZE       0
 
 /*--- Include files ---------------------------------------------------------------------*/
 
@@ -116,10 +132,12 @@ typedef enum
 
 typedef enum
 {
-    HGL_BUMP_ARENA,       // push-only arena
-    HGL_STACK_ARENA,      // push-and-pop arena
-    HGL_FREE_STACK_ALLOCATOR, // Like a free list allocator but with more fragmentation
-    HGL_POOL_ALLOCATOR,       // Allocator with fixed size chunks
+    HGL_ARENA_ALLOCATOR,                    // push-only arena
+    HGL_STACK_ALLOCATOR,                    // push-and-pop arena
+    HGL_SCRATCH_ALLOCATOR,                  // push-only, silent wrap-around
+    HGL_FREE_STACK_ALLOCATOR,               // Like a free list allocator but with more fragmentation
+    HGL_POOL_ALLOCATOR,                     // Allocator with fixed size chunks
+    HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR,  // malloc family functions with "free all" support
     HGL_N_ALLOCATOR_KINDS,
 } HglAllocKind;
 
@@ -127,8 +145,7 @@ typedef enum
 {
     HGL_OP_ALLOC             = (1u << 0),
     HGL_OP_REALLOC_IN_PLACE  = (1u << 1),
-    HGL_OP_REALLOC_ARBITRARY = (1u << 2),
-    HGL_OP_REALLOC           = HGL_OP_REALLOC_IN_PLACE | HGL_OP_REALLOC_ARBITRARY,
+    HGL_OP_REALLOC           = (1u << 2),
     HGL_OP_FREE              = (1u << 3),
     HGL_OP_FREE_ALL          = (1u << 4),
     HGL_OP_FREE_LAST         = (1u << 5),
@@ -159,6 +176,13 @@ typedef struct
     ssize_t pool_chunk_size;
 } HglAllocConfig;
 
+typedef struct HglAllocListNode
+{
+        struct HglAllocListNode *prev;
+        struct HglAllocListNode *next;
+    size_t alloc_size;
+} HglAllocListNode;
+
 typedef struct
 {
     HglAllocConfig config;
@@ -167,20 +191,22 @@ typedef struct
         size_t head;
         HglAllocFreeStack free_stack;
         HglAllocPool pool;
+        HglAllocListNode *linked_list_head;
     };
 } HglAllocator;
 
-#define hgl_alloc_make(...) hgl_alloc_make_((HglAllocConfig){.kind = HGL_BUMP_ARENA,            \
-                                                             .backend = HGL_MMAP,               \
-                                                             .optional_backing_buffer = NULL,   \
-                                                             .alignment = 16,                   \
-                                                             .size = 0,                         \
-                                                             .free_stack_capacity = -1,         \
-                                                             .pool_chunk_size = -1,             \
+#define hgl_alloc_make(...) hgl_alloc_make_((HglAllocConfig){.kind = HGL_ALLOC_DEFAULT_KIND,           \
+                                                             .backend = HGL_ALLOC_DEFAULT_BACKEND,     \
+                                                             .optional_backing_buffer = NULL,          \
+                                                             .alignment = HGL_ALLOC_DEFAULT_ALIGNMENT, \
+                                                             .size = HGL_ALLOC_DEFAULT_SIZE,           \
+                                                             .free_stack_capacity = -1,                \
+                                                             .pool_chunk_size = -1,                    \
                                                              __VA_ARGS__})
 HglAllocator hgl_alloc_make_(HglAllocConfig config);
 #define hgl_alloc_from_pool(allocator) hgl_alloc((allocator), (allocator)->config.pool_chunk_size)
 void *hgl_alloc(HglAllocator *allocator, size_t alloc_size);
+void *hgl_zalloc(HglAllocator *allocator, size_t alloc_size);
 void *hgl_realloc(HglAllocator *allocator, void *ptr, size_t alloc_size);
 void hgl_free(HglAllocator *allocator, void *ptr);
 void hgl_free_last(HglAllocator *allocator);
@@ -203,6 +229,15 @@ size_t hgl_alloc_usage(HglAllocator *allocator);
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <linux/mman.h>
+#include <stddef.h>
+#include <stdalign.h>
+
+#ifndef MSB64
+#define MSB64(x) (63 - __builtin_clzll(x))
+#endif
+#define LIST_NODE_PADDED_SIZE (1 << MSB64((sizeof(HglAllocListNode) << 1) - 1))
+
+static_assert(sizeof(HglAllocListNode) >= alignof(max_align_t));
 
 typedef struct
 {
@@ -235,10 +270,20 @@ static inline void hgl_alloc_print_(const char *fmt, ...)
 HglAllocator hgl_alloc_make_(HglAllocConfig config)
 {
     HglAllocator allocator = {
-        .head = 0,
         .memory = NULL,
         .config = config
     };
+
+    if (config.kind == HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR) {
+        if (config.size != HGL_ALLOC_DEFAULT_SIZE) {
+            HGL_ALLOC_WARNING("hgl_alloc_make_(): `size` has no effect for HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR.\n");
+        }
+        if (config.alignment != HGL_ALLOC_DEFAULT_ALIGNMENT) {
+            HGL_ALLOC_WARNING("hgl_alloc_make_(): `alignment` has no effect for HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR.\n");
+        }
+        allocator.linked_list_head = NULL;
+        return allocator;
+    }
 
     if (config.alignment % 2 != 0) {
         HGL_ALLOC_WARNING("hgl_alloc_make_(): `alignment` must be a power of 2.\n");
@@ -251,8 +296,9 @@ HglAllocator hgl_alloc_make_(HglAllocConfig config)
     }
 
     switch (config.kind) {
-        case HGL_BUMP_ARENA: break;
-        case HGL_STACK_ARENA: break;
+        case HGL_ARENA_ALLOCATOR: break;
+        case HGL_STACK_ALLOCATOR: break;
+        case HGL_SCRATCH_ALLOCATOR: break;
 
         case HGL_FREE_STACK_ALLOCATOR: {
             if (config.free_stack_capacity < 1) {
@@ -276,6 +322,7 @@ HglAllocator hgl_alloc_make_(HglAllocConfig config)
             }
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR:
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 
@@ -327,8 +374,11 @@ HglAllocator hgl_alloc_make_(HglAllocConfig config)
     }
 
     switch (config.kind) {
-        case HGL_BUMP_ARENA: break;
-        case HGL_STACK_ARENA: break;
+        case HGL_ARENA_ALLOCATOR:
+        case HGL_STACK_ALLOCATOR:
+        case HGL_SCRATCH_ALLOCATOR: {
+            allocator.head = 0;
+        } break;
 
         case HGL_FREE_STACK_ALLOCATOR: {
             if (config.backend == HGL_BUFFER_BACKED) {
@@ -366,6 +416,7 @@ HglAllocator hgl_alloc_make_(HglAllocConfig config)
             hgl_free_all(&allocator);
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR:
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 
@@ -380,7 +431,7 @@ void *hgl_alloc(HglAllocator *allocator, size_t alloc_size)
     }
 
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA: {
+        case HGL_ARENA_ALLOCATOR: {
             void *ptr = allocator->memory + allocator->head;
             size_t aligned_size = alloc_size + allocator->config.alignment - 1;
             aligned_size &= ~(allocator->config.alignment - 1);
@@ -399,7 +450,7 @@ void *hgl_alloc(HglAllocator *allocator, size_t alloc_size)
             return ptr;
         } break;
 
-        case HGL_STACK_ARENA: {
+        case HGL_STACK_ALLOCATOR: {
             void *ptr = allocator->memory + allocator->head;
 
             size_t aligned_size = alloc_size + allocator->config.alignment - 1;
@@ -424,6 +475,31 @@ void *hgl_alloc(HglAllocator *allocator, size_t alloc_size)
             memcpy(&allocator->memory[footer_offset], &footer, sizeof(HglAllocStackFooter));
 
             /* Move head to nearest multiple of alignment after `head` + `alloc_size` */
+            allocator->head += aligned_size;
+
+            return ptr;
+        } break;
+
+        case HGL_SCRATCH_ALLOCATOR: {
+            size_t aligned_size = alloc_size + allocator->config.alignment - 1;
+            aligned_size &= ~(allocator->config.alignment - 1);
+
+            /* Allocation too big: Fail */
+            if (aligned_size > allocator->config.size) {
+#ifdef HGL_ALLOC_DEBUG_PRINTS
+                HGL_ALLOC_WARNING("hgl_alloc(): Allocation failed. Requested %lu bytes (%lu including "
+                                  "padding), but the scratch allocator can only hold %zu bytes.\n",
+                                  alloc_size, aligned_size, allocator->config.size);
+#endif
+                return NULL;
+            }
+
+            /* Silently wrap if needed */
+            if (allocator->head + aligned_size > allocator->config.size) {
+                allocator->head = 0;
+            }
+
+            void *ptr = allocator->memory + allocator->head;
             allocator->head += aligned_size;
 
             return ptr;
@@ -490,40 +566,78 @@ void *hgl_alloc(HglAllocator *allocator, size_t alloc_size)
             return allocator->pool.chunks[allocator->pool.head--];
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            void *ptr = malloc(alloc_size + LIST_NODE_PADDED_SIZE);
+            if (ptr == NULL) {
+                return NULL;
+            }
+            uint8_t *ptr8 = (uint8_t *)ptr;
+
+            struct HglAllocListNode *node = (HglAllocListNode *) ptr;
+
+            if (allocator->linked_list_head == NULL) {
+                node->prev = node;
+                node->next = node;
+                allocator->linked_list_head = node;
+            } else {
+                HglAllocListNode *temp = allocator->linked_list_head;
+                allocator->linked_list_head = node;
+                node->prev = temp;
+                node->next = temp->next;
+                node->next->prev = node;
+                node->prev->next = node;
+            }
+
+            node->alloc_size = alloc_size;
+
+            return ptr8 + LIST_NODE_PADDED_SIZE;
+        } break;
+
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 
     return NULL;
 }
 
+void *hgl_zalloc(HglAllocator *allocator, size_t alloc_size)
+{
+    void *ptr = hgl_alloc(allocator, alloc_size);
+    memset(ptr, 0, alloc_size);
+    return ptr;
+}
+
 void *hgl_realloc(HglAllocator *allocator, void *ptr, size_t alloc_size)
 {
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA: {
-            HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_BUMP_ARENA.\n");
+        case HGL_ARENA_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_ARENA_ALLOCATOR.\n");
         } break;
 
-        case HGL_STACK_ARENA: {
+        case HGL_STACK_ALLOCATOR: {
             hgl_free(allocator, ptr);
             return hgl_alloc(allocator, alloc_size);
         } break;
+
+        case HGL_SCRATCH_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_SCRATCH_ALLOCATOR.\n");
+        };
 
         case HGL_FREE_STACK_ALLOCATOR: {
             // TODO I haven't really though about this too hard..
             uint8_t *ptr8 = (uint8_t *) ptr;
 
             if (ptr8 == NULL) {
-                return hgl_alloc(allocator, alloc_size);        
+                return hgl_alloc(allocator, alloc_size);
             }
 
             if ((ptr8 < allocator->memory) || (ptr8 > (allocator->memory + allocator->config.size))) {
-                HGL_ALLOC_ERROR("hgl_realloc(): Invalid pointer. Pointer ptr=%p is outside the valid range [%p, %p].\n", 
-                        ptr, allocator->memory, allocator->memory + allocator->config.size);
+                HGL_ALLOC_ERROR("hgl_realloc(): Invalid pointer. Pointer ptr=%p is outside the valid range [%p, %p].\n",
+                                ptr, allocator->memory, allocator->memory + allocator->config.size);
             }
 
             if (((uintptr_t)ptr8 & (allocator->config.alignment - 1)) != 0) {
-                HGL_ALLOC_ERROR("hgl_realloc(): Invalid pointer. Pointer ptr=%p has incorrect alignment (%d).\n", 
-                        ptr, allocator->config.alignment);
+                HGL_ALLOC_ERROR("hgl_realloc(): Invalid pointer. Pointer ptr=%p has incorrect alignment (%d).\n",
+                                ptr, allocator->config.alignment);
             }
 
             ptr8 -= allocator->config.alignment;
@@ -532,16 +646,52 @@ void *hgl_realloc(HglAllocator *allocator, void *ptr, size_t alloc_size)
 
             /* alloc new & copy data there */
             void *newptr = hgl_alloc(allocator, alloc_size);
-            memcpy(newptr, ptr, current_allocation_size);
+            if (newptr != ptr) {
+                memcpy(newptr, ptr, current_allocation_size);
+            }
 
             /* free old chunk */
             hgl_free(allocator, ptr);
 
-            return newptr; 
+            return newptr;
         } break;
 
         case HGL_POOL_ALLOCATOR: {
             HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_POOL_ALLOCATOR.\n");
+        } break;
+
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            uint8_t *ptr8 = (uint8_t *) ptr;
+
+            if (ptr8 == NULL) {
+                return hgl_alloc(allocator, alloc_size);
+            }
+
+            HglAllocListNode *node = (HglAllocListNode *)(ptr8 - LIST_NODE_PADDED_SIZE);
+            HglAllocListNode *prev = node->prev;
+            HglAllocListNode *next = node->next;
+            bool is_head = (node == allocator->linked_list_head);
+            bool is_only_node = (node == next) && (node == prev);
+
+            node = realloc((void *)node, alloc_size + LIST_NODE_PADDED_SIZE);
+            if (node == NULL) {
+                return NULL;
+            }
+
+            if (is_only_node) {
+                node->next = node;
+                node->prev = node;
+            } else {
+                next->prev = node;
+                prev->next = node;
+            }
+
+            if (is_head) {
+                allocator->linked_list_head = node;
+            }
+
+            node->alloc_size = alloc_size;
+            return ((uint8_t *)node) + LIST_NODE_PADDED_SIZE;
         } break;
 
         case HGL_N_ALLOCATOR_KINDS: assert(0);
@@ -557,11 +707,11 @@ void hgl_free(HglAllocator *allocator, void *ptr)
     }
 
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA: {
-            HGL_ALLOC_ERROR("hgl_free(): invalid operation on HGL_BUMP_ARENA.\n");
+        case HGL_ARENA_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_free(): invalid operation on HGL_ARENA_ALLOCATOR.\n");
         } break;
 
-        case HGL_STACK_ARENA: {
+        case HGL_STACK_ALLOCATOR: {
             if (allocator->head == 0) {
                 HGL_ALLOC_ERROR("hgl_free(): Invalid pointer. Arena is empty.\n"); // "except for one man"
             }
@@ -577,17 +727,21 @@ void hgl_free(HglAllocator *allocator, void *ptr)
             allocator->head = last_footer->alloc_offset;
         } break;
 
+        case HGL_SCRATCH_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_SCRATCH_ALLOCATOR.\n");
+        };
+
         case HGL_FREE_STACK_ALLOCATOR: {
             uint8_t *ptr8 = (uint8_t *) ptr;
 
             if ((ptr8 < allocator->memory) || (ptr8 > (allocator->memory + allocator->config.size))) {
                 HGL_ALLOC_ERROR("hgl_free(): Invalid pointer. Pointer ptr=%p is outside the valid range [%p, %p].\n",
-                        ptr, allocator->memory, allocator->memory + allocator->config.size);
+                                ptr, allocator->memory, allocator->memory + allocator->config.size);
             }
 
             if (((uintptr_t)ptr8 & (allocator->config.alignment - 1)) != 0) {
                 HGL_ALLOC_ERROR("hgl_free(): Invalid pointer. Pointer ptr=%p has incorrect alignment (%d).\n",
-                        ptr, allocator->config.alignment);
+                                ptr, allocator->config.alignment);
             }
 
             ptr8 -= allocator->config.alignment;
@@ -630,6 +784,26 @@ void hgl_free(HglAllocator *allocator, void *ptr)
             allocator->pool.chunks[++(allocator->pool.head)] = ptr;
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            uint8_t *ptr8 = (uint8_t *) ptr;
+
+            HglAllocListNode *node = (HglAllocListNode *) (ptr8 - LIST_NODE_PADDED_SIZE);
+            node->prev->next = node->next;
+            node->next->prev = node->prev;
+            HglAllocListNode *prev = node->prev;
+            free(node);
+
+            /* If this header was the head of the linked list, make the next one head. */
+            if (allocator->linked_list_head == node) {
+                allocator->linked_list_head = prev;
+            }
+
+            /* If the prev. one is also the head, then there was only one allocation in the list. Make head == NULL. */
+            if (allocator->linked_list_head == node) {
+                allocator->linked_list_head = NULL;
+            }
+        } break;
+
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 }
@@ -637,11 +811,11 @@ void hgl_free(HglAllocator *allocator, void *ptr)
 void hgl_free_last(HglAllocator *allocator)
 {
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA: {
-            HGL_ALLOC_ERROR("hgl_free_last(): invalid operation on HGL_BUMP_ARENA.\n");
+        case HGL_ARENA_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_free_last(): invalid operation on HGL_ARENA_ALLOCATOR.\n");
         } break;
 
-        case HGL_STACK_ARENA: {
+        case HGL_STACK_ALLOCATOR: {
             if (allocator->head == 0) {
                 HGL_ALLOC_ERROR("hgl_free_last(): Arena is empty.\n"); // "except for one man"
             }
@@ -650,12 +824,20 @@ void hgl_free_last(HglAllocator *allocator)
             allocator->head = last_footer->alloc_offset;
         } break;
 
+        case HGL_SCRATCH_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_SCRATCH_ALLOCATOR.\n");
+        };
+
         case HGL_FREE_STACK_ALLOCATOR: {
             HGL_ALLOC_ERROR("hgl_free_last(): invalid operation on HGL_FREE_STACK_ALLOCATOR.\n");
         } break;
 
         case HGL_POOL_ALLOCATOR: {
             HGL_ALLOC_ERROR("hgl_free_last(): invalid operation on HGL_POOL_ALLOCATOR.\n");
+        } break;
+
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_free_last(): invalid operation on HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR.\n");
         } break;
 
         case HGL_N_ALLOCATOR_KINDS: assert(0);
@@ -666,10 +848,14 @@ void hgl_free_last(HglAllocator *allocator)
 void hgl_free_all(HglAllocator *allocator)
 {
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA:
-        case HGL_STACK_ARENA: {
+        case HGL_ARENA_ALLOCATOR:
+        case HGL_STACK_ALLOCATOR: {
             allocator->head = 0;
         } break;
+
+        case HGL_SCRATCH_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): nonsensical operation on HGL_SCRATCH_ALLOCATOR.\n");
+        };
 
         case HGL_FREE_STACK_ALLOCATOR: {
             allocator->free_stack.count = 1;
@@ -685,12 +871,24 @@ void hgl_free_all(HglAllocator *allocator)
             }
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            while (allocator->linked_list_head != NULL) {
+                HglAllocListNode *node = allocator->linked_list_head->next;
+                hgl_free(allocator, (uint8_t*)node + LIST_NODE_PADDED_SIZE);
+            }
+        } break;
+
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 }
 
 void hgl_alloc_destroy(HglAllocator *allocator)
 {
+    if (allocator->config.kind == HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR) {
+        hgl_free_all(allocator);
+        return;
+    }
+
     switch (allocator->config.backend) {
         case HGL_ALIGNED_ALLOC: free(allocator->memory); break;
         case HGL_MMAP:
@@ -701,8 +899,9 @@ void hgl_alloc_destroy(HglAllocator *allocator)
     }
 
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA: break;
-        case HGL_STACK_ARENA: break;
+        case HGL_ARENA_ALLOCATOR: break;
+        case HGL_STACK_ALLOCATOR: break;
+        case HGL_SCRATCH_ALLOCATOR: break;
         case HGL_FREE_STACK_ALLOCATOR: {
             if (allocator->config.backend != HGL_BUFFER_BACKED) {
                 free(allocator->free_stack.arr);
@@ -713,6 +912,7 @@ void hgl_alloc_destroy(HglAllocator *allocator)
                 free(allocator->pool.chunks);
             }
         } break;
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR:
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 }
@@ -720,10 +920,12 @@ void hgl_alloc_destroy(HglAllocator *allocator)
 bool hgl_alloc_supports(HglAllocator *allocator, uint32_t ops)
 {
     static const uint32_t SUPPORTED_OPS[HGL_N_ALLOCATOR_KINDS] = {
-        [HGL_BUMP_ARENA]           = HGL_OP_ALLOC | HGL_OP_FREE_ALL,
-        [HGL_STACK_ARENA]          = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_REALLOC_IN_PLACE | HGL_OP_FREE_LAST,
-        [HGL_FREE_STACK_ALLOCATOR] = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_REALLOC | HGL_OP_FREE,
-        [HGL_POOL_ALLOCATOR]       = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_FREE,
+        [HGL_ARENA_ALLOCATOR]                   = HGL_OP_ALLOC | HGL_OP_FREE_ALL,
+        [HGL_STACK_ALLOCATOR]                   = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_REALLOC_IN_PLACE | HGL_OP_FREE_LAST,
+        [HGL_SCRATCH_ALLOCATOR]                 = HGL_OP_ALLOC,
+        [HGL_FREE_STACK_ALLOCATOR]              = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_REALLOC | HGL_OP_FREE,
+        [HGL_POOL_ALLOCATOR]                    = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_FREE,
+        [HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR] = HGL_OP_ALLOC | HGL_OP_FREE_ALL | HGL_OP_REALLOC | HGL_OP_FREE,
     };
 
     return (ops & SUPPORTED_OPS[allocator->config.kind]) == ops;
@@ -732,11 +934,15 @@ bool hgl_alloc_supports(HglAllocator *allocator, uint32_t ops)
 void hgl_alloc_print_usage(HglAllocator *allocator)
 {
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA:
-        case HGL_STACK_ARENA: {
+        case HGL_ARENA_ALLOCATOR:
+        case HGL_STACK_ALLOCATOR: {
             printf("usage: %f%% (%lu/%lu bytes).\n",
                    100.0 * ((double) allocator->head / (double) allocator->config.size),
                    allocator->head, allocator->config.size);
+        } break;
+
+        case HGL_SCRATCH_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): nonsensical operation on HGL_SCRATCH_ALLOCATOR.\n");
         } break;
 
         case HGL_FREE_STACK_ALLOCATOR: {
@@ -763,6 +969,10 @@ void hgl_alloc_print_usage(HglAllocator *allocator)
 
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            printf("usage: %zu bytes.\n", hgl_alloc_usage(allocator));
+        } break;
+
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 }
@@ -770,9 +980,14 @@ void hgl_alloc_print_usage(HglAllocator *allocator)
 size_t hgl_alloc_usage(HglAllocator *allocator)
 {
     switch (allocator->config.kind) {
-        case HGL_BUMP_ARENA:
-        case HGL_STACK_ARENA: {
+        case HGL_ARENA_ALLOCATOR:
+        case HGL_STACK_ALLOCATOR: {
             return allocator->head;
+        } break;
+
+        case HGL_SCRATCH_ALLOCATOR: {
+            HGL_ALLOC_ERROR("hgl_realloc(): nonsensical operation on HGL_SCRATCH_ALLOCATOR.\n");
+            return 0;
         } break;
 
         case HGL_FREE_STACK_ALLOCATOR: {
@@ -790,11 +1005,23 @@ size_t hgl_alloc_usage(HglAllocator *allocator)
             return allocator->pool.n_chunks - allocator->pool.head - 1;
         } break;
 
+        case HGL_LIFETIME_MANAGED_MALLOC_ALLOCATOR: {
+            size_t used = 0;
+            HglAllocListNode *node = allocator->linked_list_head;
+            if (node == NULL) {
+                return 0;
+            }
+            do {
+                used += node->alloc_size;
+                node = node->next;
+            } while (node != allocator->linked_list_head);
+            return used;
+        } break;
+
         case HGL_N_ALLOCATOR_KINDS: assert(0);
     }
 
     return 0;
 }
-
 
 #endif /* HGL_ALLOC_IMPLEMENTATION */

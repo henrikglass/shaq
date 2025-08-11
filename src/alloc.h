@@ -6,6 +6,7 @@
 
 #define Allocator HglAllocator
 
+extern Allocator *g_temp_allocator;
 extern Allocator *g_frame_arena;
 extern Allocator *g_session_arena;
 extern Allocator *g_session_fs_allocator;
@@ -13,6 +14,7 @@ extern Allocator *g_session_fs_allocator;
 void alloc_init(void);
 void alloc_final(void);
 
+void *tmp_alloc(size_t size);
 void *frame_arena_alloc(size_t size);
 void *session_arena_alloc(size_t size);
 void *session_arena_realloc(void *ptr, size_t size);

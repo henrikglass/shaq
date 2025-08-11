@@ -70,7 +70,7 @@ b8 gui_begin_main_window()
 i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_shaders)
 {
     Shader *current = &shaders[current_idx];
-    char *current_name_cstr = hgl_sv_make_cstr_copy(current->name, frame_arena_alloc);
+    char *current_name_cstr = hgl_sv_make_cstr_copy(current->name, tmp_alloc);
 
     if (imgui_begin_combo("Show", current_name_cstr)) {
         for (u32 i = 0; i < n_shaders; i++) {
@@ -217,7 +217,7 @@ SelValue gui_get_dynamic_item_value(StringView label,
 
 static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
 {
-    char *label_cstr = hgl_sv_make_cstr_copy(item->label, frame_arena_alloc);
+    char *label_cstr = hgl_sv_make_cstr_copy(item->label, tmp_alloc);
 
     switch (item->kind) {
         case INPUT_FLOAT: {
