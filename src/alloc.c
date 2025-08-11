@@ -41,7 +41,6 @@ void alloc_init()
 
 void alloc_final()
 {
-    hgl_free_all(g_temp_allocator);
     hgl_free_all(g_frame_arena);
     hgl_free_all(g_session_arena);
     hgl_free_all(g_session_fs_allocator);

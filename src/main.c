@@ -39,12 +39,7 @@ int main(int argc, char *argv[])
     srand(*opt_rng_seed == 0 ? (u64)time(NULL): *opt_rng_seed);
 
     shaq_begin(*opt_input, *opt_quiet);
-    while (true) {
-        if (shaq_should_close()) {
-            printf("Main: got \"shaq should close\"!\n");
-            break;
-        }
-
+    while (!shaq_should_close()) {
         shaq_new_frame();
     }
     shaq_end();
