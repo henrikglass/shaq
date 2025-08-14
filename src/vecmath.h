@@ -3,8 +3,8 @@
 
 /*--- Include files ---------------------------------------------------------------------*/
 
+#define HGLM_STRIP_PREFIX
 #include "hglm.h"
-#include "hglm_aliases.h"
 
 #endif /* VECMATH_H */
 
