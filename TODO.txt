@@ -1,8 +1,8 @@
-SEL: mouse_pos()
+GUI: do last render step to its own dockable imgui window
+GUI: Text editor for *.ini, shaders, etc.
+GUI: Menu - open/edit/etc.
 SEL: mouse_left_button_down()
 SEL: mouse_right_button_down()
 SEL: missing basic functions, E.g. matmul, idk.
 basic cleanup + renaming stuff (e.g. session_arena)
-GUI: imgui update + imgui docking
 GUI: split windows between functions
-GUI: Text editor for *.ini, shaders, etc.
