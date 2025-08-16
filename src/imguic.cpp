@@ -32,6 +32,7 @@ void imgui_init(GLFWwindow *window)
 {
     IMGUI_CHECKVERSION(); 
     ImGui::CreateContext();
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 450 core");
 
@@ -67,6 +68,7 @@ void imgui_begin_frame()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 b8 imgui_begin(const char *str)
@@ -205,7 +207,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    //ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -51,7 +51,7 @@ b8 gui_begin_main_window()
 {
     gui.smoothed_deltatime = 0.97f*gui.smoothed_deltatime +
                              0.03f*shaq_deltatime();
-    if (!imgui_begin("##Main window")) {
+    if (!imgui_begin("Shaq")) {
         return false;
     }
 
