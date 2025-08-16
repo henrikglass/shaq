@@ -24,6 +24,7 @@ b8 renderer_should_close(void);
 b8 renderer_should_hide_gui(void);
 b8 renderer_window_was_resized(void);
 IVec2 renderer_iresolution(void);
+Vec2 renderer_mouse_position(void);
 //GLFWwindow *renderer_get_window(void);
 
 #endif /* RENDERER_H */

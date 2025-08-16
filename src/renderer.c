@@ -187,6 +187,15 @@ IVec2 renderer_iresolution()
     return renderer.resolution;
 }
 
+Vec2 renderer_mouse_position()
+{
+    f64 x, y;
+    glfwGetCursorPos(renderer.window, &x, &y);
+    Vec2 mpos = vec2_make(x, y);
+    vec2_print(mpos);
+    return mpos;
+}
+
 //GLFWwindow *renderer_get_window()
 //{
 //    return renderer.window;

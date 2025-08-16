@@ -114,6 +114,7 @@ static SelValue fn_vec2_dot_(void *args);
 static SelValue fn_vec2_mul_scalar_(void *args);
 static SelValue fn_vec2_lerp_(void *args);
 static SelValue fn_vec2_slerp_(void *args);
+static SelValue fn_mouse_position_(void *args);
 
 static SelValue fn_vec3_(void *args);
 static SelValue fn_vec3_from_spherical_(void *args);
@@ -237,6 +238,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("vec2_mul_scalar"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_mul_scalar_, .argtypes = {TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},            .synopsis = "vec2 vec2_mul_scalar(vec2 v, float s)", .desc = NULL, },
     { .id = SV_LIT("vec2_lerp"),       .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_lerp(vec2 a, vec2 b, float t)", .desc = NULL, },
     { .id = SV_LIT("vec2_slerp"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,      .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_slerp(vec2 a, vec2 b, float t)", .desc = NULL, },
+    { .id = SV_LIT("mouse_position"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,  .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = NULL, },
 
     { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = NULL, },
     { .id = SV_LIT("vec2_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = NULL, },
@@ -259,8 +261,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("vec4_xyz"),        .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_xyz_,        .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec3 vec3_xyz(vec4 v)",                         .desc = "Returns the x,y, and z components of `v` as a vec3", },
     { .id = SV_LIT("rgba"),            .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,            .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
 
-    { .id = SV_LIT("ivec2"),        .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_ivec2_,            .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "ivec2 ivec2(int x, int y)", .desc = NULL, },
-    { .id = SV_LIT("iresolution"),  .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_iresolution_,      .argtypes = {TYPE_NIL},                                         .synopsis = "ivec2 iresolution()", .desc = "Returns the current window resolution", },
+    { .id = SV_LIT("ivec2"),           .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_ivec2_,            .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},                                         .synopsis = "ivec2 ivec2(int x, int y)", .desc = NULL, },
+    { .id = SV_LIT("iresolution"),     .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_iresolution_,      .argtypes = {TYPE_NIL},                                         .synopsis = "ivec2 iresolution()", .desc = "Returns the current window resolution", },
 
     { .id = SV_LIT("ivec3"),      .type = TYPE_IVEC3, .qualifier = QUALIFIER_PURE, .impl = fn_ivec3_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL},                               .synopsis = "ivec3 ivec3(int x, int y, int z)", .desc = NULL, },
 
@@ -919,6 +921,12 @@ static SelValue fn_vec2_slerp_(void *args)
 {
     Vec2 *args_v2 = (Vec2 *) args;
     return (SelValue) {.val_vec2 = hglm_vec2_slerp(args_v2[0], args_v2[1], *(f32*)&args_v2[2])};
+}
+
+static SelValue fn_mouse_position_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_vec2 = renderer_mouse_position()};
 }
 
 
