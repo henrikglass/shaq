@@ -247,7 +247,9 @@ void hgl_ini_fprint(FILE *stream, HglIni *ini);
 #define HGL_INI_FREE free
 #endif
 
+#ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
 #define hgl_ini_da_add(da, item)                                                         \
     do {                                                                                 \

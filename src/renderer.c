@@ -12,6 +12,8 @@
 #include <GLFW/glfw3.h>
 #include "imguic.h"
 
+#include "tracy/TracyC.h"
+
 /*--- Private macros --------------------------------------------------------------------*/
 
 /*--- Private type definitions ----------------------------------------------------------*/
@@ -122,6 +124,8 @@ void renderer_begin_frame()
 
 void renderer_do_shader_pass(Shader *s)
 {
+    TracyCZone(tracy_ctx, 1);
+
     glUseProgram(s->gl_shader_program_id);
 
     /* update uniforms */
@@ -133,16 +137,21 @@ void renderer_do_shader_pass(Shader *s)
                            s->render_texture.gl_texture_id, 0);
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        TracyCZoneEnd(tracy_ctx);
         return; /* possibly no `source` entry in *.ini file or shader compilation failure */
     }
 
     /* Draw */
     glClear(GL_COLOR_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    TracyCZoneEnd(tracy_ctx);
 }
 
 void renderer_do_final_pass(Shader *s)
 {
+    TracyCZone(tracy_ctx, 1);
+
     glUseProgram(renderer.last_pass_shader.gl_shader_program_id); // TODO update tex uniform 
     glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
     glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 1, (i32 *)&renderer.resolution); 
@@ -151,20 +160,27 @@ void renderer_do_final_pass(Shader *s)
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (s == NULL) {
+        TracyCZoneEnd(tracy_ctx);
         return;
     }
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    TracyCZoneEnd(tracy_ctx);
 }
 
 void renderer_end_frame()
 {
+    TracyCZone(tracy_ctx, 1);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glfwSwapBuffers(renderer.window);
     glfwPollEvents();
     gl_check_errors();
+
+    TracyCZoneEnd(tracy_ctx);
 }
 
 b8 renderer_should_close()

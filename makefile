@@ -1,6 +1,6 @@
 MAKEFLAGS += "-j $(shell nproc)"
 
-.PHONY: shaq sel clean cleaner
+.PHONY: shaq sel clean cleaner tracy
 
 C_WARNINGS     := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			      -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
@@ -10,11 +10,12 @@ C_WARNINGS     := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 			      -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
 				  -Wno-override-init \
 			      -Wno-error=cpp 
-C_INCLUDES     := -Iinclude
+C_INCLUDES     := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb -Isrc/tracy
 C_FLAGS        := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
 DEBUG_FLAGS    := -O0 -ggdb3
 RELEASE_FLAGS  := -O2 -g -march=native
-L_FLAGS        := -Llib -lm -lglfw -limgui -lstdc++
+OPTIONS  	   := -DTRACY_ENABLE -DTRACY_TIMER_FALLBACK
+L_FLAGS        := -Llib -lm -lglfw -limgui -ltracy -lstdc++
 
 SOURCES := src/alloc.c 	       \
 		   src/str.c           \
@@ -35,27 +36,30 @@ SOURCES := src/alloc.c 	       \
 
 all: debug sel
 
-debug: lib/libimgui.a
-	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -O2 -c src/imguic.cpp -o imguic.o
-	gcc $(C_FLAGS) $(DEBUG_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
+debug: libs 
+	g++ -Wall -Wextra $(C_INCLUDES) $(OPTIONS) -O2 -c src/imguic.cpp -o imguic.o
+	gcc $(C_FLAGS) $(DEBUG_FLAGS) $(OPTIONS)  src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
 	-rm imguic.o
 
-release: lib/libimgui.a
-	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -O2 -c src/imguic.cpp -o imguic.o
-	gcc $(C_FLAGS) $(RELEASE_FLAGS) src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
+release: libs
+	g++ -Wall -Wextra $(C_INCLUDES) $(OPTIONS) -O2 -c src/imguic.cpp -o imguic.o
+	gcc $(C_FLAGS) $(RELEASE_FLAGS) $(OPTIONS)  src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
 	-rm imguic.o
 
-#sel: lib/libimgui.a
-#	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -c src/imguic.cpp -o imguic.o
-#	gcc $(C_FLAGS) -Isrc test/test_sel.c $(SOURCES) -o sel imguic.o $(L_FLAGS)
-#	rm imguic.o
-
-lib/libimgui.a:
+libs:
 	-mkdir lib
-	g++ -Wall -Wextra -Iinclude -Iinclude/imgui -Isrc/imgui -O2 -c src/imgui/*.cpp
+ifeq ("$(wildcard lib/libtracy.a)","")
+	g++ -O2 $(OPTIONS) -c src/tracy/TracyClient.cpp -o TracyClient.o
+	ar cr libtracy.a TracyClient.o
+	-rm TracyClient.o
+	mv libtracy.a lib
+endif
+ifeq ("$(wildcard lib/libimgui.a)","")
+	g++ -Wall -Wextra -Isrc/imgui -O2 -c src/imgui/*.cpp
 	ar cr libimgui.a *.o
 	-rm *.o
 	mv libimgui.a lib
+endif
 
 clean:
 	-rm shaq
