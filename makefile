@@ -1,73 +1,76 @@
+
 MAKEFLAGS += "-j $(shell nproc)"
 
-.PHONY: shaq sel clean cleaner tracy
+TARGET     := shaq
+C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
+              -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
+              -Wshadow -Wpointer-arith -Wcast-qual -Winit-self -Wuninitialized \
+              -Wcast-align -Wstrict-aliasing -Wformat=2 -Wmissing-declarations \
+              -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
+              -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
+              -Wno-override-init -Wno-error=cpp
+C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb -Isrc/tracy
+C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
+CPP_FLAGS  := $(C_INCLUDES) --std=c++11
+L_FLAGS    := -Llib -lm -lglfw -lstdc++
 
-C_WARNINGS     := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
-			      -Wswitch-enum -Wno-deprecated -Wduplicated-cond -Wduplicated-branches \
-			      -Wshadow -Wpointer-arith -Wcast-qual -Winit-self -Wuninitialized \
-			      -Wcast-align -Wstrict-aliasing -Wformat=2 -Wmissing-declarations \
-			      -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
-			      -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
-				  -Wno-override-init \
-			      -Wno-error=cpp 
-C_INCLUDES     := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb -Isrc/tracy
-C_FLAGS        := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
-DEBUG_FLAGS    := -O0 -ggdb3
-RELEASE_FLAGS  := -O2 -g -march=native
-OPTIONS  	   := -DTRACY_ENABLE -DTRACY_TIMER_FALLBACK
-L_FLAGS        := -Llib -lm -lglfw -limgui -ltracy -lstdc++
-
-SOURCES := src/alloc.c 	       \
-		   src/str.c           \
-		   src/selc.c          \
-		   src/selvm.c         \
-		   src/shaq_core.c     \
-		   src/shader.c        \
-		   src/uniform.c       \
-		   src/texture.c       \
-		   src/util.c          \
-		   src/io.c            \
-		   src/glad/glad.c     \
-		   src/gl_util.c       \
-		   src/renderer.c      \
-		   src/gui.c   		   \
-		   src/log.c      	   \
-
-
-all: debug sel
-
-debug: libs 
-	g++ -Wall -Wextra $(C_INCLUDES) $(OPTIONS) -O2 -c src/imguic.cpp -o imguic.o
-	gcc $(C_FLAGS) $(DEBUG_FLAGS) $(OPTIONS)  src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
-	-rm imguic.o
-
-release: libs
-	g++ -Wall -Wextra $(C_INCLUDES) $(OPTIONS) -O2 -c src/imguic.cpp -o imguic.o
-	gcc $(C_FLAGS) $(RELEASE_FLAGS) $(OPTIONS)  src/main.c $(SOURCES) -o shaq imguic.o $(L_FLAGS)
-	-rm imguic.o
-
-libs:
-	-mkdir lib
-ifeq ("$(wildcard lib/libtracy.a)","")
-	g++ -O2 $(OPTIONS) -c src/tracy/TracyClient.cpp -o TracyClient.o
-	ar cr libtracy.a TracyClient.o
-	-rm TracyClient.o
-	mv libtracy.a lib
+ifeq ($(BUILD_TYPE), debug)
+	C_FLAGS   += -O0 -g
+	CPP_FLAGS += -O0 -g
+else ifeq ($(BUILD_TYPE), release)
+	C_FLAGS   += -O2 -g -march=native
+	CPP_FLAGS += -O2 -g -march=native
+else ifeq ($(BUILD_TYPE), profile)
+	C_FLAGS   += -O2 -g -march=native -DTRACY_ENABLE 
+	CPP_FLAGS += -O2 -g -march=native -DTRACY_ENABLE 
 endif
-ifeq ("$(wildcard lib/libimgui.a)","")
-	g++ -Wall -Wextra -Isrc/imgui -O2 -c src/imgui/*.cpp
-	ar cr libimgui.a *.o
-	-rm *.o
-	mv libimgui.a lib
+
+CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
+C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
+C_LINK = $(CC) $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
+
+.PHONY: shaq tracy imgui
+
+all: debug
+
+debug: prep
+	@$(MAKE) --no-print-directory BUILD_TYPE=debug build
+
+release: prep
+	@$(MAKE) --no-print-directory BUILD_TYPE=release build
+
+profile: prep
+	@$(MAKE) --no-print-directory BUILD_TYPE=profile build
+
+prep:
+	@-mkdir build 
+	@-mkdir build/tracy 
+	@-mkdir build/imgui 
+
+build: shaq tracy imgui
+	$(call C_LINK, build/*.o build/tracy/*.o build/imgui/*.o, $(TARGET))
+
+shaq:
+	$(call CPP_COMPILE, src/*.cpp, build/)
+	$(call C_COMPILE, src/*.c src/glad/*.c, build/)
+
+tracy:
+ifeq ("$(wildcard build/tracy/*.o)","")
+	$(call CPP_COMPILE, src/tracy/*.cpp, build/tracy/)
+endif
+
+imgui:
+ifeq ("$(wildcard build/imgui/*.o)","")
+	$(call CPP_COMPILE, src/imgui/*.cpp, build/imgui/)
 endif
 
 clean:
+	-rm build/*.o
 	-rm shaq
-	-rm sel
 
-cleaner:
-	-rm lib/*
-	-rmdir lib
-	-rm shaq
-	-rm sel
+cleaner: clean
+	-rm build/tracy/*
+	-rm build/imgui/*
+	-rm build/*
+	-rm -r build/
 
