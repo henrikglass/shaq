@@ -42,11 +42,6 @@ release: prep
 profile: prep
 	@$(MAKE) --no-print-directory BUILD_TYPE=profile build
 
-prep:
-	@-mkdir build 
-	@-mkdir build/tracy 
-	@-mkdir build/imgui 
-
 build: shaq tracy imgui
 	$(call C_LINK, build/*.o build/tracy/*.o build/imgui/*.o, $(TARGET))
 
@@ -64,13 +59,16 @@ ifeq ("$(wildcard build/imgui/*.o)","")
 	$(call CPP_COMPILE, src/imgui/*.cpp, build/imgui/)
 endif
 
-clean:
-	-rm build/*.o
-	-rm shaq
+prep:
+	@-mkdir -p build 
+	@-mkdir -p build/tracy 
+	@-mkdir -p build/imgui 
 
-cleaner: clean
-	-rm build/tracy/*
-	-rm build/imgui/*
-	-rm build/*
-	-rm -r build/
+clean:
+	-@rm build/*.o 2> /dev/null ||:
+	-@rm shaq 2> /dev/null ||:
+
+cleaner:
+	-@rm -r build/ 2> /dev/null ||:
+	-@rm shaq 2> /dev/null ||:
 
