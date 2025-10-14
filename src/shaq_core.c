@@ -253,7 +253,6 @@ static void reload_session()
     /* Reload ini file */
     shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath, false);
     shaq.ini = hgl_ini_open(shaq.ini_filepath);
-
     if (shaq.ini == NULL) {
         log_error("Failed to open or parse *.ini file.");
         goto out_error;
