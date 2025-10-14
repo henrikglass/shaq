@@ -3,9 +3,9 @@ Shaq is a tool for developing GLSL shaders, similar to [shadertoy.com](shadertoy
 
 # Usage
 At the core of Shaq is the *.ini project file. In this file, you define shaders and their respective inputs. 
-Lets say you have two shaders you want to compose: One shader `mandelbrot` renders the mandelbrot set, at a 
-certain zoom level, which is calculated from a uniform variable `time`. The other shader `dither`, takes an 
-image, and applies an ordered dithering filter with a certain color bit depth `bpp`. Such a project file may
+Lets say you have two shaders you want to compose: One shader `mandelbrot` renders the mandelbrot set at a 
+certain zoom level; the zoom level is calculated from a uniform variable `time`. The other shader `dither`, takes an 
+image, and applies an ordered dithering filter to it with a certain color bit depth `bpp`. Such a project file may
 look something like this:
 
 ```ini
