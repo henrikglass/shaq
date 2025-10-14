@@ -9,7 +9,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
               -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
               -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
               -Wno-override-init -Wno-error=cpp
-C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb -Isrc/tracy
+C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
 CPP_FLAGS  := $(C_INCLUDES) --std=c++11
 L_FLAGS    := -Llib -lm -lglfw -lstdc++
@@ -29,7 +29,7 @@ CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}
 C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
 C_LINK = $(CC) $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
 
-.PHONY: shaq tracy imgui
+.PHONY: shaq imgui
 
 all: debug
 
@@ -42,17 +42,12 @@ release: prep
 profile: prep
 	@$(MAKE) --no-print-directory BUILD_TYPE=profile build
 
-build: shaq tracy imgui
-	$(call C_LINK, build/*.o build/tracy/*.o build/imgui/*.o, $(TARGET))
+build: shaq imgui
+	$(call C_LINK, build/*.o build/imgui/*.o, $(TARGET))
 
 shaq:
 	$(call CPP_COMPILE, src/*.cpp, build/)
 	$(call C_COMPILE, src/*.c src/glad/*.c, build/)
-
-tracy:
-ifeq ("$(wildcard build/tracy/*.o)","")
-	$(call CPP_COMPILE, src/tracy/*.cpp, build/tracy/)
-endif
 
 imgui:
 ifeq ("$(wildcard build/imgui/*.o)","")
@@ -61,7 +56,6 @@ endif
 
 prep:
 	@-mkdir -p build 
-	@-mkdir -p build/tracy 
 	@-mkdir -p build/imgui 
 
 clean:

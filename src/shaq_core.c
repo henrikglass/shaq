@@ -14,8 +14,6 @@
 #include "gui.h"
 #include "log.h"
 
-#include "tracy/TracyC.h"
-
 #define HGL_INI_ALLOC session_fs_alloc
 #define HGL_INI_REALLOC session_fs_realloc
 #define HGL_INI_FREE dummy_free /* handled by call to `hgl_free_all(g_session_fs_allocator)` */
@@ -87,8 +85,6 @@ b8 shaq_should_close(void)
 
 void shaq_new_frame(void)
 {
-    TracyCZone(tracy_ctx, 1);
-
     if (session_reload_needed()) {
         reload_session();
     }
@@ -102,11 +98,9 @@ void shaq_new_frame(void)
     shaq.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
 
     /* begin frame */
-    TracyCMessageL("Calling renderer_begin_frame()");
     renderer_begin_frame();
 
     /* Draw individual shaders onto individual offscreen framebuffer textures */
-    TracyCMessageL("Do individual shader passes");
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
         Shader *s  = &shaq.shaders.arr[index];
@@ -115,7 +109,6 @@ void shaq_new_frame(void)
     }
 
     /* Draw final pass onto visible framebuffer */
-    TracyCMessageL("Do final pass");
     if (shaq.visible_shader_idx != -1) {
         renderer_do_final_pass(&shaq.shaders.arr[shaq.visible_shader_idx]);
     } else {
@@ -123,7 +116,6 @@ void shaq_new_frame(void)
     }
 
     /* draw GUI */
-    TracyCMessageL("Drawing GUI");
     if (!renderer_should_hide_gui()) {
         gui_begin_frame();
         if (gui_begin_main_window()) {
@@ -143,14 +135,10 @@ void shaq_new_frame(void)
     }
 
     /* end frame */
-    TracyCMessageL("Calling renderer_end_frame()");
     renderer_end_frame();
 
     /* collect garbage */
     hgl_free_all(g_frame_arena);
-    
-    TracyCZoneEnd(tracy_ctx);
-    TracyCFrameMark;
 }
 
 void shaq_end(void)
