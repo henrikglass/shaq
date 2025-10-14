@@ -19,7 +19,7 @@ uniform sampler2D input   = output_of("mandelbrot")
 uniform int bpp           = 4
 ```
 
-If you're familiar with shader programming, it should be fairly clear what's going on, even if it's your first 
+If you're familiar with shader programming it should be fairly clear what's going on, even if it's your first 
 time looking at a Shaq project file. Each shader is defined with a name, wrapped in brackets. Each shader has 
 a source file. Finally, each shader may have zero or more uniform variables that may be assigned from the host 
 program. 
