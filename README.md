@@ -41,5 +41,5 @@ figure out in what order things need to be rendered.
 
 # Why is it named after a basketball player?
 The name Shaq is an abbreviaton of Shader Quick. Or Shader Qompositor. Or Shaquille O' Neal if you're 
-adamant you're being adament about it. I haven't really decided. Don't ask me about it again. And don't 
-ask me to spell compositor, ok?
+being adamant about it. I haven't really decided. Don't ask me about it again. And don't ask me to 
+spell compositor, ok?
