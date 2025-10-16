@@ -2,7 +2,6 @@
 
 #include "sel.h"
 #include "shaq_core.h"
-#include "renderer.h"
 #include "gui.h"
 
 #include <time.h>
@@ -862,7 +861,7 @@ static SelValue fn_perlin3D_(void *args)
 static SelValue fn_aspect_ratio_(void *args)
 {
     (void) args;
-    IVec2 ires = renderer_iresolution();
+    IVec2 ires = shaq_iresolution();
     return (SelValue) {.val_f32 = (f32)ires.x / (f32)ires.y}; 
 }
 
@@ -926,7 +925,7 @@ static SelValue fn_vec2_slerp_(void *args)
 static SelValue fn_mouse_position_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_vec2 = renderer_mouse_position()};
+    return (SelValue) {.val_vec2 = shaq_mouse_position()}; // TODO support non-fullscreen
 }
 
 
@@ -1065,7 +1064,7 @@ static SelValue fn_ivec2_(void *args)
 static SelValue fn_iresolution_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_ivec2 = renderer_iresolution()};
+    return (SelValue) {.val_ivec2 = shaq_iresolution()};
 }
 
 

@@ -12,7 +12,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
 C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
 CPP_FLAGS  := $(C_INCLUDES) --std=c++11
-L_FLAGS    := -Llib -lm -lglfw -lstdc++
+L_FLAGS    := -Llib -lm -lstdc++ -lglfw -ldl
 
 ifeq ($(BUILD_TYPE), debug)
 	C_FLAGS   += -O0 -g
@@ -27,7 +27,7 @@ endif
 
 CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
 C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
-C_LINK = $(CC) $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
+C_LINK = gcc $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
 
 .PHONY: shaq imgui
 

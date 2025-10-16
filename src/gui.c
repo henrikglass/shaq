@@ -37,10 +37,18 @@ static struct
 {
     Array(DynamicGuiItem, SHAQ_MAX_N_DYNAMIC_GUI_ITEMS) dynamic_items;
     b8 dark_mode;
+    b8 should_reload;
+    IVec2 shader_window_position;
+    IVec2 shader_window_size;
     float smoothed_deltatime;
 } gui;
 
 /*--- Public functions ------------------------------------------------------------------*/
+
+void gui_reload()
+{
+    gui.should_reload = false;
+}
 
 void gui_begin_frame()
 {
@@ -51,7 +59,7 @@ b8 gui_begin_main_window()
 {
     gui.smoothed_deltatime = 0.97f*gui.smoothed_deltatime +
                              0.03f*shaq_deltatime();
-    if (!imgui_begin("Shaq")) {
+    if (!imgui_begin("Main Window")) {
         return false;
     }
 
@@ -61,10 +69,31 @@ b8 gui_begin_main_window()
     imgui_textf("Controls:"); imgui_newline();
     imgui_textf("d      -  toggle light/dark mode"); imgui_newline();
     imgui_textf("f      -  toggle fullscreen"); imgui_newline();
-    imgui_textf("h      -  hide/show GUI "); imgui_newline();
+    imgui_textf("s      -  toggle maximized shader view "); imgui_newline();
     imgui_textf("esq/q  -  exit"); imgui_newline();
     imgui_separator();
     return true;
+}
+
+b8 gui_begin_shader_window()
+{
+    imgui_push_style_shader_window();
+    b8 ret = imgui_begin("Shader View");
+    if (ret) {
+        int x, y, w, h;
+        imgui_get_current_window_dimensions(&x, &y, &w, &h);
+
+        gui.shader_window_position.x = x;
+        gui.shader_window_position.y = y;
+
+        if ((w != gui.shader_window_size.x) || 
+            (h != gui.shader_window_size.y)) {
+            gui.shader_window_size.x = w;
+            gui.shader_window_size.y = h;
+            gui.should_reload = true;
+        }
+    }
+    return ret;
 }
 
 i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_shaders)
@@ -94,7 +123,7 @@ i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_sha
     return current_idx;
 }
 
-void gui_draw_shader(const Shader *s)
+void gui_draw_shader_info(const Shader *s)
 {
     imgui_textf("[" SV_FMT "]\n    source = " SV_FMT , 
                 SV_ARG(s->name), SV_ARG(s->filepath));
@@ -108,6 +137,13 @@ void gui_draw_shader(const Shader *s)
     imgui_separator();
 }
 
+void gui_draw_shader(const Shader *s)
+{
+    imgui_draw_texture(s->render_texture.gl_texture_id,
+                       gui.shader_window_size.x,
+                       gui.shader_window_size.y);
+}
+
 void gui_draw_dymanic_gui_items()
 {
     imgui_textf("User-defined items:"); imgui_newline();
@@ -116,6 +152,12 @@ void gui_draw_dymanic_gui_items()
         draw_and_update_dynamic_item(item);
     }
     imgui_separator();
+}
+
+void gui_end_shader_window()
+{
+    imgui_end();
+    imgui_pop_style_shader_window();
 }
 
 void gui_end_main_window()
@@ -211,6 +253,36 @@ SelValue gui_get_dynamic_item_value(StringView label,
     array_push(&gui.dynamic_items, item);
 
     return (SelValue) {0};
+}
+
+b8 gui_should_reload()
+{
+#if 0
+    /* 
+     * Hold off on signaling that a reload is needed until the user stops 
+     * interacting with the GUI. By doing this we avoid having to perform
+     * a reload every frame while the user is, for instance, actively 
+     * resizing the shader view window. 
+     *
+     * TODO: Maybe remove this. If it turns out that reloading every 
+     *       frame does not significantly impact performance, then we might
+     *       as well do it for the sake of user experience.
+     */
+    if (imgui_is_any_item_active()) {
+        return false;
+    }
+#endif
+    return gui.should_reload;
+}
+
+IVec2 gui_shader_window_position()
+{
+    return gui.shader_window_position; 
+}
+
+IVec2 gui_shader_window_size()
+{
+    return gui.shader_window_size; 
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
@@ -310,5 +382,4 @@ static inline void draw_uniform(const Uniform *u)
     }
     imgui_newline();
 }
-
 

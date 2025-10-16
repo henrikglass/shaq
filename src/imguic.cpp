@@ -68,7 +68,12 @@ void imgui_begin_frame()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::DockSpaceOverViewport(0, NULL /*, ImGuiDockNodeFlags_PassthruCentralNode */);
+}
+
+b8 imgui_is_any_item_active()
+{
+    return ImGui::IsAnyItemActive();
 }
 
 b8 imgui_begin(const char *str)
@@ -93,6 +98,14 @@ void imgui_begin_table(const char *label, i32 n_cols)
 bool imgui_begin_combo(const char *label, const char *preview_value)
 {
     return ImGui::BeginCombo(label, preview_value);
+}
+
+void imgui_draw_texture(u32 gl_texture_id, int w, int h)
+{
+    ImGui::Image((ImTextureID)(uintptr_t)gl_texture_id, 
+                 ImVec2(w, h), 
+                 ImVec2(0, 1), 
+                 ImVec2(1, 0));
 }
 
 void imgui_table_next_row(void)
@@ -184,6 +197,30 @@ void imgui_set_item_default_focus(void)
     ImGui::SetItemDefaultFocus();
 }
 
+void imgui_push_style_shader_window(void)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(100, 80));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+}
+
+void imgui_pop_style_shader_window(void)
+{
+    ImGui::PopStyleVar();
+    ImGui::PopStyleVar();
+    ImGui::PopStyleVar();
+}
+
+void imgui_get_current_window_dimensions(int *x, int *y, int *w, int *h)
+{
+    ImVec2 pos = ImGui::GetWindowPos();
+    ImVec2 size = ImGui::GetContentRegionAvail();
+    *x = pos.x;
+    *y = pos.y;
+    *w = size.x;
+    *h = size.y;
+}
+
 void imgui_end_combo(void)
 {
     ImGui::EndCombo();
@@ -207,11 +244,12 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+
 
 
 #ifdef __cplusplus

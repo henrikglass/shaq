@@ -16,16 +16,16 @@
 
 void renderer_init(void);
 void renderer_final(void);
+void renderer_reload(void);
 void renderer_begin_frame(void);
 void renderer_do_shader_pass(Shader *s);
 void renderer_do_final_pass(Shader *s);
 void renderer_end_frame(void);
 b8 renderer_should_close(void);
-b8 renderer_should_hide_gui(void);
-b8 renderer_window_was_resized(void);
-IVec2 renderer_iresolution(void);
+b8 renderer_should_reload(void);
+b8 renderer_shader_view_is_maximized(void);
+IVec2 renderer_window_size(void);
 Vec2 renderer_mouse_position(void);
-//GLFWwindow *renderer_get_window(void);
 
 #endif /* RENDERER_H */
 

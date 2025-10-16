@@ -30,11 +30,13 @@ extern "C" {
 void imgui_init(GLFWwindow *window);
 void imgui_final(void);
 void imgui_set_darkmode(bool enable);
+b8 imgui_is_any_item_active(void);
 void imgui_begin_frame(void);
 b8 imgui_begin(const char *str);
 void imgui_begin_child(const char *label, u32 color);
 void imgui_begin_table(const char *label, i32 n_cols);
 bool imgui_begin_combo(const char *label, const char *preview_value);
+void imgui_draw_texture(u32 gl_texture_id, int w, int h);
 void imgui_table_next_row(void);
 void imgui_table_next_col(void);
 void imgui_text_unformatted(const char *str, size_t len);
@@ -50,6 +52,9 @@ void imgui_slider_float(const char *label, float *v, float min, float max, bool 
 void imgui_color_picker(const char *label, float *v);
 bool imgui_selectable(const char *label, bool is_selected);
 void imgui_set_item_default_focus(void);
+void imgui_push_style_shader_window(void);
+void imgui_pop_style_shader_window(void);
+void imgui_get_current_window_dimensions(int *x, int *y, int *w, int *h);
 void imgui_end_combo(void);
 void imgui_end_table(void);
 void imgui_end_child(void);

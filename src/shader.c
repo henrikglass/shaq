@@ -181,7 +181,7 @@ void shader_reload(Shader *s)
     }
 
     s->gl_shader_program_id = shader_program;
-    s->render_texture = texture_make_empty(renderer_iresolution());
+    s->render_texture = texture_make_empty(shaq_iresolution());
 
     glUseProgram(s->gl_shader_program_id); // necessary?
     for (u32 i = 0; i < s->uniforms.count; i++) {

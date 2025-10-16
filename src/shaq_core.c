@@ -78,12 +78,12 @@ void shaq_begin(const char *ini_filepath, bool quiet)
     reload_session();
 }
 
-b8 shaq_should_close(void)
+b8 shaq_should_close()
 {
     return renderer_should_close();
 }
 
-void shaq_new_frame(void)
+void shaq_new_frame()
 {
     if (session_reload_needed()) {
         reload_session();
@@ -108,16 +108,23 @@ void shaq_new_frame(void)
         renderer_do_shader_pass(s);
     }
 
-    /* Draw final pass onto visible framebuffer */
-    if (shaq.visible_shader_idx != -1) {
+    if (renderer_shader_view_is_maximized()) {
+        /* No GUI: Draw visible shader directly onto the default frame buffer */
         renderer_do_final_pass(&shaq.shaders.arr[shaq.visible_shader_idx]);
     } else {
-        renderer_do_final_pass(NULL);
-    }
-
-    /* draw GUI */
-    if (!renderer_should_hide_gui()) {
+        /* Show GUI */
         gui_begin_frame();
+
+        /* Draw visible shader into shader window */
+        if (gui_begin_shader_window()) {
+            if (shaq.visible_shader_idx != -1) {
+                gui_draw_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
+            }
+        }
+        gui_end_shader_window();
+        renderer_do_final_pass(NULL);
+
+        /* Draw main window */
         if (gui_begin_main_window()) {
             shaq.visible_shader_idx = gui_draw_shader_display_selector(shaq.visible_shader_idx, 
                                                                        shaq.shaders.arr, 
@@ -126,7 +133,7 @@ void shaq_new_frame(void)
             for (u32 i = 0; i < shaq.render_order.count; i++) {
                 Shader *s  = &shaq.shaders.arr[i];
                 assert(s != NULL);
-                gui_draw_shader(s);
+                gui_draw_shader_info(s);
             }
             gui_draw_log();
         }
@@ -141,19 +148,41 @@ void shaq_new_frame(void)
     hgl_free_all(g_frame_arena);
 }
 
-void shaq_end(void)
+void shaq_end()
 {
     return; // TODO
 }
 
-f32 shaq_time(void)
+f32 shaq_time()
 {
     return shaq.last_frame_time_s;
 }
 
-f32 shaq_deltatime(void)
+f32 shaq_deltatime()
 {
     return shaq.last_frame_deltatime_s;
+}
+
+IVec2 shaq_iresolution()
+{
+    if (renderer_shader_view_is_maximized()) {
+        return renderer_window_size();
+    } 
+    return gui_shader_window_size();
+}
+
+Vec2 shaq_mouse_position()
+{
+    Vec2 mouse_pos = renderer_mouse_position();
+
+    if (renderer_shader_view_is_maximized()) {
+        return mouse_pos;
+    } 
+
+    IVec2 shader_window_pos = gui_shader_window_position();
+    mouse_pos.x -= shader_window_pos.x;
+    mouse_pos.y -= shader_window_pos.y;
+    return mouse_pos;
 }
 
 i32 shaq_find_shader_id_by_name(StringView name)
@@ -220,7 +249,11 @@ static b8 session_reload_needed()
         }
     }
 
-    if (renderer_window_was_resized()) {
+    if (renderer_should_reload()) {
+        return true;
+    }
+
+    if (gui_should_reload()) {
         return true;
     }
 
@@ -274,6 +307,10 @@ static void reload_session()
         shader_reload(s);
     }
 
+    /* "Reload" renderer & GUI */
+    renderer_reload();
+    gui_reload();
+
     /* Reset visible shader idx if necessary */
     if ((shaq.visible_shader_idx >= (i32)shaq.shaders.count) ||
         (shaq.visible_shader_idx == -1)) {
@@ -325,7 +362,7 @@ static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
     return 0;
 }
 
-static void determine_render_order(void)
+static void determine_render_order()
 {
     array_clear(&shaq.render_order);
 
@@ -365,7 +402,7 @@ static i32 load_state_from_ini(HglIni *ini)
     return (shaq.shaders.count != 0) ? 0 : -1;
 }
 
-static void shaq_atexit_(void)
+static void shaq_atexit_()
 {
     log_print_info_log();
     log_print_error_log();

@@ -33,15 +33,15 @@ GLFWmonitor* get_current_monitor(GLFWwindow *window);
 
 static struct {
     GLFWwindow *window;
-    IVec2 resolution;
+    IVec2 window_size;
     Shader last_pass_shader;
     u32 VBO;
     u32 VAO;
     u32 offscreen_fb;
 
-    b8 window_was_resized_this_frame;
+    b8 should_reload;
     b8 is_fullscreen;
-    b8 hide_gui;
+    b8 shader_view_is_maximized;
 } renderer;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -58,12 +58,12 @@ void renderer_init()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    renderer.window_was_resized_this_frame = false;
+    renderer.should_reload = false;
     renderer.is_fullscreen = false;
-    renderer.hide_gui = false;
-    renderer.resolution = ivec2_make(1680, 1050);
-    renderer.window = glfwCreateWindow(renderer.resolution.x, 
-                                       renderer.resolution.y, 
+    renderer.shader_view_is_maximized = false;
+    renderer.window_size = ivec2_make(1680, 1050);
+    renderer.window = glfwCreateWindow(renderer.window_size.x, 
+                                       renderer.window_size.y, 
                                        "Shaq", NULL, NULL);
 
     if (renderer.window == NULL) {
@@ -97,7 +97,7 @@ void renderer_init()
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vec2), (void *)0);
     glEnableVertexAttribArray(0);
     glGenFramebuffers(1, &renderer.offscreen_fb);
-    glViewport(0, 0, renderer.resolution.x, renderer.resolution.y);
+    glViewport(0, 0, renderer.window_size.x, renderer.window_size.y);
     glClearColor(0.117f, 0.117f, 0.117f, 1.0f);
 
     shader_make_last_pass_shader(&renderer.last_pass_shader);
@@ -115,9 +115,14 @@ void renderer_final()
     glfwTerminate();
 }
 
+void renderer_reload()
+{
+    renderer.should_reload = false;
+}
+
 void renderer_begin_frame()
 {
-    renderer.window_was_resized_this_frame = false;
+    // TODO
 }
 
 void renderer_do_shader_pass(Shader *s)
@@ -145,7 +150,8 @@ void renderer_do_final_pass(Shader *s)
 {
     glUseProgram(renderer.last_pass_shader.gl_shader_program_id); // TODO update tex uniform 
     glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
-    glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 1, (i32 *)&renderer.resolution); 
+    glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 
+                 1, (i32 *)&renderer.window_size); 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -172,19 +178,19 @@ b8 renderer_should_close()
     return glfwWindowShouldClose(renderer.window);
 }
 
-b8 renderer_should_hide_gui(void)
+b8 renderer_should_reload()
 {
-    return renderer.hide_gui;
+    return renderer.should_reload;
 }
 
-b8 renderer_window_was_resized()
+b8 renderer_shader_view_is_maximized(void)
 {
-    return renderer.window_was_resized_this_frame;
+    return renderer.shader_view_is_maximized;
 }
 
-IVec2 renderer_iresolution()
+IVec2 renderer_window_size()
 {
-    return renderer.resolution;
+    return renderer.window_size;
 }
 
 Vec2 renderer_mouse_position()
@@ -192,14 +198,8 @@ Vec2 renderer_mouse_position()
     f64 x, y;
     glfwGetCursorPos(renderer.window, &x, &y);
     Vec2 mpos = vec2_make(x, y);
-    vec2_print(mpos);
     return mpos;
 }
-
-//GLFWwindow *renderer_get_window()
-//{
-//    return renderer.window;
-//}
 
 /*--- Private functions -----------------------------------------------------------------*/
 
@@ -207,9 +207,9 @@ static void resize_callback(GLFWwindow *window, i32 w, i32 h)
 {
     (void) window;
     glViewport(0, 0, w, h);
-    renderer.resolution.x = w;
-    renderer.resolution.y = h;
-    renderer.window_was_resized_this_frame = true;
+    renderer.window_size.x = w;
+    renderer.window_size.y = h;
+    renderer.should_reload = true;
 }
 
 static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, i32 mods)
@@ -227,12 +227,14 @@ static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, 
         case GLFW_KEY_F: {
             if (action == GLFW_PRESS) {
                 toggle_fullscreen(window);
+                renderer.should_reload = true;
             }
         } break;
 
-        case GLFW_KEY_H: {
+        case GLFW_KEY_S: {
             if (action == GLFW_PRESS) {
-                renderer.hide_gui = !renderer.hide_gui;
+                renderer.shader_view_is_maximized = !renderer.shader_view_is_maximized;
+                renderer.should_reload = true;
             }
         } break;
 
@@ -247,13 +249,13 @@ static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, 
 
 static void toggle_fullscreen(GLFWwindow *window)
 {
-    static IVec2 old_resolution = {0};
     static IVec2 old_position = {0};
+    static IVec2 old_size = {0};
 
     if (renderer.is_fullscreen) {
         printf("toggle fullscreen OFF\n");
         glfwSetWindowMonitor(window, NULL, 0, 0, 
-                             old_resolution.x, old_resolution.y, 
+                             old_size.x, old_size.y, 
                              GLFW_DONT_CARE);
         glfwSetWindowPos(window, old_position.x, old_position.y);
         renderer.is_fullscreen = false;
@@ -261,12 +263,13 @@ static void toggle_fullscreen(GLFWwindow *window)
         printf("toggle fullscreen ON\n");
         GLFWmonitor *monitor = get_current_monitor(window);
         const GLFWvidmode *mode = glfwGetVideoMode(monitor);
-        old_resolution = renderer.resolution;
+        old_size = renderer.window_size;
         glfwGetWindowPos(window, &old_position.x, &old_position.y);
-        renderer.resolution.x = mode->width;
-        renderer.resolution.y = mode->height;
+        renderer.window_size.x = mode->width;
+        renderer.window_size.y = mode->height;
         glfwSetWindowMonitor(window, monitor, 0, 0, 
-                             renderer.resolution.x, renderer.resolution.y, 
+                             renderer.window_size.x, 
+                             renderer.window_size.y, 
                              GLFW_DONT_CARE);
         renderer.is_fullscreen = true;
     }
