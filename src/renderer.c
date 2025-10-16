@@ -120,11 +120,6 @@ void renderer_reload()
     renderer.should_reload = false;
 }
 
-void renderer_begin_frame()
-{
-    // TODO
-}
-
 void renderer_do_shader_pass(Shader *s)
 {
     glUseProgram(s->gl_shader_program_id);
@@ -146,28 +141,30 @@ void renderer_do_shader_pass(Shader *s)
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void renderer_do_final_pass(Shader *s)
+void renderer_draw_fullscreen_shader(Shader *s)
 {
-    glUseProgram(renderer.last_pass_shader.gl_shader_program_id); // TODO update tex uniform 
-    glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
-    glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 
-                 1, (i32 *)&renderer.window_size); 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     if (s == NULL) {
         return;
     }
 
+    glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
+    glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 
+                 1, (i32 *)&renderer.window_size); 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s->render_texture.gl_texture_id);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void renderer_end_frame()
+void renderer_begin_final_pass(void)
 {
+    glUseProgram(renderer.last_pass_shader.gl_shader_program_id);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void renderer_end_final_pass(void)
+{
     glfwSwapBuffers(renderer.window);
     glfwPollEvents();
     gl_check_errors();
@@ -238,7 +235,6 @@ static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, 
             }
         } break;
 
-        case GLFW_KEY_Q: 
         case GLFW_KEY_ESCAPE: {
             if (action == GLFW_PRESS) {
                 glfwSetWindowShouldClose(window, true);

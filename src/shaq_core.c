@@ -97,9 +97,6 @@ void shaq_new_frame()
     shaq.last_frame_deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
     shaq.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
 
-    /* begin frame */
-    renderer_begin_frame();
-
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
@@ -108,9 +105,11 @@ void shaq_new_frame()
         renderer_do_shader_pass(s);
     }
 
+    /* Do final pass (render to framebuffer) */
+    renderer_begin_final_pass();
     if (renderer_shader_view_is_maximized()) {
         /* No GUI: Draw visible shader directly onto the default frame buffer */
-        renderer_do_final_pass(&shaq.shaders.arr[shaq.visible_shader_idx]);
+        renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
     } else {
         /* Show GUI */
         gui_begin_frame();
@@ -122,7 +121,6 @@ void shaq_new_frame()
             }
         }
         gui_end_shader_window();
-        renderer_do_final_pass(NULL);
 
         /* Draw main window */
         if (gui_begin_main_window()) {
@@ -135,14 +133,14 @@ void shaq_new_frame()
                 assert(s != NULL);
                 gui_draw_shader_info(s);
             }
-            gui_draw_log();
         }
         gui_end_main_window();
+
+        /* Draw log window */
+        gui_draw_log_window();
         gui_end_frame();
     }
-
-    /* end frame */
-    renderer_end_frame();
+    renderer_end_final_pass();
 
     /* collect garbage */
     hgl_free_all(g_frame_arena);

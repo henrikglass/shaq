@@ -59,20 +59,19 @@ b8 gui_begin_main_window()
 {
     gui.smoothed_deltatime = 0.97f*gui.smoothed_deltatime +
                              0.03f*shaq_deltatime();
-    if (!imgui_begin("Main Window")) {
-        return false;
+    b8 ret = imgui_begin("Main Window");
+    if (ret) {
+        imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
+        imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
+        imgui_separator();
+        imgui_textf("Controls:"); imgui_newline();
+        imgui_textf("d    -  toggle light/dark mode"); imgui_newline();
+        imgui_textf("f    -  toggle fullscreen"); imgui_newline();
+        imgui_textf("s    -  toggle maximized shader view "); imgui_newline();
+        imgui_textf("esq  -  exit"); imgui_newline();
+        imgui_separator();
     }
-
-    imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
-    imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
-    imgui_separator();
-    imgui_textf("Controls:"); imgui_newline();
-    imgui_textf("d      -  toggle light/dark mode"); imgui_newline();
-    imgui_textf("f      -  toggle fullscreen"); imgui_newline();
-    imgui_textf("s      -  toggle maximized shader view "); imgui_newline();
-    imgui_textf("esq/q  -  exit"); imgui_newline();
-    imgui_separator();
-    return true;
+    return ret;
 }
 
 b8 gui_begin_shader_window()
@@ -179,10 +178,13 @@ void gui_end_frame()
     }
 }
 
-void gui_draw_log()
+void gui_draw_log_window()
 {
-    imgui_textf("Log:"); 
-    imgui_newline();
+    b8 ret = imgui_begin("Log");
+    if (!ret) {
+        imgui_end();
+        return;
+    }
     imgui_begin_child("Log", gui.dark_mode ? 0x282828FF : 0xD1D1D1FF);
     while (true) {
         u32 msg_len;
@@ -203,14 +205,7 @@ void gui_draw_log()
         imgui_text_unformatted(msg, msg_len); 
     }
     imgui_end_child();
-    //u32 info_len;
-    //const char *info = log_get_info_log(&info_len);
-    //imgui_text_unformatted(info, info_len); 
-    //imgui_textf("Error log:"); 
-    //imgui_newline();
-    //u32 error_len;
-    //const char *error = log_get_error_log(&error_len);
-    //imgui_text_unformatted(error, error_len); 
+    imgui_end();
 }
 
 void gui_toggle_darkmode()

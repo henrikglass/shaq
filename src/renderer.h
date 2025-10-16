@@ -17,10 +17,10 @@
 void renderer_init(void);
 void renderer_final(void);
 void renderer_reload(void);
-void renderer_begin_frame(void);
 void renderer_do_shader_pass(Shader *s);
-void renderer_do_final_pass(Shader *s);
-void renderer_end_frame(void);
+void renderer_draw_fullscreen_shader(Shader *s);
+void renderer_begin_final_pass(void);
+void renderer_end_final_pass(void);
 b8 renderer_should_close(void);
 b8 renderer_should_reload(void);
 b8 renderer_shader_view_is_maximized(void);

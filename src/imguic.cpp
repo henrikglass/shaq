@@ -250,8 +250,6 @@ void imgui_end_frame()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-
-
 #ifdef __cplusplus
 }
 #endif
