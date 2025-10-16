@@ -207,16 +207,18 @@ static const char *const TOKEN_TO_STR[] =
 
 const Const BUILTIN_CONSTANTS[] = 
 {
-    {.id = SV_LIT("PI"),                 .type = TYPE_FLOAT, .value.val_f32 =     3.1415926535},
-    {.id = SV_LIT("TAU"),                .type = TYPE_FLOAT, .value.val_f32 = 2.0*3.1415926535},
-    {.id = SV_LIT("PHI"),                .type = TYPE_FLOAT, .value.val_f32 =     1.6180339887},
-    {.id = SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32 =     2.7182818284},
-    {.id = SV_LIT("GL_NEAREST"),         .type = TYPE_UINT,  .value.val_f32 = GL_NEAREST },
-    {.id = SV_LIT("GL_LINEAR"),          .type = TYPE_UINT,  .value.val_f32 = GL_LINEAR },
-    {.id = SV_LIT("GL_REPEAT"),          .type = TYPE_UINT,  .value.val_f32 = GL_REPEAT },
-    {.id = SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_UINT,  .value.val_f32 = GL_MIRRORED_REPEAT },
-    {.id = SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_EDGE },
-    {.id = SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_UINT,  .value.val_f32 = GL_CLAMP_TO_BORDER },
+    {.id = SV_LIT("PI"),                 .type = TYPE_FLOAT, .value.val_f32  =     3.1415926535},
+    {.id = SV_LIT("TAU"),                .type = TYPE_FLOAT, .value.val_f32  = 2.0*3.1415926535},
+    {.id = SV_LIT("PHI"),                .type = TYPE_FLOAT, .value.val_f32  =     1.6180339887},
+    {.id = SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32  =     2.7182818284},
+    {.id = SV_LIT("TRUE"),               .type = TYPE_BOOL,  .value.val_bool = 1 },
+    {.id = SV_LIT("FALSE"),              .type = TYPE_BOOL,  .value.val_bool = 0 },
+    {.id = SV_LIT("GL_NEAREST"),         .type = TYPE_UINT,  .value.val_f32  = GL_NEAREST },
+    {.id = SV_LIT("GL_LINEAR"),          .type = TYPE_UINT,  .value.val_f32  = GL_LINEAR },
+    {.id = SV_LIT("GL_REPEAT"),          .type = TYPE_UINT,  .value.val_f32  = GL_REPEAT },
+    {.id = SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_UINT,  .value.val_f32  = GL_MIRRORED_REPEAT },
+    {.id = SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_UINT,  .value.val_f32  = GL_CLAMP_TO_EDGE },
+    {.id = SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_UINT,  .value.val_f32  = GL_CLAMP_TO_BORDER },
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
@@ -401,7 +403,8 @@ static Token lexer_peek(Lexer *l)
             if (c != '.') {
                 // Not the job of the lexer to check this honestly
                 if (i != l->buf.length) {
-                    LEXER_ASSERT(!is_identifier_char(c) || c == 'u', "hmm");
+                    LEXER_ASSERT(!is_identifier_char(c) || c == 'u', 
+                                 "Unexpected character in integer literal.");
                 }
 
                 b8 is_unsigned = false;

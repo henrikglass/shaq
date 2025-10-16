@@ -65,7 +65,7 @@ static_assert(sizeof(TextureIndex) == 4, "actually doesn't matter TODO remove");
 
 typedef union
 {
-    bool val_bool; 
+    i32 val_bool; 
     i32 val_i32; 
     u32 val_u32; 
     f32 val_f32; 

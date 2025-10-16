@@ -58,6 +58,6 @@ void  session_arena_free(void *ptr)                 { hgl_free(g_session_arena, 
 void *session_fs_alloc(size_t size)                 { return hgl_alloc(g_session_fs_allocator, size); }
 void *session_fs_realloc(void *ptr, size_t size)    { return hgl_realloc(g_session_fs_allocator, ptr, size); }
 void  session_fs_free(void *ptr)                    { hgl_free(g_session_fs_allocator, ptr); }
-void *dummy_alloc(size_t size)                      { (void) size; assert(0); return NULL; }
-void *dummy_realloc(void *ptr, size_t size)         { (void) size; (void) ptr; assert(0); return NULL; }
-void  dummy_free(void *ptr)                         { (void) ptr; assert(0); }
+void *dummy_alloc(size_t size)                      { (void) size; return NULL; }
+void *dummy_realloc(void *ptr, size_t size)         { (void) size; (void) ptr; return NULL; }
+void  dummy_free(void *ptr)                         { (void) ptr; }
