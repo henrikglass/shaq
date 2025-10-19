@@ -54,6 +54,11 @@ static inline f32 negf(f32 *val);
 static SelValue fn_load_image_(void *args);
 static SelValue fn_output_of_(void *args);
 
+static SelValue fn_mouse_left_button_is_down_(void *args);
+static SelValue fn_mouse_right_button_is_down_(void *args);
+static SelValue fn_mouse_left_button_was_clicked_(void *args);
+static SelValue fn_mouse_right_button_was_clicked_(void *args);
+
 static SelValue fn_int_(void *args);
 static SelValue fn_unsigned_(void *args);
 static SelValue fn_mini_(void *args);
@@ -163,6 +168,7 @@ static SelValue fn_mat4_mul_vec4_(void *args);
 static SelValue fn_mat4_mul_scalar_(void *args);
 
 static SelValue fn_input_float_(void *args);
+static SelValue fn_checkbox_(void *args);
 static SelValue fn_slider_float_(void *args);
 static SelValue fn_slider_float_log_(void *args);
 static SelValue fn_input_vec2_(void *args);
@@ -177,6 +183,11 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("load_image"), .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_load_image_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture load_image(str filepath)", .desc = "Returns a reference to a texture loaded from `filepath`", },
     //{ .id = SV_LIT("load_image_detailed"),  /* ... */ }, // TODO (specify min/mag filter, wrapping, etc.).
     { .id = SV_LIT("output_of"),  .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_output_of_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader`. Calling this function implicitly defines the render order.", },
+
+    { .id = SV_LIT("mouse_left_button_is_down"),      .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_mouse_left_button_is_down_, .argtypes = {TYPE_NIL},          .synopsis = "bool mouse_left_button_is_down()", .desc = NULL, },
+    { .id = SV_LIT("mouse_right_button_is_down"),     .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_mouse_right_button_is_down_, .argtypes = {TYPE_NIL},          .synopsis = "bool mouse_right_button_is_down()", .desc = NULL, },
+    { .id = SV_LIT("mouse_left_button_was_clicked"),  .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_mouse_left_button_was_clicked_, .argtypes = {TYPE_NIL},          .synopsis = "bool mouse_left_button_was_clicked()", .desc = NULL, },
+    { .id = SV_LIT("mouse_right_button_was_clicked"), .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_mouse_right_button_was_clicked_, .argtypes = {TYPE_NIL},          .synopsis = "bool mouse_right_button_was_clicked()", .desc = NULL, },
 
     { .id = SV_LIT("int"),        .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = SV_LIT("unsigned"),   .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_unsigned_, .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "uint unsigned(int x)", .desc = "Typecast int to uint.", },
@@ -287,12 +298,13 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("mat4_mul_scalar"),       .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_scalar_,       .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_NIL},                      .synopsis = "mat4 mat4_mul_scalar(mat4 m, float s)",                .desc = NULL, },
 
     { .id = SV_LIT("input_float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_input_float_,      .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float input_float(str label, float default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("checkbox"),         .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_checkbox_,         .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool checkbox(str label)", .desc = "desc.: TODO", },
     { .id = SV_LIT("slider_float"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_,     .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float(str label, float min, float max, float default)", .desc = "desc.: TODO", },
     { .id = SV_LIT("slider_float_log"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_log_, .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float_log(str label, float min, float max, float default)", .desc = "desc.: TODO", },
-    { .id = SV_LIT("input_vec2"),       .type = TYPE_VEC2, .qualifier = QUALIFIER_NONE, .impl = fn_input_vec2_,       .argtypes = {TYPE_STR, TYPE_VEC2, TYPE_NIL}, .synopsis = "vec2 input_vec2(str label, vec2 default)", .desc = "desc.: TODO", },
-    { .id = SV_LIT("input_vec3"),       .type = TYPE_VEC3, .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "desc.: TODO", },
-    { .id = SV_LIT("input_vec4"),       .type = TYPE_VEC4, .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "desc.: TODO", },
-    { .id = SV_LIT("color_picker"),     .type = TYPE_VEC4, .qualifier = QUALIFIER_NONE, .impl = fn_color_picker_,     .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 color_picker(str label, vec4 default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("input_vec2"),       .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec2_,       .argtypes = {TYPE_STR, TYPE_VEC2, TYPE_NIL}, .synopsis = "vec2 input_vec2(str label, vec2 default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("input_vec3"),       .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("input_vec4"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("color_picker"),     .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_color_picker_,     .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 color_picker(str label, vec4 default)", .desc = "desc.: TODO", },
 };
 const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -556,6 +568,34 @@ static SelValue fn_output_of_(void *args)
     }
     return (SelValue) { .val_tex = {.kind = SHADER_INDEX, .render_texture_index = (u32) index}};
 }
+
+
+/* ---------------------- BOOL functions -------------------- */
+
+static SelValue fn_mouse_left_button_is_down_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = shaq_mouse_left_button_is_down()};
+}
+
+static SelValue fn_mouse_right_button_is_down_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = shaq_mouse_right_button_is_down()};
+}
+
+static SelValue fn_mouse_left_button_was_clicked_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = shaq_mouse_left_button_was_clicked()};
+}
+
+static SelValue fn_mouse_right_button_was_clicked_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = shaq_mouse_right_button_was_clicked()};
+}
+
 
 /* ----------------------- INT functions -------------------- */
 
@@ -1202,6 +1242,12 @@ static SelValue fn_input_float_(void *args)
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
     return gui_get_dynamic_item_value(label, INPUT_FLOAT, secondary_args, 1*sizeof(f32));
+}
+
+static SelValue fn_checkbox_(void *args)
+{
+    StringView label = *(StringView *)args;
+    return gui_get_dynamic_item_value(label, CHECKBOX, NULL, 0);
 }
 
 static SelValue fn_slider_float_(void *args)

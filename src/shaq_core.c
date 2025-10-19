@@ -183,6 +183,26 @@ Vec2 shaq_mouse_position()
     return mouse_pos;
 }
 
+b8 shaq_mouse_left_button_is_down()
+{
+    return renderer_mouse_left_button_is_down();
+}
+
+b8 shaq_mouse_right_button_is_down()
+{
+    return renderer_mouse_right_button_is_down();
+}
+
+b8 shaq_mouse_left_button_was_clicked()
+{
+    return renderer_mouse_left_button_was_clicked();
+}
+
+b8 shaq_mouse_right_button_was_clicked()
+{
+    return renderer_mouse_right_button_was_clicked();
+}
+
 i32 shaq_find_shader_id_by_name(StringView name)
 {
     /* look up shader id */

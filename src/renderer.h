@@ -26,6 +26,10 @@ b8 renderer_should_reload(void);
 b8 renderer_shader_view_is_maximized(void);
 IVec2 renderer_window_size(void);
 Vec2 renderer_mouse_position(void);
+b8 renderer_mouse_left_button_is_down(void);
+b8 renderer_mouse_right_button_is_down(void);
+b8 renderer_mouse_left_button_was_clicked(void);
+b8 renderer_mouse_right_button_was_clicked(void);
 
 #endif /* RENDERER_H */
 

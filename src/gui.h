@@ -15,6 +15,7 @@ typedef enum {
     INPUT_VEC2,
     INPUT_VEC3,
     INPUT_VEC4,
+    CHECKBOX,
     SLIDER_FLOAT,
     SLIDER_FLOAT_LOG,
     COLOR_PICKER,

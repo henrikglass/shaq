@@ -42,6 +42,11 @@ static struct {
     b8 should_reload;
     b8 is_fullscreen;
     b8 shader_view_is_maximized;
+
+    b8 lmb_is_down;
+    b8 rmb_is_down;
+    b8 lmb_was_down_last_frame;
+    b8 rmb_was_down_last_frame;
 } renderer;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -168,6 +173,11 @@ void renderer_end_final_pass(void)
     glfwSwapBuffers(renderer.window);
     glfwPollEvents();
     gl_check_errors();
+
+    renderer.lmb_was_down_last_frame = renderer.lmb_is_down;
+    renderer.rmb_was_down_last_frame = renderer.rmb_is_down;
+    renderer.lmb_is_down = glfwGetMouseButton(renderer.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    renderer.rmb_is_down = glfwGetMouseButton(renderer.window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 }
 
 b8 renderer_should_close()
@@ -196,6 +206,26 @@ Vec2 renderer_mouse_position()
     glfwGetCursorPos(renderer.window, &x, &y);
     Vec2 mpos = vec2_make(x, y);
     return mpos;
+}
+
+b8 renderer_mouse_left_button_is_down()
+{
+    return renderer.lmb_is_down;
+}
+
+b8 renderer_mouse_right_button_is_down()
+{
+    return renderer.rmb_is_down;
+}
+
+b8 renderer_mouse_left_button_was_clicked()
+{
+    return renderer.lmb_is_down && !renderer.lmb_was_down_last_frame;
+}
+
+b8 renderer_mouse_right_button_was_clicked()
+{
+    return renderer.rmb_is_down && !renderer.rmb_was_down_last_frame;
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

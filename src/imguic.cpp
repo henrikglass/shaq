@@ -153,6 +153,11 @@ void imgui_newline()
     ImGui::NewLine();
 }
 
+void imgui_checkbox(const char *label, bool *b)
+{
+    ImGui::Checkbox(label, b);
+}
+
 void imgui_input_float(const char *label, float *v)
 {
     ImGui::InputFloat(label, v);

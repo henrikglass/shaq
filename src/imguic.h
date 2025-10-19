@@ -44,6 +44,7 @@ void imgui_textf(const char *fmt, ...);
 void imgui_text_color(const char *str, u32 color);
 void imgui_separator(void);
 void imgui_newline(void);
+void imgui_checkbox(const char *label, bool *b);
 void imgui_input_float(const char *label, float *v);
 void imgui_input_float2(const char *label, float *v);
 void imgui_input_float3(const char *label, float *v);

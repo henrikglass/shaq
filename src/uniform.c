@@ -91,6 +91,9 @@ void uniform_determine_location_in_shader_program(Uniform *u, u32 shader_program
 {
     char *name_cstr = hgl_sv_make_cstr_copy(u->name, tmp_alloc);
     u->gl_uniform_location = glGetUniformLocation(shader_program, name_cstr);
+    if (u->gl_uniform_location == -1) {
+        log_error("Could not locate uniform variable: `%s`.", name_cstr);
+    }
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

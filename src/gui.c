@@ -323,6 +323,13 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
             imgui_input_float4(label_cstr, (float *)&item->value.val_vec4);
         } break;
 
+        case CHECKBOX: {
+            if (item->spawned_this_frame) {
+                item->value.val_bool = 0;
+            }
+            imgui_checkbox(label_cstr, (bool *)&item->value.val_bool);
+        } break;
+
         case SLIDER_FLOAT:
         case SLIDER_FLOAT_LOG: {
             f32 *args_f32 = (f32*)item->secondary_args;
