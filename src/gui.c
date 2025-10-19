@@ -40,7 +40,7 @@ static struct
     b8 should_reload;
     IVec2 shader_window_position;
     IVec2 shader_window_size;
-    float smoothed_deltatime;
+    f32 smoothed_deltatime;
 } gui;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -67,7 +67,9 @@ b8 gui_begin_main_window()
         imgui_textf("Controls:"); imgui_newline();
         imgui_textf("d    -  toggle light/dark mode"); imgui_newline();
         imgui_textf("f    -  toggle fullscreen"); imgui_newline();
-        imgui_textf("s    -  toggle maximized shader view "); imgui_newline();
+        imgui_textf("s    -  toggle maximized shader view"); imgui_newline();
+        imgui_textf("r    -  force reload"); imgui_newline();
+        imgui_textf("t    -  reset time"); imgui_newline();
         imgui_textf("esq  -  exit"); imgui_newline();
         imgui_separator();
     }
@@ -286,10 +288,27 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
 {
     char *label_cstr = hgl_sv_make_cstr_copy(item->label, tmp_alloc);
 
+    /**
+     * TODO: Figure out why this happens. It doesn't seem to cause any
+     *       unexpected behaviors though.
+     */
+    if (strlen(label_cstr) == 0) {
+        return;
+    }
+
     switch (item->kind) {
+        case INPUT_INT: {
+            i32 *args_i32 = (i32*)item->secondary_args;
+            i32 default_value = args_i32[0];
+            if (item->spawned_this_frame) {
+                item->value.val_i32 = default_value;
+            }
+            imgui_input_int(label_cstr, &item->value.val_i32);
+        } break;
+
         case INPUT_FLOAT: {
             f32 *args_f32 = (f32*)item->secondary_args;
-            float default_value = args_f32[0];
+            f32 default_value = args_f32[0];
             if (item->spawned_this_frame) {
                 item->value.val_f32 = default_value;
             }
@@ -302,7 +321,7 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
             if (item->spawned_this_frame) {
                 item->value.val_vec2 = default_value;
             }
-            imgui_input_float2(label_cstr, (float *)&item->value.val_vec2);
+            imgui_input_float2(label_cstr, (f32 *)&item->value.val_vec2);
         } break;
 
         case INPUT_VEC3: {
@@ -311,7 +330,7 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
             if (item->spawned_this_frame) {
                 item->value.val_vec3 = default_value;
             }
-            imgui_input_float3(label_cstr, (float *)&item->value.val_vec3);
+            imgui_input_float3(label_cstr, (f32 *)&item->value.val_vec3);
         } break;
 
         case INPUT_VEC4: {
@@ -320,22 +339,35 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
             if (item->spawned_this_frame) {
                 item->value.val_vec4 = default_value;
             }
-            imgui_input_float4(label_cstr, (float *)&item->value.val_vec4);
+            imgui_input_float4(label_cstr, (f32 *)&item->value.val_vec4);
         } break;
 
         case CHECKBOX: {
+            i32 *args_i32 = (i32*)item->secondary_args;
+            i32 default_value = args_i32[0];
             if (item->spawned_this_frame) {
-                item->value.val_bool = 0;
+                item->value.val_bool = default_value;
             }
             imgui_checkbox(label_cstr, (bool *)&item->value.val_bool);
+        } break;
+
+        case DRAG_INT: {
+            i32 *args_i32 = (i32*)item->secondary_args;
+            i32 min = args_i32[0];
+            i32 max = args_i32[1];
+            i32 default_value = args_i32[2];
+            if (item->spawned_this_frame) {
+                item->value.val_i32 = default_value;
+            }
+            imgui_drag_int(label_cstr, &item->value.val_i32, min, max); 
         } break;
 
         case SLIDER_FLOAT:
         case SLIDER_FLOAT_LOG: {
             f32 *args_f32 = (f32*)item->secondary_args;
-            float min = args_f32[0];
-            float max = args_f32[1];
-            float default_value = args_f32[2];
+            f32 min = args_f32[0];
+            f32 max = args_f32[1];
+            f32 default_value = args_f32[2];
             if (item->spawned_this_frame) {
                 item->value.val_f32 = default_value;
             }
@@ -348,7 +380,7 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
             if (item->spawned_this_frame) {
                 item->value.val_vec4 = default_value;
             }
-            imgui_color_picker(label_cstr, (float *)&item->value.val_vec4);
+            imgui_color_picker(label_cstr, (f32 *)&item->value.val_vec4);
         } break;
     }
 }

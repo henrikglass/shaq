@@ -82,6 +82,10 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
         }
 
         return 0;
+    } else if (sv_starts_with_lchop(&k, "source")) {
+        return -1; // ignore
+    } else {
+        log_error("Expected keyword `uniform` in left-hand-side expression: `%s`.", kv->val);
     }
     
     return -1;

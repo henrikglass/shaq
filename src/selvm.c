@@ -119,6 +119,7 @@ static SelValue fn_vec2_mul_scalar_(void *args);
 static SelValue fn_vec2_lerp_(void *args);
 static SelValue fn_vec2_slerp_(void *args);
 static SelValue fn_mouse_position_(void *args);
+static SelValue fn_mouse_drag_position_(void *args);
 
 static SelValue fn_vec3_(void *args);
 static SelValue fn_vec3_from_spherical_(void *args);
@@ -169,8 +170,10 @@ static SelValue fn_mat4_mul_scalar_(void *args);
 
 static SelValue fn_input_float_(void *args);
 static SelValue fn_checkbox_(void *args);
+static SelValue fn_drag_int_(void *args);
 static SelValue fn_slider_float_(void *args);
 static SelValue fn_slider_float_log_(void *args);
+static SelValue fn_input_int_(void *args);
 static SelValue fn_input_vec2_(void *args);
 static SelValue fn_input_vec3_(void *args);
 static SelValue fn_input_vec4_(void *args);
@@ -239,16 +242,17 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
 
-    { .id = SV_LIT("vec2"),            .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,            .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = NULL, },
-    { .id = SV_LIT("vec2_from_polar"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_polar_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = NULL, },
-    { .id = SV_LIT("vec2_distance"),   .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_distance_,   .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 vec2_distance(vec2 a, vec2 b)", .desc = NULL, },
-    { .id = SV_LIT("vec2_length"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_length_,     .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_length(vec2 v)", .desc = NULL, },
-    { .id = SV_LIT("vec2_normalize"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_normalize_,  .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_normalize(vec2 v)", .desc = NULL, },
-    { .id = SV_LIT("vec2_dot"),        .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_dot_,        .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 vec2_dot(vec2 a, vec2 b)", .desc = NULL, },
-    { .id = SV_LIT("vec2_mul_scalar"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_mul_scalar_, .argtypes = {TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},            .synopsis = "vec2 vec2_mul_scalar(vec2 v, float s)", .desc = NULL, },
-    { .id = SV_LIT("vec2_lerp"),       .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_lerp(vec2 a, vec2 b, float t)", .desc = NULL, },
-    { .id = SV_LIT("vec2_slerp"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,      .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_slerp(vec2 a, vec2 b, float t)", .desc = NULL, },
-    { .id = SV_LIT("mouse_position"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,  .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = NULL, },
+    { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = NULL, },
+    { .id = SV_LIT("vec2_from_polar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_polar_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = NULL, },
+    { .id = SV_LIT("vec2_distance"),       .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_distance_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 vec2_distance(vec2 a, vec2 b)", .desc = NULL, },
+    { .id = SV_LIT("vec2_length"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_length_,         .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_length(vec2 v)", .desc = NULL, },
+    { .id = SV_LIT("vec2_normalize"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_normalize_,      .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_normalize(vec2 v)", .desc = NULL, },
+    { .id = SV_LIT("vec2_dot"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_dot_,            .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 vec2_dot(vec2 a, vec2 b)", .desc = NULL, },
+    { .id = SV_LIT("vec2_mul_scalar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_mul_scalar_,     .argtypes = {TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},            .synopsis = "vec2 vec2_mul_scalar(vec2 v, float s)", .desc = NULL, },
+    { .id = SV_LIT("vec2_lerp"),           .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_lerp(vec2 a, vec2 b, float t)", .desc = NULL, },
+    { .id = SV_LIT("vec2_slerp"),          .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,          .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_slerp(vec2 a, vec2 b, float t)", .desc = NULL, },
+    { .id = SV_LIT("mouse_position"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,      .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = NULL, },
+    { .id = SV_LIT("mouse_drag_position"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_drag_position_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_drag_position()", .desc = NULL, },
 
     { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = NULL, },
     { .id = SV_LIT("vec2_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = NULL, },
@@ -298,9 +302,11 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("mat4_mul_scalar"),       .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_scalar_,       .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_NIL},                      .synopsis = "mat4 mat4_mul_scalar(mat4 m, float s)",                .desc = NULL, },
 
     { .id = SV_LIT("input_float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_input_float_,      .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float input_float(str label, float default)", .desc = "desc.: TODO", },
-    { .id = SV_LIT("checkbox"),         .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_checkbox_,         .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool checkbox(str label)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("checkbox"),         .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_checkbox_,         .argtypes = {TYPE_STR, TYPE_BOOL, TYPE_NIL}, .synopsis = "bool checkbox(str label, bool default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("drag_int"),         .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_drag_int_,         .argtypes = {TYPE_STR, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "int drag_int(str label, int min, int max, int default)", .desc = "desc.: TODO", },
     { .id = SV_LIT("slider_float"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_,     .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float(str label, float min, float max, float default)", .desc = "desc.: TODO", },
     { .id = SV_LIT("slider_float_log"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_log_, .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float_log(str label, float min, float max, float default)", .desc = "desc.: TODO", },
+    { .id = SV_LIT("input_int"),        .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_input_int_,        .argtypes = {TYPE_STR, TYPE_INT, TYPE_NIL}, .synopsis = "int input_int(str label, int default)", .desc = "desc.: TODO", },
     { .id = SV_LIT("input_vec2"),       .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec2_,       .argtypes = {TYPE_STR, TYPE_VEC2, TYPE_NIL}, .synopsis = "vec2 input_vec2(str label, vec2 default)", .desc = "desc.: TODO", },
     { .id = SV_LIT("input_vec3"),       .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "desc.: TODO", },
     { .id = SV_LIT("input_vec4"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "desc.: TODO", },
@@ -965,7 +971,13 @@ static SelValue fn_vec2_slerp_(void *args)
 static SelValue fn_mouse_position_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_vec2 = shaq_mouse_position()}; // TODO support non-fullscreen
+    return (SelValue) {.val_vec2 = shaq_mouse_position()};
+}
+
+static SelValue fn_mouse_drag_position_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_vec2 = shaq_mouse_drag_position()};
 }
 
 
@@ -1246,8 +1258,18 @@ static SelValue fn_input_float_(void *args)
 
 static SelValue fn_checkbox_(void *args)
 {
+    u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
-    return gui_get_dynamic_item_value(label, CHECKBOX, NULL, 0);
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, CHECKBOX, secondary_args, 1*sizeof(f32));
+}
+
+static SelValue fn_drag_int_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, DRAG_INT, secondary_args, 3*sizeof(i32));
 }
 
 static SelValue fn_slider_float_(void *args)
@@ -1264,6 +1286,14 @@ static SelValue fn_slider_float_log_(void *args)
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
     return gui_get_dynamic_item_value(label, SLIDER_FLOAT_LOG, secondary_args, 3*sizeof(f32));
+}
+
+static SelValue fn_input_int_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_dynamic_item_value(label, INPUT_INT, secondary_args, sizeof(i32));
 }
 
 static SelValue fn_input_vec2_(void *args)

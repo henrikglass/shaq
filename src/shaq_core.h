@@ -25,10 +25,12 @@ f32 shaq_time(void);
 f32 shaq_deltatime(void);
 IVec2 shaq_iresolution(void);
 Vec2 shaq_mouse_position(void);
+Vec2 shaq_mouse_drag_position(void);
 b8 shaq_mouse_left_button_is_down(void);
 b8 shaq_mouse_right_button_is_down(void);
 b8 shaq_mouse_left_button_was_clicked(void);
 b8 shaq_mouse_right_button_was_clicked(void);
+void shaq_reset_time(void);
 
 i32 shaq_find_shader_id_by_name(StringView name);
 i32 shaq_load_texture_if_necessary(StringView filepath);

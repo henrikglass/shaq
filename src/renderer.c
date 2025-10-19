@@ -2,6 +2,7 @@
 
 #include "renderer.h"
 
+#include "shaq_core.h"
 #include "constants.h"
 #include "hgl_int.h"
 #include "vecmath.h"
@@ -43,6 +44,8 @@ static struct {
     b8 is_fullscreen;
     b8 shader_view_is_maximized;
 
+    Vec2 mouse_position;
+    Vec2 mouse_drag_position;
     b8 lmb_is_down;
     b8 rmb_is_down;
     b8 lmb_was_down_last_frame;
@@ -174,10 +177,30 @@ void renderer_end_final_pass(void)
     glfwPollEvents();
     gl_check_errors();
 
+    f64 x, y;
+    glfwGetCursorPos(renderer.window, &x, &y);
+    renderer.mouse_position = vec2_make(x, y);
     renderer.lmb_was_down_last_frame = renderer.lmb_is_down;
     renderer.rmb_was_down_last_frame = renderer.rmb_is_down;
     renderer.lmb_is_down = glfwGetMouseButton(renderer.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     renderer.rmb_is_down = glfwGetMouseButton(renderer.window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    // TODO CHECK MOUSE POS INSIDE WINDOW
+    if (renderer.lmb_is_down) {
+        if (renderer.shader_view_is_maximized) {
+            renderer.mouse_drag_position = renderer.mouse_position;
+        } else {
+            IVec2 swpos = gui_shader_window_position();
+            IVec2 swsize = gui_shader_window_size();
+            float min_x = swpos.x;
+            float min_y = swpos.y;
+            float max_x = swpos.x + swsize.x;
+            float max_y = swpos.y + swsize.y;
+            if (((f32)x >= min_x) && ((f32)x < max_x) &&
+                ((f32)y >= min_y) && ((f32)y < max_y)) {
+                renderer.mouse_drag_position = renderer.mouse_position;
+            }
+        }
+    }
 }
 
 b8 renderer_should_close()
@@ -202,10 +225,12 @@ IVec2 renderer_window_size()
 
 Vec2 renderer_mouse_position()
 {
-    f64 x, y;
-    glfwGetCursorPos(renderer.window, &x, &y);
-    Vec2 mpos = vec2_make(x, y);
-    return mpos;
+    return renderer.mouse_position;
+}
+
+Vec2 renderer_mouse_drag_position()
+{
+    return renderer.mouse_drag_position;
 }
 
 b8 renderer_mouse_left_button_is_down()
@@ -262,6 +287,18 @@ static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, 
             if (action == GLFW_PRESS) {
                 renderer.shader_view_is_maximized = !renderer.shader_view_is_maximized;
                 renderer.should_reload = true;
+            }
+        } break;
+
+        case GLFW_KEY_R: {
+            if (action == GLFW_PRESS) {
+                renderer.should_reload = true;
+            }
+        } break;
+
+        case GLFW_KEY_T: {
+            if (action == GLFW_PRESS) {
+                shaq_reset_time();
             }
         } break;
 

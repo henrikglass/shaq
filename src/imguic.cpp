@@ -158,6 +158,16 @@ void imgui_checkbox(const char *label, bool *b)
     ImGui::Checkbox(label, b);
 }
 
+void imgui_drag_int(const char *label, int *v, int min, int max)
+{
+    ImGui::DragInt(label, v, 1, min, max, "%d", ImGuiSliderFlags_Logarithmic);
+}
+
+void imgui_input_int(const char *label, int *v)
+{
+    ImGui::InputInt(label, v);
+}
+
 void imgui_input_float(const char *label, float *v)
 {
     ImGui::InputFloat(label, v);
@@ -249,7 +259,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    //ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

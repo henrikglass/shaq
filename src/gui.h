@@ -11,11 +11,13 @@
 /*--- Public type definitions -----------------------------------------------------------*/
 
 typedef enum {
+    INPUT_INT,
     INPUT_FLOAT,
     INPUT_VEC2,
     INPUT_VEC3,
     INPUT_VEC4,
     CHECKBOX,
+    DRAG_INT,
     SLIDER_FLOAT,
     SLIDER_FLOAT_LOG,
     COLOR_PICKER,

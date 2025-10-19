@@ -172,11 +172,21 @@ IVec2 shaq_iresolution()
 Vec2 shaq_mouse_position()
 {
     Vec2 mouse_pos = renderer_mouse_position();
-
     if (renderer_shader_view_is_maximized()) {
         return mouse_pos;
     } 
+    IVec2 shader_window_pos = gui_shader_window_position();
+    mouse_pos.x -= shader_window_pos.x;
+    mouse_pos.y -= shader_window_pos.y;
+    return mouse_pos;
+}
 
+Vec2 shaq_mouse_drag_position()
+{
+    Vec2 mouse_pos = renderer_mouse_drag_position();
+    if (renderer_shader_view_is_maximized()) {
+        return mouse_pos;
+    } 
     IVec2 shader_window_pos = gui_shader_window_position();
     mouse_pos.x -= shader_window_pos.x;
     mouse_pos.y -= shader_window_pos.y;
@@ -201,6 +211,11 @@ b8 shaq_mouse_left_button_was_clicked()
 b8 shaq_mouse_right_button_was_clicked()
 {
     return renderer_mouse_right_button_was_clicked();
+}
+
+void shaq_reset_time()
+{
+    shaq.start_timestamp_ns = util_get_time_nanos();
 }
 
 i32 shaq_find_shader_id_by_name(StringView name)
