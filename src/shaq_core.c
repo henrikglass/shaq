@@ -142,6 +142,9 @@ void shaq_new_frame()
         /* Draw menu bar */
         gui_draw_menu_bar();
 
+        /* Draw file dialog (maybe) */
+        gui_draw_file_dialog();
+
         gui_end_frame();
     }
     renderer_end_final_pass();
@@ -316,9 +319,18 @@ static void reload_session()
     log_clear_all_logs();
     log_info("Reloaded");
 
+    /* "Reload" renderer & GUI */
+    renderer_reload();
+    gui_reload();
+
     /* collect garbage */
     hgl_free_all(g_session_arena);
     hgl_free_all(g_session_fs_allocator);
+
+    /* Return early if no filepath is set */
+    if (shaq.ini_filepath == NULL) {
+        return;
+    }
 
     /* Reload ini file */
     shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath, false);
@@ -343,10 +355,6 @@ static void reload_session()
         Shader *s = &shaq.shaders.arr[i];
         shader_reload(s);
     }
-
-    /* "Reload" renderer & GUI */
-    renderer_reload();
-    gui_reload();
 
     /* Reset visible shader idx if necessary */
     if ((shaq.visible_shader_idx >= (i32)shaq.shaders.count) ||

@@ -9,6 +9,7 @@ extern "C" {
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
+#include "ImGuiFileDialog/ImGuiFileDialog.h"
 
 #include <stdio.h>
 
@@ -123,6 +124,27 @@ void imgui_end_menu()
 void imgui_end_main_menu_bar()
 {
     ImGui::EndMainMenuBar();
+}
+
+void imgui_open_file_dialog()
+{
+    IGFD::FileDialogConfig config;
+    config.path = ".";
+    ImGuiFileDialog::Instance()->OpenDialog("ShaqFileDialog", "Choose File", ".ini,.shaq", config);
+}
+
+void imgui_display_file_dialog()
+{
+    if (ImGuiFileDialog::Instance()->Display("ShaqFileDialog")) {
+        if (ImGuiFileDialog::Instance()->IsOk()) {
+            //std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            //std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+            printf("Select\n");
+            // TODO
+        }
+
+        ImGuiFileDialog::Instance()->Close();
+    }
 }
 
 void imgui_draw_texture(u32 gl_texture_id, int w, int h)

@@ -9,7 +9,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
               -Wmissing-prototypes -Wstrict-prototypes -Wwrite-strings \
               -Wunused-parameter -Wshadow -Wdouble-promotion -Wfloat-equal \
               -Wno-override-init -Wno-error=cpp
-C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb
+C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb -Isrc/imgui -Isrc/ImGuiFileDialog
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -fno-strict-aliasing #-fsanitize=address
 CPP_FLAGS  := $(C_INCLUDES) --std=c++11
 L_FLAGS    := -Llib -lm -lstdc++ -lglfw -ldl
@@ -52,6 +52,7 @@ shaq:
 imgui:
 ifeq ("$(wildcard build/imgui/*.o)","")
 	$(call CPP_COMPILE, src/imgui/*.cpp, build/imgui/)
+	$(call CPP_COMPILE, src/ImGuiFileDialog/*.cpp, build/imgui/)
 endif
 
 prep:

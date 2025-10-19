@@ -27,14 +27,10 @@
 
 i64 io_get_file_modify_time(const char *filepath, bool retry_on_failure)
 {
-    //struct stat statbuf;
-    //int err = stat(filepath, &statbuf);
-    //if (err != 0) {
-    //    printf("WALLAHIII               errno = %s\n", strerror(errno));
-    //    return -1;
-    //}
-
     i64 ret = -1;
+    if (filepath == NULL) {
+        goto out; 
+    }
 
     /*
      * What the fuck is this, you may ask?

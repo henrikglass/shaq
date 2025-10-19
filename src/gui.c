@@ -213,14 +213,23 @@ void gui_draw_log_window()
 void gui_draw_menu_bar()
 {
     if (imgui_begin_main_menu_bar()) {
-        if (imgui_begin_menu("File")) {
+        if (imgui_begin_menu("Menu")) {
             if (imgui_menu_item("Open", NULL)) {
                 printf("File Open (TODO)\n");
+                imgui_open_file_dialog();
+            }
+            if (imgui_menu_item("Quit", "Alt-F4")) {
+                exit(0);
             }
             imgui_end_menu();
         }
     }
     imgui_end_main_menu_bar();
+}
+
+void gui_draw_file_dialog()
+{
+    imgui_display_file_dialog();
 }
 
 void gui_toggle_darkmode()

@@ -38,7 +38,8 @@ int main(int argc, char *argv[])
 
     srand(*opt_rng_seed == 0 ? (u64)time(NULL): *opt_rng_seed);
 
-    shaq_begin(*opt_input, *opt_quiet);
+    //shaq_begin(*opt_input, *opt_quiet);
+    shaq_begin(NULL, *opt_quiet);
     while (!shaq_should_close()) {
         shaq_new_frame();
     }
