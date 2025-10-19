@@ -155,7 +155,7 @@ void renderer_draw_fullscreen_shader(Shader *s)
         return;
     }
 
-    glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0); // TODO cache
+    glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0);
     glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 
                  1, (i32 *)&renderer.window_size); 
     glActiveTexture(GL_TEXTURE0);
@@ -188,7 +188,7 @@ void renderer_end_final_pass(void)
      * TODO: Handle this in a better way. Currently, mouse_drag_position may be updated
      *       when, for instance, the shader view window is being resized
      */
-    if (renderer.lmb_is_down && /*!imgui_is_any_item_active()*/) {
+    if (renderer.lmb_is_down /*&& !imgui_is_any_item_active()*/) {
         if (renderer.shader_view_is_maximized) {
             renderer.mouse_drag_position = renderer.mouse_position;
         } else {
