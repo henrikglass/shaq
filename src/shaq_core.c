@@ -138,6 +138,10 @@ void shaq_new_frame()
 
         /* Draw log window */
         gui_draw_log_window();
+
+        /* Draw menu bar */
+        gui_draw_menu_bar();
+
         gui_end_frame();
     }
     renderer_end_final_pass();

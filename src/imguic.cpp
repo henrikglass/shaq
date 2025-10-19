@@ -54,7 +54,7 @@ void imgui_final()
     ImGui::DestroyContext();
 }
 
-void imgui_set_darkmode(bool enable)
+void imgui_set_darkmode(b8 enable)
 {
     if (enable) {
         ImGui::StyleColorsDark();
@@ -95,9 +95,34 @@ void imgui_begin_table(const char *label, i32 n_cols)
     ImGui::BeginTable(label, n_cols);
 }
 
-bool imgui_begin_combo(const char *label, const char *preview_value)
+b8 imgui_begin_combo(const char *label, const char *preview_value)
 {
     return ImGui::BeginCombo(label, preview_value);
+}
+
+b8 imgui_begin_main_menu_bar()
+{
+    return ImGui::BeginMainMenuBar();
+}
+
+b8 imgui_begin_menu(const char *label)
+{
+    return ImGui::BeginMenu(label);
+}
+
+b8 imgui_menu_item(const char *label, const char *shortcut)
+{
+    return ImGui::MenuItem(label, shortcut);
+}
+
+void imgui_end_menu()
+{
+    ImGui::EndMenu();
+}
+
+void imgui_end_main_menu_bar()
+{
+    ImGui::EndMainMenuBar();
 }
 
 void imgui_draw_texture(u32 gl_texture_id, int w, int h)
@@ -153,7 +178,7 @@ void imgui_newline()
     ImGui::NewLine();
 }
 
-void imgui_checkbox(const char *label, bool *b)
+void imgui_checkbox(const char *label, b8 *b)
 {
     ImGui::Checkbox(label, b);
 }
@@ -188,7 +213,7 @@ void imgui_input_float4(const char *label, float *v)
     ImGui::InputFloat4(label, v);
 }
 
-void imgui_slider_float(const char *label, float *v, float min, float max, bool log)
+void imgui_slider_float(const char *label, float *v, float min, float max, b8 log)
 {
     if (log) {
         ImGui::SliderFloat(label, v, min, max, "%.3f", ImGuiSliderFlags_Logarithmic);
@@ -202,7 +227,7 @@ void imgui_color_picker(const char *label, float *v)
     ImGui::ColorEdit4(label, v);
 }
 
-bool imgui_selectable(const char *label, bool is_selected)
+b8 imgui_selectable(const char *label, b8 is_selected)
 {
     return ImGui::Selectable(label, is_selected);
 }
@@ -259,7 +284,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

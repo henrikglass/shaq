@@ -40,6 +40,7 @@ void gui_end_shader_window(void);
 void gui_end_main_window(void);
 void gui_end_frame(void);
 void gui_draw_log_window(void);
+void gui_draw_menu_bar(void);
 void gui_toggle_darkmode(void);
 SelValue gui_get_dynamic_item_value(StringView label,
                                     DynamicGuiItemKind kind,

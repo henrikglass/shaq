@@ -184,8 +184,11 @@ void renderer_end_final_pass(void)
     renderer.rmb_was_down_last_frame = renderer.rmb_is_down;
     renderer.lmb_is_down = glfwGetMouseButton(renderer.window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
     renderer.rmb_is_down = glfwGetMouseButton(renderer.window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-    // TODO CHECK MOUSE POS INSIDE WINDOW
-    if (renderer.lmb_is_down) {
+    /* 
+     * TODO: Handle this in a better way. Currently, mouse_drag_position may be updated
+     *       when, for instance, the shader view window is being resized
+     */
+    if (renderer.lmb_is_down && /*!imgui_is_any_item_active()*/) {
         if (renderer.shader_view_is_maximized) {
             renderer.mouse_drag_position = renderer.mouse_position;
         } else {

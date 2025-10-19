@@ -210,6 +210,19 @@ void gui_draw_log_window()
     imgui_end();
 }
 
+void gui_draw_menu_bar()
+{
+    if (imgui_begin_main_menu_bar()) {
+        if (imgui_begin_menu("File")) {
+            if (imgui_menu_item("Open", NULL)) {
+                printf("File Open (TODO)\n");
+            }
+            imgui_end_menu();
+        }
+    }
+    imgui_end_main_menu_bar();
+}
+
 void gui_toggle_darkmode()
 {
     gui.dark_mode = !gui.dark_mode;
