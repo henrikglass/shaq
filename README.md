@@ -43,3 +43,8 @@ figure out in what order things need to be rendered.
 The name Shaq is an abbreviaton of Shader Quick. Or Shader Qompositor. Or Shaquille O' Neal if you're 
 being adamant about it. I haven't really decided. Don't ask me about it again. And don't ask me to 
 spell compositor, ok?
+
+# Credits
+This project uses open source components. See a list of credits below.
+
+// TODO
