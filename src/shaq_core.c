@@ -337,7 +337,6 @@ static void reload_session()
     array_clear(&shaq.render_order);
     array_clear(&shaq.loaded_textures);
     log_clear_all_logs();
-    log_info("Reloaded");
 
     /* "Reload" renderer & GUI */
     renderer_reload();
@@ -386,7 +385,7 @@ static void reload_session()
         log_print_error_log();
     }
 
-#if 1
+#if 0
     printf("frame arena          -- "); hgl_alloc_print_usage(g_frame_arena);
     printf("session arena        -- "); hgl_alloc_print_usage(g_session_arena);
     printf("session fs allocator -- "); hgl_alloc_print_usage(g_session_fs_allocator);

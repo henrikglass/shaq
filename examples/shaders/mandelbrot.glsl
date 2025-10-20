@@ -21,7 +21,6 @@ void main()
     vec2 uv, c, z; 
     int i;
 
-    //uv = gl_FragCoord.xy / iresolution.y;
     uv = gl_FragCoord.xy / iresolution.y;
     uv = uv * 2.0 - vec2(1.0);
 
