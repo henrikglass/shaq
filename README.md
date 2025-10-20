@@ -1,50 +1,114 @@
-# shaq
-Shaq is a tool for developing GLSL shaders, similar to [shadertoy.com](shadertoy.com), but meant for offline use.
+# Shaq
+Shaq is a tool for developing GLSL shaders and prototyping multi-pass shader pipelines. Shaq is in many
+ways similar to the fantastic [shadertoy.com](shadertoy.com) tool, but there are a few main differences:
 
-# Usage
-At the core of Shaq is the *.ini project file. In this file, you define shaders and their respective inputs. 
-Lets say you have two shaders you want to compose: One shader, `mandelbrot`, renders the mandelbrot set at a 
-certain zoom level; the zoom level is calculated from a uniform variable `time`. The other shader, `dither`, takes an 
-image and applies an ordered dithering filter to it with a certain color bit depth `bpp`. Such a project file may
-look something like this:
+1. Shaq is an offline tool.
+2. Shaq uses plain GLSL shaders.
+3. Shaq places emphasis on host-side logic. Embedded into Shaq is tiny scripting language, the Simple
+   Expression Language (SEL), which gives the user the ability to specify the values of uniform
+   variables, on a frame-by-frame basis, using basic arithmetic expressions.
 
-```ini
-[mandelbrot]
-source                    = shaders/mandelbrot.glsl
-uniform float time        = time()*slider_float_log("timescale", 0.01, 10.0, 1.0)
+# Building
+To build Shaq entirely from scratch, run:
 
-[dither]
-source                    = shaders/dither.glsl
-uniform sampler2D input   = output_of("mandelbrot")
-uniform int bpp           = 4
+```bash
+$ make cleaner & make
 ```
 
-If you're familiar with shader programming it should be fairly clear what's going on, even if it's your first 
-time looking at a Shaq project file. Each shader is defined with a name, wrapped in brackets. Each shader has 
-a source file. Finally, each shader may have zero or more uniform variables that may be assigned from the host 
-program. 
+## External dependencies
+Shaq depends on the following being installed on your system:
 
-Each entry marking a uniform variable shares the same delaration syntax as GLSL and is followed by an `=` 
+* GCC
+* GNU Parallel (only necessary for build process)
+* GLFW3
+
+*Note: Shaq assumes support for OpenGL 4.5. If your machine does not support OpenGL 4.5 you may experience
+odd behaviors. I intend to fix this in the future, somehow. If you really need to run Shaq on a machine
+without OpenGL 4.5 support, it shouldn't be too difficult to manually patch the code, starting with the
+code inside `renderer.c`.*
+
+# Usage
+At the core of Shaq is the \*.ini project file. In this file, you declare to Shaq what shaders to use, what
+their respective inputs (uniform variables) are, and which values are assigned to the inputs.
+
+A Shaq project file may contain one or more shaders. Each shader is declared with a name, wrapped in brackets,
+followed by an entry called `source`, which specifies a filepath to the shader source file. Finally, each shader
+may have zero or more uniform variables that may be assigned from the host program.
+
+Each entry marking a uniform variable shares the same delaration syntax as GLSL and is followed by an `=`
 symbol. To the right of the `=` symbol is an expression. The language in which these expressions are written is
 called SEL (for Simple Expression Language). Mostly, SEL expressions follow the same rules as arithmetic expressions
-in languages like C or GLSL. Each expression evaluates to some value, and, naturally, each expression has a type. The 
-type of an expression must match the type of the uniform variable on the left-hand-side of the `=` symbol. SEL has a 
-large number of built-in functions and constants. These may be listed by runnning `./shaq --list-builtins`. One caveat 
-with SEL is that it doesn't allow implicit type conversions. So if you want to, say, assign the result of `time()` 
-(which is of type float) to a uniform variable of type int, you must explicitly typecast it using the built-in
-typecasting function `int(..)` as such: `int(time())`.
+in languages like C or GLSL. Each expression evaluates to some value and to some type. The type of an expression
+must match the type of the uniform variable on the left-hand-side of the `=` symbol.
 
-Shaq and SEL makes it easy to compose multiple shaders. Instead of having to manually go through the process of creating
-offscreen frame buffers, creating render textures, and managing the render order yourself, you can simply define a 
-dependency (as shown above with `uniform sampler2D input = output_of(\"mandelbrot\")`), and Shaq will automatically 
-figure out in what order things need to be rendered.
+SEL has a large number of built-in functions and constants. These may be listed by runnning `./shaq --list-builtins`.
+Most of the built-in functions are pure mathematical primitives and functions, like `float sin(float x)`,
+`float vec3_dot(vec3 a, vec3 b)`, and `mat4 mat4_make_rotation(float angle, vec3 axis)`. There is also a handful
+of functions that provide information from the Shaq runtime, such as `float time()`, `vec2 mouse_position()`,
+`ivec2 iresolution()`, and `texture output_of(str shader)`. Lastly, there is a set of functions that create
+GUI widgets, into which the user can enter values dynamically at runtime. These functions evaluate to the
+values entered into their respective widgets. A few examples are
+`slider_float(str label, float min, float max, float default)`, `bool checkbox(str label, bool default)`, and
+`vec4 color_picker(str label, vec4 default)`.
+
+## Example
+Inside the `examples/` directory there is an example project called `readme\_example.ini`. This project
+defines three shaders:
+
+* `Mandelbrot` - Draws a grayscale image of the mandelbrot set, given a couple of parameters such as the zoom
+  level `zoom`, the zoom position `position`, and the max allowed number of iterations `max_iterations`. The
+  zoom level may be overridden by `animate_zoom` if `animate` is set to true.
+* `Gradient` - Takes a grayscale image `input_texture` and applies a 2, 3, or 4 step linear gradient given the
+  luminance value at each pixel. The gradient colors are given by `gradient_1` through `gradient_4`. A gamma
+  correction function may optinonally be applied to the luminance value before the gradient is applied if
+  `use_gamma` is set to true. This will effectively skew the distribution of the gradients for values of
+  `gamma` other than `1.0`.
+* `Split` - Takes two images, `input_texture_1` and `input_texture_2`, and displays either one or the other
+  depending on if the X-coordinate of a given pixel is less than or greater than the X-coordinate of
+  `splitter_position`. The splitter itself is shown as a vertical bar with a certain thickness
+  `splitter_thickness` and color `splitter_color`.
+
+Here is the entire `readme_example.ini` project file:
+
+https://github.com/henrikglass/shaq/blob/1613eacb9b0a015e08822321b970d332b4a81521/examples/readme_example.ini
+
+Note that the output of `Mandelbrot` is assigned to the `input_texture` variable of `Gradient`, and that the
+outputs of both `Mandelbrot` and `Gradient` are assigned to `input_texture_1` and `input_texture_2`,
+respectively, of `Split`. This implies that the shaders must be rendered in a particular order in order to
+satisfy the dependencies. Shaq determines this order automatically. Generally, if there exists a cyclic
+dependency between shaders, Shaq will produce a warning message.
+
+If opened with Shaq (e.g. with `./shaq -i examples/readme_example.ini`) it will look something like this:
+
+TODO image
+
+I encourage playing around with the source code of the shaders and making edits to the \*.ini project file
+while Shaq is running. Shaq will automatically reload and recompile everything as necessary upon changes being
+made to any of these files.
+
+# Bugs
+Shaq is a relatively young project and probably contains a few bugs. Please message me or open an issue if you
+experience any bugs or crashes.
 
 # Why is it named after a basketball player?
-The name Shaq is an abbreviaton of Shader Quick. Or Shader Qompositor. Or Shaquille O' Neal if you're 
-being adamant about it. I haven't really decided. Don't ask me about it again. And don't ask me to 
+The name Shaq is an abbreviaton of Shader Quick. Or Shader Qompositor. Or Shaquille O' Neal if you're
+being adamant about it. I haven't really decided. Don't ask me about it again. And don't ask me to
 spell compositor, ok?
+
+# Planned features and fixes
+
+* Embed a tiny text editor
+* Support uniform arrays
+* SEL - Add missing basic functions, e.g. matrix multiplication.
+* SEL - Add missing documentation in `--list-builtins`.
+* SEL - load\_video()?
+* Degrade OpenGL version on systems with versions < 4.5
 
 # Credits
 This project uses open source components. See a list of credits below.
 
-// TODO
+[HGL](https://github.com/henrikglass) - Copyright (c) 2023-2025 Henrik A. Glass
+[stb\_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) - Copyright (c) 2017 Sean Barrett
+[Dear ImGui](https://github.com/ocornut/imgui) - Copyright (c) 2014-2025 Omar Cornut
+[ImGuiFileDialog](https://github.com/aiekick/ImGuiFileDialog) - Copyright (c) 2018-2025 Stephane Cuillerdier (aka Aiekick)
+
