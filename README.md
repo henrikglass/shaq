@@ -79,7 +79,7 @@ source                            = examples/shaders/mandelbrot.glsl
 uniform ivec2 iresolution         = iresolution()
 uniform float zoom                = slider_float_log("zoom", 1.0, 1000000.0, 1.0)
 uniform int max_iterations        = drag_int("max_n_iterations", 1, 1000, 192)
-uniform vec2 position             = vec2(-0.74364, 0.13182)
+uniform vec2 position             = input_vec2("position", vec2(-0.74364, 0.13182))
 uniform bool animate              = checkbox("Animate", FALSE)
 uniform float animate_zoom        = min(pow(0.01*slider_float("Animation Speed", 0.01, 10.0, 1.0)*time() + 1.0, 10.0), 1000000.0)
 
@@ -138,6 +138,7 @@ spell compositor, ok?
 * SEL - Add missing documentation in `--list-builtins`.
 * SEL - load\_video()?
 * Degrade OpenGL version on systems with versions < 4.5
+* Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined)
 
 # Credits
 This project uses open source components. See a list of credits below.

@@ -4,6 +4,7 @@
 
 extern "C" {
     #include "alloc.h"
+    #include "constants.h"
 }
 
 #include "imgui/imgui.h"
@@ -133,18 +134,18 @@ void imgui_open_file_dialog()
     ImGuiFileDialog::Instance()->OpenDialog("ShaqFileDialog", "Choose File", ".ini,.shaq", config);
 }
 
-void imgui_display_file_dialog()
+b8 imgui_display_file_dialog(char *filepath)
 {
+    b8 updated_filepath = false;
     if (ImGuiFileDialog::Instance()->Display("ShaqFileDialog")) {
         if (ImGuiFileDialog::Instance()->IsOk()) {
-            //std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-            //std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-            printf("Select\n");
-            // TODO
+            std::string selected_filepath = ImGuiFileDialog::Instance()->GetFilePathName();
+            strncpy(filepath, selected_filepath.c_str(), SHAQ_FILEPATH_MAX_LEN - 1);
+            updated_filepath = true;
         }
-
         ImGuiFileDialog::Instance()->Close();
     }
+    return updated_filepath;
 }
 
 void imgui_draw_texture(u32 gl_texture_id, int w, int h)

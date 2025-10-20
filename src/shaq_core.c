@@ -46,13 +46,15 @@ static void shaq_atexit_(void);
 static struct {
 
     HglIni *ini; 
-    const char *ini_filepath;
+    char ini_filepath[SHAQ_FILEPATH_MAX_LEN];
+    b8 has_ini_filepath;
     i64 ini_modifytime;
     Array(Shader, SHAQ_MAX_N_SHADERS) shaders;
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
     Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) loaded_textures;
     i32 visible_shader_idx;
     b8 quiet;
+    b8 should_reload;
 
     u64 start_timestamp_ns;
     u64 last_frame_timestamp_ns;
@@ -69,9 +71,13 @@ void shaq_begin(const char *ini_filepath, bool quiet)
     alloc_init();
     renderer_init();
 
+    if (ini_filepath != NULL) {
+        strncpy(shaq.ini_filepath, ini_filepath, SHAQ_FILEPATH_MAX_LEN - 1);
+        shaq.has_ini_filepath = true;
+    }
+
     shaq.start_timestamp_ns = util_get_time_nanos();
     shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
-    shaq.ini_filepath = ini_filepath;
     shaq.visible_shader_idx = (u32) -1;
     shaq.quiet = quiet;
 
@@ -143,7 +149,10 @@ void shaq_new_frame()
         gui_draw_menu_bar();
 
         /* Draw file dialog (maybe) */
-        gui_draw_file_dialog();
+        if (gui_draw_file_dialog(shaq.ini_filepath)) {
+            shaq.has_ini_filepath = true;
+            shaq.should_reload = true;
+        }
 
         gui_end_frame();
     }
@@ -276,6 +285,15 @@ u32 shaq_get_loaded_texture_by_index(u32 index)
 
 static b8 session_reload_needed()
 {
+    if (shaq.should_reload) {
+        return true;
+    }
+
+    /* Return early if no filepath is set */
+    if (!shaq.has_ini_filepath) {
+        return false;
+    }
+
     i64 ts = io_get_file_modify_time(shaq.ini_filepath, true);
     if (ts == -1) {
         return false; // File is probably in the process of being saved. Hold off for a bit.
@@ -302,6 +320,8 @@ static b8 session_reload_needed()
 
 static void reload_session()
 {
+    shaq.should_reload = false;
+
     /* Manually free OpenGL resources */
     for (u32 i = 0; i < shaq.shaders.count; i++) {
         Shader *s = &shaq.shaders.arr[i];
@@ -328,7 +348,7 @@ static void reload_session()
     hgl_free_all(g_session_fs_allocator);
 
     /* Return early if no filepath is set */
-    if (shaq.ini_filepath == NULL) {
+    if (!shaq.has_ini_filepath) {
         return;
     }
 

@@ -227,9 +227,9 @@ void gui_draw_menu_bar()
     imgui_end_main_menu_bar();
 }
 
-void gui_draw_file_dialog()
+b8 gui_draw_file_dialog(char *ini_filepath)
 {
-    imgui_display_file_dialog();
+    return imgui_display_file_dialog(ini_filepath);
 }
 
 void gui_toggle_darkmode()

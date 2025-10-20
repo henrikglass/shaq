@@ -43,7 +43,7 @@ b8 imgui_menu_item(const char *label, const char *shortcut);
 void imgui_end_menu(void);
 void imgui_end_main_menu_bar(void);
 void imgui_open_file_dialog(void);
-void imgui_display_file_dialog(void);
+b8 imgui_display_file_dialog(char *filepath);
 
 void imgui_draw_texture(u32 gl_texture_id, int w, int h);
 void imgui_table_next_row(void);

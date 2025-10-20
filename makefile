@@ -20,9 +20,6 @@ ifeq ($(BUILD_TYPE), debug)
 else ifeq ($(BUILD_TYPE), release)
 	C_FLAGS   += -O2 -g -march=native
 	CPP_FLAGS += -O2 -g -march=native
-else ifeq ($(BUILD_TYPE), profile)
-	C_FLAGS   += -O2 -g -march=native -DTRACY_ENABLE 
-	CPP_FLAGS += -O2 -g -march=native -DTRACY_ENABLE 
 endif
 
 CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
@@ -38,9 +35,6 @@ debug: prep
 
 release: prep
 	@$(MAKE) --no-print-directory BUILD_TYPE=release build
-
-profile: prep
-	@$(MAKE) --no-print-directory BUILD_TYPE=profile build
 
 build: shaq imgui
 	$(call C_LINK, build/*.o build/imgui/*.o, $(TARGET))
