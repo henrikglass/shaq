@@ -29,15 +29,6 @@ int main(int argc, char *argv[])
         return 0;
     }
    
-#if 0
-    if (*opt_input == NULL) {
-        fprintf(stderr, "No input file (*.ini) provided.\n");
-        printf("Usage: %s [Options]\n", argv[0]);
-        hgl_flags_print();
-        return 1;
-    }
-#endif
-
     srand(*opt_rng_seed == 0 ? (u64)time(NULL): *opt_rng_seed);
 
     shaq_begin(*opt_input, *opt_quiet);
