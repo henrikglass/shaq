@@ -144,7 +144,10 @@ spell compositor, ok?
 This project uses open source components. See a list of credits below.
 
 [HGL](https://github.com/henrikglass) - Copyright (c) 2023-2025 Henrik A. Glass
+
 [stb\_image.h](https://github.com/nothings/stb/blob/master/stb_image.h) - Copyright (c) 2017 Sean Barrett
+
 [Dear ImGui](https://github.com/ocornut/imgui) - Copyright (c) 2014-2025 Omar Cornut
+
 [ImGuiFileDialog](https://github.com/aiekick/ImGuiFileDialog) - Copyright (c) 2018-2025 Stephane Cuillerdier (aka Aiekick)
 
