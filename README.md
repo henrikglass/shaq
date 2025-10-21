@@ -3,7 +3,7 @@
 ![mandelbrot.png](https://github.com/henrikglass/shaq/blob/main/extras/images/mandelbrot.png?raw=true)
 
 Shaq is a tool for developing GLSL shaders and prototyping multi-pass shader pipelines. Shaq is in many 
-ways similar to the fantastic [shadertoy.com](www.shadertoy.com) tool, but there are a few main differences:
+ways similar to the fantastic [shadertoy.com](https://shadertoy.com) tool, but there are a few main differences:
 
 1. Shaq is an offline tool.
 2. Shaq uses plain GLSL shaders.
