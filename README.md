@@ -35,7 +35,7 @@ may have zero or more uniform variables that may be assigned from the host progr
 
 Each entry marking a uniform variable shares the same delaration syntax as GLSL and is followed by an `=`
 symbol. To the right of the `=` symbol is an expression. The language in which these expressions are written is
-called SEL (for Simple Expression Language). Mostly, SEL expressions follow the same rules as arithmetic expressions
+called the Simple Expression Language (SEL). Mostly, SEL expressions follow the same rules as arithmetic expressions
 in languages like C or GLSL. Each expression evaluates to some value and to some type. The type of an expression
 must match the type of the uniform variable on the left-hand-side of the `=` symbol.
 
