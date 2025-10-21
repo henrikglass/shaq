@@ -115,5 +115,14 @@ out:
     return data;
 }
 
+char *io_get_timestamp_str()
+{
+    char *buf = tmp_alloc(256);
+    time_t t = time(NULL);
+    struct tm *info = localtime(&t);
+    strftime(buf, 256, "%F %H:%M:%S %Z", info);
+    return buf;
+}
+
 /*--- Private functions -----------------------------------------------------------------*/
 

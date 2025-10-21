@@ -24,7 +24,7 @@ u32 make_shader_program(u8 *frag_shader_src);
 /*--- Private variables -----------------------------------------------------------------*/
 
 const char *const PASS_THROUGH_VERT_SHADER_SOURCE =
-    "#version 450 core\n                        "
+    "#version 330 core\n                        "
     "\n                                         "
     "layout (location = 0) in vec2 in_xy;\n     "
     "\n                                         "
@@ -35,7 +35,7 @@ const char *const PASS_THROUGH_VERT_SHADER_SOURCE =
 ;
 
 const char *const LAST_PASS_FRAGMENT_SHADER_SOURCE =
-    "#version 450 core\n                                    "
+    "#version 330 core\n                                    "
     "\n                                                     "
     "out vec4 frag_color;\n                                 "
     "\n                                                     "
@@ -63,7 +63,6 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     sh->name = sv_from_cstr(s->name);
     const char *tmp = hgl_ini_get_in_section(s, "source");
     if (tmp == NULL) {
-        //fprintf(stderr, "[SHAQ] Error: Shader %s: missing `source` entry.\n", s->name);
         log_error("Shader \"%s\" is missing a `source` entry.", s->name);
         return -1;
     } else {
@@ -73,16 +72,12 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     /* load source. */ 
     sh->frag_shader_src = io_read_entire_file(sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
     if (sh->frag_shader_src == NULL) {
-        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to load source file `" SV_FMT "`. "
-        //        "Errno = %s.\n", s->name, SV_ARG(sh->filepath), strerror(errno));
         log_error("Shader \"%s\": unable to load source file `" SV_FMT "`. "
                   "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
         return -1;
     }
     sh->modifytime = io_get_file_modify_time(sh->filepath.start, true); 
     if (sh->modifytime == -1) {
-        //fprintf(stderr, "[SHAQ] Error: Shader %s: unable to get modifytime for `" SV_FMT "`. "
-        //        "Errno = %s.\n", s->name, SV_ARG(sh->filepath), strerror(errno));
         log_error("Shader \"%s\": unable to get modifytime for `" SV_FMT "`. "
                   "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
         return -1;
@@ -118,13 +113,6 @@ void shader_determine_dependencies(Shader *s)
             array_push(&s->shader_depends, r.val_tex.render_texture_index);
         }
     } 
-
-    //printf("[" SV_FMT "] deps: ", SV_ARG(s->name));
-    //for (u32 i = 0; i < s->shader_depends.count; i++) {
-    //    printf("%u ", s->shader_depends.arr[i]);
-    //}
-    //printf("\n");
-
 }
 
 b8 shader_was_modified(Shader *s)

@@ -134,6 +134,16 @@ void imgui_open_file_dialog()
     ImGuiFileDialog::Instance()->OpenDialog("ShaqFileDialog", "Choose File", ".ini,.shaq", config);
 }
 
+void imgui_close_file_dialog(void)
+{
+    ImGuiFileDialog::Instance()->Close();
+}
+
+b8 imgui_file_dialog_is_open(void)
+{
+    return ImGuiFileDialog::Instance()->IsOpened("ShaqFileDialog");
+}
+
 b8 imgui_display_file_dialog(char *filepath)
 {
     b8 updated_filepath = false;

@@ -391,6 +391,7 @@ static void reload_session()
     printf("session fs allocator -- "); hgl_alloc_print_usage(g_session_fs_allocator);
 #endif
 
+    log_info("Session reloaded successfully (%s)", io_get_timestamp_str());
     return;
 
 out_error:
@@ -399,6 +400,7 @@ out_error:
         log_print_info_log();
         log_print_error_log();
     }
+    log_error("Session reload failed (%s)", io_get_timestamp_str());
 }
 
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)

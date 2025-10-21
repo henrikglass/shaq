@@ -1,12 +1,10 @@
-
-#version 450 core
+#version 330 core
 
 out vec4 frag_color;
 
 uniform sampler2D input_color_tex_A;
 uniform sampler2D input_color_tex_B;
 
-// Builtins
 uniform ivec2 iresolution;
 uniform float time;
 

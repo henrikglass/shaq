@@ -58,8 +58,8 @@ void renderer_init()
 {
     glfwInit();
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef __APPLE__
@@ -270,46 +270,58 @@ static void resize_callback(GLFWwindow *window, i32 w, i32 h)
 static void key_callback(GLFWwindow *window, i32 key, i32 scancode, i32 action, i32 mods)
 {
     (void) scancode;
-    (void) mods;
 
-    switch (key) {
-        case GLFW_KEY_D: {
-            if (action == GLFW_PRESS) {
-                gui_toggle_darkmode();
-            }
-        } break;
+    if (action != GLFW_PRESS) {
+        return;
+    }
 
-        case GLFW_KEY_F: {
-            if (action == GLFW_PRESS) {
+    if (mods == 0) {
+        switch (key) {
+            case GLFW_KEY_ESCAPE: {
+                if (imgui_file_dialog_is_open()) {
+                    imgui_close_file_dialog();
+                }
+            } break;
+        }
+    }
+
+    if (mods == GLFW_MOD_ALT) {
+        switch (key) {
+            case GLFW_KEY_ENTER: {
                 toggle_fullscreen(window);
                 renderer.should_reload = true;
-            }
-        } break;
+            } break;
+        }
+    }
 
-        case GLFW_KEY_S: {
-            if (action == GLFW_PRESS) {
+    if (mods == GLFW_MOD_CONTROL) {
+        switch (key) {
+            case GLFW_KEY_D: {
+                gui_toggle_darkmode();
+            } break;
+
+            case GLFW_KEY_F: {
                 renderer.shader_view_is_maximized = !renderer.shader_view_is_maximized;
                 renderer.should_reload = true;
-            }
-        } break;
+            } break;
 
-        case GLFW_KEY_R: {
-            if (action == GLFW_PRESS) {
+            case GLFW_KEY_R: {
                 renderer.should_reload = true;
-            }
-        } break;
+            } break;
 
-        case GLFW_KEY_T: {
-            if (action == GLFW_PRESS) {
+            case GLFW_KEY_T: {
                 shaq_reset_time();
-            }
-        } break;
+            } break;
 
-        case GLFW_KEY_ESCAPE: {
-            if (action == GLFW_PRESS) {
-                glfwSetWindowShouldClose(window, true);
-            }
-        } break;
+            case GLFW_KEY_O: {
+                imgui_open_file_dialog();
+            } break;
+
+            case GLFW_KEY_Q: 
+            case GLFW_KEY_W: {
+                glfwSetWindowShouldClose(renderer.window, true);
+            } break;
+        }
     }
 }
 

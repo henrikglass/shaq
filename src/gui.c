@@ -65,12 +65,13 @@ b8 gui_begin_main_window()
         imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
         imgui_separator();
         imgui_textf("Controls:"); imgui_newline();
-        imgui_textf("d    -  toggle light/dark mode"); imgui_newline();
-        imgui_textf("f    -  toggle fullscreen"); imgui_newline();
-        imgui_textf("s    -  toggle maximized shader view"); imgui_newline();
-        imgui_textf("r    -  force reload"); imgui_newline();
-        imgui_textf("t    -  reset time"); imgui_newline();
-        imgui_textf("esq  -  exit"); imgui_newline();
+        imgui_textf("Alt-Enter      -  toggle fullscreen"); imgui_newline();
+        imgui_textf("Ctrl-d         -  toggle light/dark mode"); imgui_newline();
+        imgui_textf("Ctrl-f         -  toggle maximized shader view"); imgui_newline();
+        imgui_textf("Ctrl-r         -  force reload"); imgui_newline();
+        imgui_textf("Ctrl-t         -  reset time"); imgui_newline();
+        imgui_textf("Ctrl-o         -  open file dialog"); imgui_newline();
+        imgui_textf("Ctrl-q/Ctrl-w  -  exit"); imgui_newline();
         imgui_separator();
     }
     return ret;
@@ -214,8 +215,7 @@ void gui_draw_menu_bar()
 {
     if (imgui_begin_main_menu_bar()) {
         if (imgui_begin_menu("Menu")) {
-            if (imgui_menu_item("Open", NULL)) {
-                printf("File Open (TODO)\n");
+            if (imgui_menu_item("Open", "Ctrl-O")) {
                 imgui_open_file_dialog();
             }
             if (imgui_menu_item("Quit", "Alt-F4")) {
