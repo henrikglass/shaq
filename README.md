@@ -25,11 +25,6 @@ Shaq depends on the following being installed on your system:
 * GNU Parallel (only necessary for build process)
 * GLFW3
 
-*Note: Shaq assumes support for OpenGL 4.5. If your machine does not support OpenGL 4.5 you may experience
-odd behaviors. I intend to fix this in the future, somehow. If you really need to run Shaq on a machine
-without OpenGL 4.5 support, it shouldn't be too difficult to manually patch the code, starting with the
-code inside `renderer.c`.*
-
 # Usage
 At the core of Shaq is the \*.ini project file. In this file, you declare to Shaq what shaders to use, what
 their respective inputs (uniform variables) are, and which values are assigned to the inputs.
