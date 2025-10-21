@@ -139,7 +139,7 @@ spell compositor, ok?
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined)
 
 # Credits
-This project uses open source components. See a list of credits below.
+This project uses open source components:
 
 [HGL](https://github.com/henrikglass) - Copyright (c) 2023-2025 Henrik A. Glass
 
