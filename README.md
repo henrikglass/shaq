@@ -50,7 +50,7 @@ values entered into their respective widgets. A few examples are
 `vec4 color_picker(str label, vec4 default)`.
 
 ## Example
-Inside the `examples/` directory there is an example project called `readme\_example.ini`. This project
+Inside the `examples/` directory there is an example project called `readme_example.ini`. This project
 defines three shaders:
 
 * `Mandelbrot` - Draws a grayscale image of the mandelbrot set, given a couple of parameters such as the zoom
