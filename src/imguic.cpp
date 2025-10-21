@@ -36,7 +36,7 @@ void imgui_init(GLFWwindow *window)
     ImGui::CreateContext();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 450 core");
+    ImGui_ImplOpenGL3_Init("#version 330 core");
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 10.0f;
