@@ -107,7 +107,7 @@ uniform vec4 splitter_color       = color_picker("splitter color", rgba(0xA02010
 
 Note that the output of `Mandelbrot` is assigned to the `input_texture` variable of `Gradient`, and that the
 outputs of both `Mandelbrot` and `Gradient` are assigned to `input_texture_1` and `input_texture_2` variables 
-of `Split`. In other words, there is an implied order in which the shaders need to be rendered. Shaq determines 
+of `Split`. In other words, there exists an implied order in which the shaders need to be rendered. Shaq determines 
 this order automatically. In the general case, if there exists a cyclic dependency between the two shaders then 
 Shaq will produce a warning message and fail to display an image for the affected shaders.
 
