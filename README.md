@@ -135,6 +135,7 @@ spell compositor, ok?
 * SEL - Add missing basic functions, e.g. matrix multiplication.
 * SEL - Add missing documentation in `--list-builtins`.
 * SEL - load\_video()?
+* SEL - output\_of\_last\_frame()?
 * SEL - bool key_pressed(str c) and bool key_down(str c) functions
 * Degrade OpenGL version on systems with versions < 4.5
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined)
