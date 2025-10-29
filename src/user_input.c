@@ -22,6 +22,7 @@ static struct {
 
     Vec2 mouse_position;
     Vec2 mouse_drag_position;
+    Vec2 mouse_position_last;
     b8 lmb_is_down;
     b8 rmb_is_down;
     b8 lmb_was_down_last_frame;
@@ -36,9 +37,9 @@ void user_input_poll()
 {
     user_input.should_reload = false;
     user_input.key_pressed_bitfield = 0u;
+    user_input.mouse_position_last = user_input.mouse_position;
 
     glfwPollEvents();
-
     GLFWwindow *w = renderer_get_glfw_window();
 
     /* Update mouse position */
@@ -49,6 +50,9 @@ void user_input_poll()
         IVec2 shader_window_pos = gui_shader_window_position();
         user_input.mouse_position.x -= shader_window_pos.x;
         user_input.mouse_position.y -= shader_window_pos.y;
+        user_input.mouse_position.y = gui_shader_window_size().y - user_input.mouse_position.y;
+    } else {
+        user_input.mouse_position.y = renderer_window_size().y - user_input.mouse_position.y;
     }
 
     /* Update mouse button state */
@@ -91,6 +95,11 @@ Vec2 user_input_mouse_position()
 Vec2 user_input_mouse_drag_position()
 {
     return user_input.mouse_drag_position;
+}
+
+Vec2 user_input_mouse_position_last()
+{
+    return user_input.mouse_position_last;
 }
 
 b8 user_input_left_mouse_button_is_down()

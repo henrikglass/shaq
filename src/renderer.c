@@ -128,6 +128,10 @@ void renderer_reload()
 
 void renderer_do_shader_pass(Shader *s)
 {
+    if (!shader_is_ok(s)) {
+        return;
+    }
+
     glUseProgram(s->gl_shader_program_id);
 
     /* prepare offscreen frame buffer */
@@ -145,11 +149,7 @@ void renderer_do_shader_pass(Shader *s)
 
 void renderer_draw_fullscreen_shader(Shader *s)
 {
-    if (s == NULL) {
-        return;
-    }
-
-    if (s->render_texture_current == NULL) {
+    if (!shader_is_ok(s)) {
         return;
     }
 

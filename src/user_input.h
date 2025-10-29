@@ -20,6 +20,7 @@ void user_input_poll(void);
 b8 user_input_should_reload(void);
 Vec2 user_input_mouse_position(void);
 Vec2 user_input_mouse_drag_position(void);
+Vec2 user_input_mouse_position_last(void);
 b8 user_input_left_mouse_button_is_down(void);
 b8 user_input_right_mouse_button_is_down(void);
 b8 user_input_left_mouse_button_was_clicked(void);

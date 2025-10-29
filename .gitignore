@@ -3,4 +3,4 @@ sel
 *.swp
 tags
 *.o
-lib/
+help.txt

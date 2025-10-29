@@ -125,6 +125,23 @@ b8 shader_was_modified(Shader *s)
     return modifytime != s->modifytime;
 }
 
+b8 shader_is_ok(const Shader *s)
+{
+    if (s == NULL) {
+        return false;
+    }
+
+    if (s->render_texture_current == NULL) {
+        return false;
+    }
+
+    if (s->render_texture_last == NULL) {
+        return false;
+    }
+
+    return true;
+}
+
 void shader_reload(Shader *s)
 {
     if (s->gl_shader_program_id != 0) {

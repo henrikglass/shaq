@@ -64,6 +64,7 @@ static SelValue fn_left_mouse_button_was_clicked_(void *args);
 static SelValue fn_right_mouse_button_was_clicked_(void *args);
 static SelValue fn_key_is_down_(void *args);
 static SelValue fn_key_was_pressed_(void *args);
+static SelValue fn_shaq_reloaded_this_frame_(void *args);
 
 static SelValue fn_int_(void *args);
 static SelValue fn_unsigned_(void *args);
@@ -126,6 +127,7 @@ static SelValue fn_vec2_mul_scalar_(void *args);
 static SelValue fn_vec2_lerp_(void *args);
 static SelValue fn_vec2_slerp_(void *args);
 static SelValue fn_mouse_position_(void *args);
+static SelValue fn_mouse_position_last_(void *args);
 static SelValue fn_mouse_drag_position_(void *args);
 
 static SelValue fn_vec3_(void *args);
@@ -201,6 +203,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("right_mouse_button_was_clicked"), .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_right_mouse_button_was_clicked_, .argtypes = {TYPE_NIL}, .synopsis = "bool right_mouse_button_was_clicked()", .desc = "Returns true if the right mouse button was pressed in the last frame.", },
     { .id = SV_LIT("key_is_down"),                    .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_key_is_down_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool key_is_down(str key)", .desc = "Returns true if `key` is down. `key` can be any letter in the English alphabet.", },
     { .id = SV_LIT("key_was_pressed"),                .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_key_was_pressed_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool key_was_pressed(str key)", .desc = "Returns true if `key` was pressed . `key` can be any letter in the English alphabet.", },
+    { .id = SV_LIT("shaq_reloaded_this_frame"),       .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_shaq_reloaded_this_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool shaq_reloaded_this_frame()", .desc = "Returns true if Shaq performed an internal reload operation this frame.", },
 
     { .id = SV_LIT("int"),         .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,         .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = SV_LIT("unsigned"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_unsigned_,    .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "uint unsigned(int x)", .desc = "Typecast int to uint.", },
@@ -263,6 +266,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("vec2_lerp"),           .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
     { .id = SV_LIT("vec2_slerp"),          .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,          .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_slerp(vec2 a, vec2 b, float t)", .desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.", },
     { .id = SV_LIT("mouse_position"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,      .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = "Returns the current mouse position, in pixel coordinates.", },
+    { .id = SV_LIT("mouse_position_last"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_last_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position_last()", .desc = "Returns the mouse position from the last frame, in pixel coordinates.", },
     { .id = SV_LIT("mouse_drag_position"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_drag_position_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_drag_position()", .desc = "Returns the mouse position from when the left mouse button was last held, in pixel coordinates.", },
 
     { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = "Creates a 3D vector with components `x`, `y`, and `z`", },
@@ -648,6 +652,13 @@ static SelValue fn_key_was_pressed_(void *args)
     return (SelValue) {.val_bool = user_input_key_was_pressed(c)};
 }
 
+static SelValue fn_shaq_reloaded_this_frame_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = shaq_reloaded_this_frame()};
+}
+
+
 /* ----------------------- INT functions -------------------- */
 
 static SelValue fn_int_(void *args)
@@ -1023,6 +1034,12 @@ static SelValue fn_mouse_position_(void *args)
 {
     (void) args;
     return (SelValue) {.val_vec2 = user_input_mouse_position()};
+}
+
+static SelValue fn_mouse_position_last_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_vec2 = user_input_mouse_position_last()};
 }
 
 static SelValue fn_mouse_drag_position_(void *args)

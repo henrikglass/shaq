@@ -25,6 +25,7 @@ void shaq_reset_time(void);
 f32 shaq_time(void);
 f32 shaq_deltatime(void);
 i32 shaq_frame_count(void);
+b8 shaq_reloaded_this_frame(void);
 
 i32 shaq_find_shader_id_by_name(StringView name);
 i32 shaq_load_texture_if_necessary(StringView filepath);

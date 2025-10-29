@@ -34,7 +34,7 @@
 /*--- Private function prototypes -------------------------------------------------------*/
 
 static b8 session_reload_needed(void);
-static void reload_session(void);
+static i32 reload_session(void);
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
 static void determine_render_order(void);
 static i32 load_state_from_ini(HglIni *ini); // TODO better name
@@ -56,6 +56,7 @@ static struct {
     i32 visible_shader_idx;
     b8 quiet;
     b8 should_reload;
+    b8 reloaded_this_frame;
 
     i32 frame_count;
     u64 start_timestamp_ns;
@@ -94,8 +95,12 @@ b8 shaq_should_close()
 
 void shaq_new_frame()
 {
+    shaq.reloaded_this_frame = false;
     if (session_reload_needed()) {
-        reload_session();
+        i32 err = reload_session();
+        if (err == 0) {
+            shaq.reloaded_this_frame = true;
+        }
     }
 
     /* compute time */
@@ -210,6 +215,11 @@ i32 shaq_frame_count()
     return shaq.frame_count;
 }
 
+b8 shaq_reloaded_this_frame()
+{
+    return shaq.reloaded_this_frame;
+}
+
 i32 shaq_find_shader_id_by_name(StringView name)
 {
     /* look up shader id */
@@ -293,7 +303,7 @@ static b8 session_reload_needed()
            user_input_should_reload();
 }
 
-static void reload_session()
+static i32 reload_session()
 {
     shaq.should_reload = false;
 
@@ -323,7 +333,7 @@ static void reload_session()
 
     /* Return early if no filepath is set */
     if (!shaq.has_ini_filepath) {
-        return;
+        return -1;
     }
 
     /* Reload ini file */
@@ -367,7 +377,7 @@ static void reload_session()
 #endif
 
     log_info("Session reloaded successfully (%s)", io_get_timestamp_str());
-    return;
+    return 0;
 
 out_error:
     shaq.visible_shader_idx = -1;
@@ -376,6 +386,7 @@ out_error:
         log_print_error_log();
     }
     log_error("Session reload failed (%s)", io_get_timestamp_str());
+    return -1;
 }
 
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
