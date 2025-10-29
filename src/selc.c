@@ -254,16 +254,22 @@ out:
 void sel_list_builtins(void) {
     printf("Constants:\n");
     for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
-        printf("  %-80.*s TYPE: %s\n", 
+        printf("    %-80.*s TYPE: %s\n", 
                SV_ARG(BUILTIN_CONSTANTS[i].id), 
                TYPE_TO_STR[BUILTIN_CONSTANTS[i].type]);
     }
-
+    printf("\n");
     printf("Functions:\n");
-    for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
-        printf("  %-80s %s\n", 
-               BUILTIN_FUNCTIONS[i].synopsis,
-               (BUILTIN_FUNCTIONS[i].desc != NULL) ? BUILTIN_FUNCTIONS[i].desc : "-");
+    for (Type t = (Type)0; t < N_TYPES; t++) {
+        printf("  Returning %s:\n", TYPE_TO_STR[t]);
+        for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
+            const Func *f = &BUILTIN_FUNCTIONS[i];
+            if (f->type != t) {
+                continue;
+            }
+            printf("    %-80s %s\n", f->synopsis, (f->desc != NULL) ? f->desc : "-");
+        }
+        printf("\n");
     }
 }
 
@@ -286,7 +292,7 @@ void sel_print_value(Type t, SelValue v)
         case TYPE_STR:     printf("\""SV_FMT"\"" "\n", SV_ARG(v.val_str)); break;
         case TYPE_TEXTURE: {
             if (v.val_tex.error) printf("ERROR\n"); 
-            else if (v.val_tex.kind == SHADER_INDEX) printf("render texture: %u\n", v.val_tex.render_texture_index); 
+            else if (v.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE_INDEX) printf("render texture: %u\n", v.val_tex.render_texture_index); 
             else if (v.val_tex.kind == LOADED_TEXTURE_INDEX) printf("loaded texture: %u\n", v.val_tex.loaded_texture_index);
         } break;
         case TYPE_NIL:     printf("<NIL>\n"); break;

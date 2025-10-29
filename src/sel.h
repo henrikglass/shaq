@@ -50,14 +50,15 @@ typedef enum
 
 typedef enum
 {
-    SHADER_INDEX,
+    SHADER_CURRENT_RENDER_TEXTURE_INDEX,
+    SHADER_LAST_RENDER_TEXTURE_INDEX,
     LOADED_TEXTURE_INDEX,
 } TextureIndexKind;
 
 typedef struct
 {
     u32 error : 1;
-    u32 kind  : 1;
+    TextureIndexKind kind  : 2;
     u32 loaded_texture_index : 8;
     u32 render_texture_index : 8;
 } TextureIndex;

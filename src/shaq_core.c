@@ -8,6 +8,7 @@
 #include "shader.h"
 #include "uniform.h"
 #include "texture.h"
+#include "user_input.h"
 #include "util.h"
 #include "io.h"
 #include "renderer.h"
@@ -56,6 +57,7 @@ static struct {
     b8 quiet;
     b8 should_reload;
 
+    i32 frame_count;
     u64 start_timestamp_ns;
     u64 last_frame_timestamp_ns;
     f32 last_frame_deltatime_s;
@@ -76,6 +78,7 @@ void shaq_begin(const char *ini_filepath, bool quiet)
         shaq.has_ini_filepath = true;
     }
 
+    shaq.frame_count = 0;
     shaq.start_timestamp_ns = util_get_time_nanos();
     shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
     shaq.visible_shader_idx = (u32) -1;
@@ -103,11 +106,27 @@ void shaq_new_frame()
     shaq.last_frame_deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
     shaq.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
 
+    /* poll inputs */
+    user_input_poll();
+
+    /* for all shaders: swap current and last frame render textures */
+    for (u32 i = 0; i < shaq.render_order.count; i++) {
+        u32 index = shaq.render_order.arr[i];
+        Shader *s  = &shaq.shaders.arr[index];
+        shader_swap_render_textures(s);
+    }
+
+    /* for all shaders: update uniforms */
+    for (u32 i = 0; i < shaq.render_order.count; i++) {
+        u32 index = shaq.render_order.arr[i];
+        Shader *s  = &shaq.shaders.arr[index];
+        shader_update_uniforms(s);
+    }
+
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
         Shader *s  = &shaq.shaders.arr[index];
-        assert(s != NULL);
         renderer_do_shader_pass(s);
     }
 
@@ -160,6 +179,9 @@ void shaq_new_frame()
 
     /* collect garbage */
     hgl_free_all(g_frame_arena);
+
+    /* increment frame counter */
+    shaq.frame_count++;
 }
 
 void shaq_end()
@@ -172,66 +194,20 @@ f32 shaq_time()
     return shaq.last_frame_time_s;
 }
 
+void shaq_reset_time()
+{
+    shaq.start_timestamp_ns = util_get_time_nanos();
+    shaq.frame_count = 0;
+}
+
 f32 shaq_deltatime()
 {
     return shaq.last_frame_deltatime_s;
 }
 
-IVec2 shaq_iresolution()
+i32 shaq_frame_count()
 {
-    if (renderer_shader_view_is_maximized()) {
-        return renderer_window_size();
-    } 
-    return gui_shader_window_size();
-}
-
-Vec2 shaq_mouse_position()
-{
-    Vec2 mouse_pos = renderer_mouse_position();
-    if (renderer_shader_view_is_maximized()) {
-        return mouse_pos;
-    } 
-    IVec2 shader_window_pos = gui_shader_window_position();
-    mouse_pos.x -= shader_window_pos.x;
-    mouse_pos.y -= shader_window_pos.y;
-    return mouse_pos;
-}
-
-Vec2 shaq_mouse_drag_position()
-{
-    Vec2 mouse_pos = renderer_mouse_drag_position();
-    if (renderer_shader_view_is_maximized()) {
-        return mouse_pos;
-    } 
-    IVec2 shader_window_pos = gui_shader_window_position();
-    mouse_pos.x -= shader_window_pos.x;
-    mouse_pos.y -= shader_window_pos.y;
-    return mouse_pos;
-}
-
-b8 shaq_mouse_left_button_is_down()
-{
-    return renderer_mouse_left_button_is_down();
-}
-
-b8 shaq_mouse_right_button_is_down()
-{
-    return renderer_mouse_right_button_is_down();
-}
-
-b8 shaq_mouse_left_button_was_clicked()
-{
-    return renderer_mouse_left_button_was_clicked();
-}
-
-b8 shaq_mouse_right_button_was_clicked()
-{
-    return renderer_mouse_right_button_was_clicked();
-}
-
-void shaq_reset_time()
-{
-    shaq.start_timestamp_ns = util_get_time_nanos();
+    return shaq.frame_count;
 }
 
 i32 shaq_find_shader_id_by_name(StringView name)
@@ -271,9 +247,14 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     return -1; 
 }
 
-u32 shaq_get_shader_render_texture_by_index(u32 index)
+u32 shaq_get_shader_current_render_texture_by_index(u32 index)
 {
-    return shaq.shaders.arr[index].render_texture.gl_texture_id;
+    return shaq.shaders.arr[index].render_texture_current->gl_texture_id;
+}
+
+u32 shaq_get_shader_last_render_texture_by_index(u32 index)
+{
+    return shaq.shaders.arr[index].render_texture_last->gl_texture_id;
 }
 
 u32 shaq_get_loaded_texture_by_index(u32 index)
@@ -307,15 +288,9 @@ static b8 session_reload_needed()
         }
     }
 
-    if (renderer_should_reload()) {
-        return true;
-    }
-
-    if (gui_should_reload()) {
-        return true;
-    }
-
-    return false;
+    return renderer_should_reload() ||
+           gui_should_reload()      ||
+           user_input_should_reload();
 }
 
 static void reload_session()

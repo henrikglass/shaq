@@ -141,7 +141,7 @@ void gui_draw_shader_info(const Shader *s)
 
 void gui_draw_shader(const Shader *s)
 {
-    imgui_draw_texture(s->render_texture.gl_texture_id,
+    imgui_draw_texture(s->render_texture_current->gl_texture_id,
                        gui.shader_window_size.x,
                        gui.shader_window_size.y);
 }

@@ -22,7 +22,9 @@ typedef struct {
     i64 modifytime;
     Array(Uniform, SHAQ_MAX_N_SHADERS) uniforms;
     Array(u32, SHAQ_MAX_N_SHADERS) shader_depends;
-    Texture render_texture;
+    Texture render_texture[2];
+    Texture *render_texture_current;
+    Texture *render_texture_last;
 
     /* OpenGL */
     u32 gl_shader_program_id;
@@ -38,7 +40,8 @@ b8 shader_was_modified(Shader *s);
 void shader_reload(Shader *s);
 void shader_make_last_pass_shader(Shader *s);
 void shader_free_opengl_resources(Shader *s);
-void shader_prepare_for_drawing(Shader *s);
+void shader_swap_render_textures(Shader *s);
+void shader_update_uniforms(Shader *s);
 
 #endif /* SHADER_H */
 

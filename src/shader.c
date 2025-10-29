@@ -109,7 +109,7 @@ void shader_determine_dependencies(Shader *s)
             continue;
         }
         SelValue r = sel_eval(u->exe, true);
-        if (r.val_tex.kind == SHADER_INDEX) {
+        if (r.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE_INDEX) {
             array_push(&s->shader_depends, r.val_tex.render_texture_index);
         }
     } 
@@ -131,7 +131,8 @@ void shader_reload(Shader *s)
         glDeleteProgram(s->gl_shader_program_id);
         s->gl_shader_program_id = 0;
     }
-    texture_free_opengl_resources(&s->render_texture);
+    texture_free_opengl_resources(&s->render_texture[0]);
+    texture_free_opengl_resources(&s->render_texture[1]);
 
     u32 vert_shader = glCreateShader(GL_VERTEX_SHADER);
     u32 frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -169,7 +170,10 @@ void shader_reload(Shader *s)
     }
 
     s->gl_shader_program_id = shader_program;
-    s->render_texture = texture_make_empty(shaq_iresolution());
+    s->render_texture[0] = texture_make_empty(renderer_shader_viewport_size());
+    s->render_texture[1] = texture_make_empty(renderer_shader_viewport_size());
+    s->render_texture_current = &s->render_texture[0];
+    s->render_texture_last = &s->render_texture[1];
 
     glUseProgram(s->gl_shader_program_id); // necessary?
     for (u32 i = 0; i < s->uniforms.count; i++) {
@@ -225,10 +229,18 @@ void shader_free_opengl_resources(Shader *s)
     if (s->gl_shader_program_id != 0) {
         glDeleteProgram(s->gl_shader_program_id);
     }
-    glDeleteTextures(1, &s->render_texture.gl_texture_id);
+    glDeleteTextures(1, &s->render_texture[0].gl_texture_id);
+    glDeleteTextures(1, &s->render_texture[1].gl_texture_id);
 }
 
-void shader_prepare_for_drawing(Shader *s)
+void shader_swap_render_textures(Shader *s)
+{
+    Texture *temp = s->render_texture_current;
+    s->render_texture_current = s->render_texture_last;
+    s->render_texture_last = temp;
+}
+
+void shader_update_uniforms(Shader *s)
 {
     if (s->gl_shader_program_id == 0) {
         return;
@@ -268,11 +280,19 @@ void shader_prepare_for_drawing(Shader *s)
                 glUniform1i(u->gl_uniform_location, texture_unit);
                 texture_unit++;
 
-                if (idx.kind == SHADER_INDEX) {
-                    glBindTexture(GL_TEXTURE_2D, shaq_get_shader_render_texture_by_index(idx.render_texture_index));
-                } else if (idx.kind == LOADED_TEXTURE_INDEX) {
-                    glBindTexture(GL_TEXTURE_2D, shaq_get_loaded_texture_by_index(idx.loaded_texture_index));
-                } 
+                switch(idx.kind) {
+                    case SHADER_CURRENT_RENDER_TEXTURE_INDEX: {
+                        glBindTexture(GL_TEXTURE_2D, shaq_get_shader_current_render_texture_by_index(idx.render_texture_index));
+                    } break;
+
+                    case SHADER_LAST_RENDER_TEXTURE_INDEX: {
+                        glBindTexture(GL_TEXTURE_2D, shaq_get_shader_last_render_texture_by_index(idx.render_texture_index));
+                    } break;
+
+                    case LOADED_TEXTURE_INDEX: {
+                        glBindTexture(GL_TEXTURE_2D, shaq_get_loaded_texture_by_index(idx.loaded_texture_index));
+                    } break;
+                }
             } break; 
             case TYPE_STR:
             case TYPE_NIL:
