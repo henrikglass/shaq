@@ -119,6 +119,18 @@ I encourage playing around with the source code of the shaders and making edits 
 while Shaq is running. Shaq will automatically reload and recompile everything as necessary upon changes being
 made to any of these files.
 
+## Synopsis
+
+```
+Usage: ./shaq [Options]
+Options:
+  -i,--input               The input project (.ini) file to run (default = -)
+  -s,--seed                `srand()` seed (defaults to `time(NULL)`) (default = 0, valid range = [0, 18446744073709551615])
+  -l,--list-builtins       List the built-in functions and constants in the Simple Expression Language (SEL) (default = 0)
+  -q,--quiet               Less verbose log messages on stdout/stderr (default = 0)
+  -help,--help             Display this message (default = 0)
+```
+
 # Bugs
 Shaq is a relatively young project and probably contains a few bugs. Please message me or open an issue if you
 experience any bugs or crashes.
