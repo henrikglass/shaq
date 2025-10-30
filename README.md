@@ -29,7 +29,10 @@ To build Shaq with debug symbols, run:
 $ make cleaner & make debug 
 ```
 
-Note: `make cleaner` is only necessary when rebuilding Shaq entirely from scratch.
+Note: `make cleaner` is only necessary when rebuilding Shaq entirely from scratch. To only rebuild only
+Shaq (excluding imgui), you can simply run `make`. Shaq **does not** use an incremental build process; C, 
+unlike certain languages that aren't 50+ years old, does not take ages to compile, and I paid for all 16 
+cores in my processor.
 
 ## External dependencies
 Shaq depends on the following being installed on your system:
