@@ -17,6 +17,11 @@ extern "C" {
 
 /*--- Private macros --------------------------------------------------------------------*/
 
+#define RGBA(r, g, b, a) ImVec4((float)r / 255.0f, \
+                                (float)g / 255.0f, \
+                                (float)g / 255.0f, \
+                                (float)a / 255.0f)
+
 /*--- Private type definitions ----------------------------------------------------------*/
 
 /*--- Private function prototypes -------------------------------------------------------*/
@@ -89,6 +94,8 @@ void imgui_set_darkmode(b8 enable)
     ImGuiStyle& style = ImGui::GetStyle();
     if (enable) {
         ImGui::StyleColorsDark();
+        style.Colors[ImGuiCol_WindowBg]      = RGBA(0x1E, 0x1E, 0x1E, 0xFF);
+        style.Colors[ImGuiCol_TitleBg]       = RGBA(0x25, 0x25, 0x25, 0xFF);
     } else {
         ImGui::StyleColorsLight();
         style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_WindowBg];
@@ -369,7 +376,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    //ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
