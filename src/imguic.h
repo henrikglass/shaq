@@ -27,7 +27,7 @@ extern "C" {
 extern "C" {
 #endif
 
-void imgui_init(GLFWwindow *window);
+void imgui_init(GLFWwindow *window, GLFWmonitor *monitor);
 void imgui_final(void);
 void imgui_set_darkmode(b8 enable);
 b8 imgui_is_any_item_active(void);
@@ -47,6 +47,9 @@ void imgui_close_file_dialog(void);
 b8 imgui_file_dialog_is_open(void);
 b8 imgui_display_file_dialog(char *filepath);
 
+void imgui_show_dpi_override_setting(void);
+void imgui_open_about_modal(void);
+void imgui_show_about_modal(void);
 void imgui_draw_texture(u32 gl_texture_id, int w, int h);
 void imgui_table_next_row(void);
 void imgui_table_next_col(void);

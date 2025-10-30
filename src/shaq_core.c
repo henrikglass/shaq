@@ -122,16 +122,16 @@ void shaq_new_frame()
     }
 
     /* for all shaders: update uniforms */
-    for (u32 i = 0; i < shaq.render_order.count; i++) {
-        u32 index = shaq.render_order.arr[i];
-        Shader *s  = &shaq.shaders.arr[index];
-        shader_update_uniforms(s);
-    }
+    //for (u32 i = 0; i < shaq.render_order.count; i++) {
+    //    u32 index = shaq.render_order.arr[i];
+    //    Shader *s  = &shaq.shaders.arr[index];
+    //}
 
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
         Shader *s  = &shaq.shaders.arr[index];
+        shader_update_uniforms(s);
         renderer_do_shader_pass(s);
     }
 
@@ -169,14 +169,14 @@ void shaq_new_frame()
         /* Draw log window */
         gui_draw_log_window();
 
-        /* Draw menu bar */
-        gui_draw_menu_bar();
-
         /* Draw file dialog (maybe) */
         if (gui_draw_file_dialog(shaq.ini_filepath)) {
             shaq.has_ini_filepath = true;
             shaq.should_reload = true;
         }
+
+        /* Draw menu bar */
+        gui_draw_menu_bar();
 
         gui_end_frame();
     }
@@ -218,6 +218,20 @@ i32 shaq_frame_count()
 b8 shaq_reloaded_this_frame()
 {
     return shaq.reloaded_this_frame;
+}
+
+Shader *shaq_find_shader_by_name(StringView name)
+{
+    /* look up shader */
+    for (u32 i = 0; i < shaq.shaders.count; i++) {
+        Shader *s  = &shaq.shaders.arr[i];
+        if (sv_equals(s->name, name)) {
+            return s;
+        }
+    }
+
+    /* no shader with name `name` */
+    return NULL;
 }
 
 i32 shaq_find_shader_id_by_name(StringView name)
@@ -393,21 +407,25 @@ static i32 satisfy_dependencies_for_shader(u32 index, u32 depth)
 {
     Shader *s = &shaq.shaders.arr[index];
 
-    /* recursed more times than there are shaders defined - guranteed cyclic dependency */
+    /* recursed more times than there are shaders defined - possible cyclic dependency */
     if (depth > shaq.shaders.count + 1) {
-        log_error("Cyclic dependency between shaders.");
+        log_error("Possible cyclic dependency between shaders.");
         return -1;
     }
 
     /* recursively satisfy the dependencies */
     for (u32 i = 0; i < s->shader_depends.count; i++) {
         i32 err = satisfy_dependencies_for_shader(s->shader_depends.arr[i], depth + 1);
-        if (err != 0) return err;
+        if (err != 0) {
+            return err;
+        }
     }
 
     /* append shader to the end of the render order if not already present */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
-        if (shaq.render_order.arr[i] == index) return 0; 
+        if (shaq.render_order.arr[i] == index) {
+            return 0; 
+        }
     }
     array_push(&shaq.render_order, index);
 
@@ -430,7 +448,7 @@ static void determine_render_order()
             log_error("Could not determine a render order for shader: " 
                       SV_FMT ".", SV_ARG(shaq.shaders.arr[i].name));
         } else {
-            log_info("Succesfully dermined render order for shader: " 
+            log_info("Successfully dermined render order for shader: " 
                      SV_FMT ".", SV_ARG(shaq.shaders.arr[i].name));
         }
     }

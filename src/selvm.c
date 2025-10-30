@@ -188,6 +188,20 @@ static SelValue fn_input_vec3_(void *args);
 static SelValue fn_input_vec4_(void *args);
 static SelValue fn_color_picker_(void *args);
 
+static SelValue fn_copy_bool_(void *args);
+static SelValue fn_copy_int_(void *args);
+static SelValue fn_copy_uint_(void *args);
+static SelValue fn_copy_float_(void *args);
+static SelValue fn_copy_vec2_(void *args);
+static SelValue fn_copy_vec3_(void *args);
+static SelValue fn_copy_vec4_(void *args);
+static SelValue fn_copy_ivec2_(void *args);
+static SelValue fn_copy_ivec3_(void *args);
+static SelValue fn_copy_ivec4_(void *args);
+static SelValue fn_copy_mat2_(void *args);
+static SelValue fn_copy_mat3_(void *args);
+static SelValue fn_copy_mat4_(void *args);
+
 /*--- Public variables ------------------------------------------------------------------*/
 
 const Func BUILTIN_FUNCTIONS[] = 
@@ -326,6 +340,20 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("input_vec3"),       .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "Creates an input widget for 3D vectors with the label `label` and default value `default`", },
     { .id = SV_LIT("input_vec4"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "Creates an input widget for 4D vectors with the label `label` and default value `default`", },
     { .id = SV_LIT("color_picker"),     .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_color_picker_,     .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 color_picker(str label, vec4 default)", .desc = "Creates a color picker widget with the label `label` and default value `default`", },
+
+    { .id = SV_LIT("copy_bool"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_bool_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "bool copy_bool(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_int"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_copy_int_,   .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "int copy_int(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_uint"),  .type = TYPE_UINT,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_uint_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "uint copy_uint(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_float"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_copy_float_, .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "float copy_float(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_vec2"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_vec2_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "vec2 copy_vec2(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_vec3"),  .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_vec3_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "vec3 copy_vec3(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_vec4"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_vec4_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "vec4 copy_vec4(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_ivec2"), .type = TYPE_IVEC2, .qualifier = QUALIFIER_NONE, .impl = fn_copy_ivec2_, .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "ivec2 copy_ivec2(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_ivec3"), .type = TYPE_IVEC3, .qualifier = QUALIFIER_NONE, .impl = fn_copy_ivec3_, .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "ivec3 copy_ivec3(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_ivec4"), .type = TYPE_IVEC4, .qualifier = QUALIFIER_NONE, .impl = fn_copy_ivec4_, .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "ivec4 copy_ivec4(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat2_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat2 copy_mat2(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat3_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat3 copy_mat3(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+    { .id = SV_LIT("copy_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat4_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat4 copy_mat4(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
 };
 const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -1396,7 +1424,58 @@ static SelValue fn_color_picker_(void *args)
     return gui_get_dynamic_item_value(label, COLOR_PICKER, secondary_args, sizeof(Vec4));
 }
 
+/* ---------------------- Copy functions -------------------- */
 
+static SelValue fn_copy_helper_(void *args, Type t)
+{
+    u8 *args8 = (u8 *) args;
+    StringView shader_name = *(StringView *)args;
+    StringView var_name = *(StringView *)(args8 + sizeof(StringView));
 
+    Shader *s = shaq_find_shader_by_name(shader_name);
+    if (s == NULL) {
+        if (shaq_reloaded_this_frame()) {
+            log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
+                      "No such shader:\"" SV_FMT "\" ", SV_ARG(shader_name), 
+                      SV_ARG(var_name), SV_ARG(shader_name));
+        }
+        goto out_err;
+    }
+    Uniform *u = shader_find_uniform_by_name(s, var_name);
+    if (u == NULL) {
+        if (shaq_reloaded_this_frame()) {
+            log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
+                      "No such uniform variable in shader :\"" SV_FMT "\" ", SV_ARG(shader_name), 
+                      SV_ARG(var_name), SV_ARG(var_name));
+        }
+        goto out_err;
+    }
+    if (u->type != t) {
+        if (shaq_reloaded_this_frame()) {
+            log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
+                      "Variable \"" SV_FMT "\" has incorrect type ", SV_ARG(shader_name), 
+                      SV_ARG(var_name), SV_ARG(var_name));
+        }
+        goto out_err;
+    }
+    return u->exe->cached_computed_value;
+
+out_err:
+    return (SelValue) {.val_i32 = 0};
+}
+
+static SelValue fn_copy_bool_(void *args)  { return fn_copy_helper_(args, TYPE_BOOL); }
+static SelValue fn_copy_int_(void *args)   { return fn_copy_helper_(args, TYPE_INT); }
+static SelValue fn_copy_uint_(void *args)  { return fn_copy_helper_(args, TYPE_UINT); }
+static SelValue fn_copy_float_(void *args) { return fn_copy_helper_(args, TYPE_FLOAT); }
+static SelValue fn_copy_vec2_(void *args)  { return fn_copy_helper_(args, TYPE_VEC2); }
+static SelValue fn_copy_vec3_(void *args)  { return fn_copy_helper_(args, TYPE_VEC3); }
+static SelValue fn_copy_vec4_(void *args)  { return fn_copy_helper_(args, TYPE_VEC4); }
+static SelValue fn_copy_ivec2_(void *args) { return fn_copy_helper_(args, TYPE_IVEC2); }
+static SelValue fn_copy_ivec3_(void *args) { return fn_copy_helper_(args, TYPE_IVEC3); }
+static SelValue fn_copy_ivec4_(void *args) { return fn_copy_helper_(args, TYPE_IVEC4); }
+static SelValue fn_copy_mat2_(void *args)  { return fn_copy_helper_(args, TYPE_MAT2); }
+static SelValue fn_copy_mat3_(void *args)  { return fn_copy_helper_(args, TYPE_MAT3); }
+static SelValue fn_copy_mat4_(void *args)  { return fn_copy_helper_(args, TYPE_MAT4); }
 
 

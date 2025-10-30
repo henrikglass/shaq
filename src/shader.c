@@ -320,6 +320,18 @@ void shader_update_uniforms(Shader *s)
     }
 }
 
+Uniform *shader_find_uniform_by_name(Shader *s, StringView name)
+{
+    for (u32 i = 0; i < s->uniforms.count; i++) {
+        Uniform *u  = &s->uniforms.arr[i];
+        if (sv_equals(u->name, name)) {
+            return u;
+        }
+    }
+
+    return NULL;
+}
+
 /*--- Private functions -----------------------------------------------------------------*/
 
 

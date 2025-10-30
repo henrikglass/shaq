@@ -15,8 +15,21 @@ ways similar to the fantastic [shadertoy.com](https://shadertoy.com) tool, but t
 To build Shaq entirely from scratch, run:
 
 ```bash
-$ make cleaner & make
+$ make cleaner & make release
 ```
+
+To build Shaq without freetype font rendering, run:
+
+```bash
+$ make cleaner & make release DISABLE_FREETYPE=yes
+```
+
+To build Shaq with debug symbols, run:
+```bash
+$ make cleaner & make debug 
+```
+
+Note: `make cleaner` is only necessary when rebuilding Shaq entirely from scratch.
 
 ## External dependencies
 Shaq depends on the following being installed on your system:
@@ -24,6 +37,9 @@ Shaq depends on the following being installed on your system:
 * GCC
 * GNU Parallel (only necessary for build process)
 * GLFW3
+* pkg-config (Only necessary for freetype build)
+* freetype2 (Only necessary for freetype build)
+* libpng16 (Only necessary for freetype build)
 
 # Usage
 At the core of Shaq is the \*.ini project file. In this file, you declare to Shaq what shaders to use, what

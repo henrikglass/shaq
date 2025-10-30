@@ -7,6 +7,7 @@
 #include "uniform.h"
 #include "texture.h"
 #include "array.h"
+#include "str.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -43,6 +44,7 @@ void shader_make_last_pass_shader(Shader *s);
 void shader_free_opengl_resources(Shader *s);
 void shader_swap_render_textures(Shader *s);
 void shader_update_uniforms(Shader *s);
+Uniform *shader_find_uniform_by_name(Shader *s, StringView name);
 
 #endif /* SHADER_H */
 

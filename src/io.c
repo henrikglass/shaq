@@ -27,6 +27,7 @@
 
 i64 io_get_file_modify_time(const char *filepath, bool retry_on_failure)
 {
+    i32 fd = -1;
     i64 ret = -1;
     if (filepath == NULL) {
         goto out; 
@@ -44,7 +45,7 @@ i64 io_get_file_modify_time(const char *filepath, bool retry_on_failure)
      *
      * TODO: Figure out a better solution.
      */
-    i32 fd = open(filepath, O_RDONLY);
+    fd = open(filepath, O_RDONLY);
     if (retry_on_failure) {
         i32 n_retries_left = 10;
         while (fd == -1 && n_retries_left > 0) {

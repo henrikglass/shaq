@@ -107,7 +107,7 @@ void renderer_init()
     glClearColor(0.117f, 0.117f, 0.117f, 1.0f);
 
     shader_make_last_pass_shader(&renderer.last_pass_shader);
-    imgui_init(renderer.window);
+    imgui_init(renderer.window, glfwGetPrimaryMonitor());
 
     if (gl_check_errors() != 0) {
         log_error("Failed to setup one or more OpenGL-intrinsic things.");

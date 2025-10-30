@@ -5,6 +5,7 @@
 extern "C" {
     #include "alloc.h"
     #include "constants.h"
+    #include "log.h"
 }
 
 #include "imgui/imgui.h"
@@ -30,7 +31,7 @@ extern "C" {
 extern "C" {
 #endif
 
-void imgui_init(GLFWwindow *window)
+void imgui_init(GLFWwindow *window, GLFWmonitor *monitor)
 {
     IMGUI_CHECKVERSION(); 
     ImGui::CreateContext();
@@ -47,6 +48,23 @@ void imgui_init(GLFWwindow *window)
     style.TabRounding = 10.0f;
     style.GrabRounding = 10.0f;
     ImGui::StyleColorsLight();
+
+    float scale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor);
+    style.ScaleAllSizes(scale);
+    style.FontScaleDpi = scale;
+
+    ImGui::GetIO().Fonts->AddFontDefault();
+    ImFontConfig font_config;
+    font_config.OversampleH = 2;
+    font_config.OversampleV = 1;
+    font_config.FontDataOwnedByAtlas = false;
+    extern uint8_t *_binary_src_fonts_default_font_ttf_start;
+    extern uint8_t *_binary_src_fonts_default_font_ttf_end;
+    uintptr_t font_data_start = (uintptr_t)&_binary_src_fonts_default_font_ttf_start;
+    uintptr_t font_data_end = (uintptr_t)&_binary_src_fonts_default_font_ttf_end;
+    int font_data_size = (int)(font_data_end - font_data_start);
+    ImFont *font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void *)font_data_start, font_data_size, 15.0f, &font_config);
+    ImGui::GetIO().FontDefault = font;
 }
 
 void imgui_final()
@@ -54,6 +72,11 @@ void imgui_final()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+}
+
+ImGuiStyle *imgui_get_style()
+{
+    return &ImGui::GetStyle();
 }
 
 void imgui_set_darkmode(b8 enable)
@@ -156,6 +179,28 @@ b8 imgui_display_file_dialog(char *filepath)
         ImGuiFileDialog::Instance()->Close();
     }
     return updated_filepath;
+}
+
+void imgui_show_dpi_override_setting()
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImGui::DragFloat("Override DPI scaling", &style.FontScaleDpi, 0.02f, 0.5f, 4.0f);
+}
+
+void imgui_open_about_modal() {
+    ImGui::OpenPopup("About##modal1");
+}
+
+void imgui_show_about_modal()
+{
+    if (ImGui::BeginPopupModal("About##modal1"))
+    {
+        ImGui::Text("Shaq build: %s %s", __DATE__, __TIME__);
+        if (ImGui::Button("Close")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 void imgui_draw_texture(u32 gl_texture_id, int w, int h)

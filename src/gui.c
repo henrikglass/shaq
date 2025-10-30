@@ -217,17 +217,32 @@ void gui_draw_log_window()
 
 void gui_draw_menu_bar()
 {
+    b8 open_popup = false;
     if (imgui_begin_main_menu_bar()) {
         if (imgui_begin_menu("Menu")) {
             if (imgui_menu_item("Open", "Ctrl-O")) {
                 imgui_open_file_dialog();
             }
-            if (imgui_menu_item("Quit", "Alt-F4")) {
+            if (imgui_menu_item("Quit", "Alt-F4/Ctrl-w")) {
                 exit(0);
             }
             imgui_end_menu();
         }
+        if (imgui_begin_menu("Settings")) {
+            imgui_show_dpi_override_setting();
+            imgui_end_menu();
+        }
+        if (imgui_begin_menu("Help")) {
+            if (imgui_menu_item("About", NULL)) {
+                open_popup = true;
+            }
+            imgui_end_menu();
+        }
     }
+    if (open_popup) {
+        imgui_open_about_modal();
+    }
+    imgui_show_about_modal(); // TODO FIX
     imgui_end_main_menu_bar();
 }
 
