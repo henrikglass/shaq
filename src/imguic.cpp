@@ -376,7 +376,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
