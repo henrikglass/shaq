@@ -33,7 +33,7 @@ CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}
 C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
 C_LINK = gcc $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
 
-.PHONY: shaq imgui
+.PHONY: shaq imgui font debug release build
 
 all: debug
 

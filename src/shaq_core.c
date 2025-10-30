@@ -37,19 +37,20 @@ static b8 session_reload_needed(void);
 static i32 reload_session(void);
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
 static void determine_render_order(void);
-static i32 load_state_from_ini(HglIni *ini); // TODO better name
+static i32 load_state_from_project_ini(HglIni *project_ini); // TODO better name
 static void shaq_atexit_(void);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Private variables -----------------------------------------------------------------*/
 
-static struct {
+static struct
+{
+    HglIni *project_ini; 
+    char project_ini_filepath[SHAQ_FILEPATH_MAX_LEN];
+    b8 project_ini_loaded;
+    i64 project_ini_modifytime;
 
-    HglIni *ini; 
-    char ini_filepath[SHAQ_FILEPATH_MAX_LEN];
-    b8 has_ini_filepath;
-    i64 ini_modifytime;
     Array(Shader, SHAQ_MAX_N_SHADERS) shaders;
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
     Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) loaded_textures;
@@ -67,16 +68,16 @@ static struct {
 
 /*--- Public functions ------------------------------------------------------------------*/
 
-void shaq_begin(const char *ini_filepath, bool quiet)
+void shaq_begin(const char *project_ini_filepath, bool quiet)
 {
     atexit(shaq_atexit_);
 
     alloc_init();
     renderer_init();
 
-    if (ini_filepath != NULL) {
-        strncpy(shaq.ini_filepath, ini_filepath, SHAQ_FILEPATH_MAX_LEN - 1);
-        shaq.has_ini_filepath = true;
+    if (project_ini_filepath != NULL) {
+        strncpy(shaq.project_ini_filepath, project_ini_filepath, SHAQ_FILEPATH_MAX_LEN - 1);
+        shaq.project_ini_loaded = true;
     }
 
     shaq.frame_count = 0;
@@ -170,8 +171,8 @@ void shaq_new_frame()
         gui_draw_log_window();
 
         /* Draw file dialog (maybe) */
-        if (gui_draw_file_dialog(shaq.ini_filepath)) {
-            shaq.has_ini_filepath = true;
+        if (gui_draw_file_dialog(shaq.project_ini_filepath)) {
+            shaq.project_ini_loaded = true;
             shaq.should_reload = true;
         }
 
@@ -218,6 +219,11 @@ i32 shaq_frame_count()
 b8 shaq_reloaded_this_frame()
 {
     return shaq.reloaded_this_frame;
+}
+
+b8 shaq_has_loaded_project()
+{
+    return shaq.project_ini_loaded;
 }
 
 Shader *shaq_find_shader_by_name(StringView name)
@@ -295,14 +301,14 @@ static b8 session_reload_needed()
     }
 
     /* Return early if no filepath is set */
-    if (!shaq.has_ini_filepath) {
+    if (!shaq.project_ini_loaded) {
         return false;
     }
 
-    i64 ts = io_get_file_modify_time(shaq.ini_filepath, true);
+    i64 ts = io_get_file_modify_time(shaq.project_ini_filepath, true);
     if (ts == -1) {
         return false; // File is probably in the process of being saved. Hold off for a bit.
-    } else if (shaq.ini_modifytime != ts) {
+    } else if (shaq.project_ini_modifytime != ts) {
         return true;
     }
 
@@ -346,20 +352,21 @@ static i32 reload_session()
     hgl_free_all(g_session_fs_allocator);
 
     /* Return early if no filepath is set */
-    if (!shaq.has_ini_filepath) {
+    if (!shaq.project_ini_loaded) {
         return -1;
     }
 
-    /* Reload ini file */
-    shaq.ini_modifytime = io_get_file_modify_time(shaq.ini_filepath, false);
-    shaq.ini = hgl_ini_open(shaq.ini_filepath);
-    if (shaq.ini == NULL) {
+    /* Reload project ini file */
+    shaq.project_ini_modifytime = io_get_file_modify_time(shaq.project_ini_filepath, false);
+    shaq.project_ini = hgl_ini_open(shaq.project_ini_filepath);
+    if (shaq.project_ini == NULL) {
         log_error("Failed to open or parse *.ini file.");
+        shaq.project_ini_loaded = false;
         goto out_error;
     }
 
-    /* Parse ini file contents + recompile simple expressions */
-    i32 err = load_state_from_ini(shaq.ini);
+    /* Parse project ini file contents + recompile simple expressions */
+    i32 err = load_state_from_project_ini(shaq.project_ini);
     if (err != 0) {
         log_error("Failed to load anything meaningful from *.ini file.");
         goto out_error;
@@ -454,12 +461,12 @@ static void determine_render_order()
     }
 }
 
-static i32 load_state_from_ini(HglIni *ini)
+static i32 load_state_from_project_ini(HglIni *project_ini)
 {
-    hgl_ini_reset_section_iterator(ini);
+    hgl_ini_reset_section_iterator(project_ini);
     u32 shader_count = 0; 
     while (true) {
-        HglIniSection *s = hgl_ini_next_section(ini);
+        HglIniSection *s = hgl_ini_next_section(project_ini);
         if(s == NULL) {
             break;
         }

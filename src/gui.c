@@ -230,6 +230,8 @@ void gui_draw_menu_bar()
         }
         if (imgui_begin_menu("Settings")) {
             imgui_show_dpi_override_setting();
+            imgui_checkbox("Enable darkmode", &gui.dark_mode);
+            imgui_set_darkmode(gui.dark_mode);
             imgui_end_menu();
         }
         if (imgui_begin_menu("Help")) {

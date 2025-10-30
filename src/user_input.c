@@ -188,7 +188,9 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
             } break;
 
             case GLFW_KEY_F: {
-                renderer_toggle_maximized_shader_view();
+                if (shaq_has_loaded_project()) {
+                    renderer_toggle_maximized_shader_view();
+                }
             } break;
 
             case GLFW_KEY_R: {

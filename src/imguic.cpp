@@ -38,8 +38,9 @@ void imgui_init(GLFWwindow *window, GLFWmonitor *monitor)
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
-
     ImGuiStyle& style = ImGui::GetStyle();
+
+    /* style */
     style.WindowRounding = 10.0f;
     style.ChildRounding = 10.0f;
     style.FrameRounding = 10.0f;
@@ -47,12 +48,16 @@ void imgui_init(GLFWwindow *window, GLFWmonitor *monitor)
     style.ScrollbarRounding = 10.0f;
     style.TabRounding = 10.0f;
     style.GrabRounding = 10.0f;
-    ImGui::StyleColorsLight();
 
+    /* colors */
+    imgui_set_darkmode(false);
+
+    /* DPI/Scaling */
     float scale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor);
     style.ScaleAllSizes(scale);
     style.FontScaleDpi = scale;
 
+    /* Font */
     ImGui::GetIO().Fonts->AddFontDefault();
     ImFontConfig font_config;
     font_config.OversampleH = 2;
@@ -81,10 +86,12 @@ ImGuiStyle *imgui_get_style()
 
 void imgui_set_darkmode(b8 enable)
 {
+    ImGuiStyle& style = ImGui::GetStyle();
     if (enable) {
         ImGui::StyleColorsDark();
     } else {
         ImGui::StyleColorsLight();
+        style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_WindowBg];
     }
 }
 
