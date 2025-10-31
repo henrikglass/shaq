@@ -229,6 +229,11 @@ b8 renderer_shader_view_is_maximized()
     return renderer.shader_view_is_maximized;
 }
 
+b8 renderer_is_fullscreen()
+{
+    return renderer.is_fullscreen;
+}
+
 IVec2 renderer_window_size()
 {
     return renderer.window_size;

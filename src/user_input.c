@@ -159,6 +159,9 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
                 if (action == GLFW_PRESS && imgui_file_dialog_is_open()) {
                     imgui_close_file_dialog();
                 }
+                if (action == GLFW_PRESS && renderer_is_fullscreen()) {
+                    renderer_toggle_fullscreen();
+                }
             } break;
 
             case GLFW_KEY_A ... GLFW_KEY_Z: {

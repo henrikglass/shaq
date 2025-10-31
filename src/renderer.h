@@ -29,6 +29,7 @@ GLFWwindow *renderer_get_glfw_window(void);
 b8 renderer_should_close(void);
 b8 renderer_should_reload(void);
 b8 renderer_shader_view_is_maximized(void);
+b8 renderer_is_fullscreen(void);
 IVec2 renderer_window_size(void);
 IVec2 renderer_shader_viewport_size(void);
 
