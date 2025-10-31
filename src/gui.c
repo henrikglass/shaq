@@ -64,15 +64,6 @@ b8 gui_begin_main_window()
         imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
         imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
         imgui_separator();
-        imgui_textf("Controls:"); imgui_newline();
-        imgui_textf("Alt-Enter      -  toggle fullscreen"); imgui_newline();
-        imgui_textf("Ctrl-d         -  toggle light/dark mode"); imgui_newline();
-        imgui_textf("Ctrl-f         -  toggle maximized shader view"); imgui_newline();
-        imgui_textf("Ctrl-r         -  force reload"); imgui_newline();
-        imgui_textf("Ctrl-t         -  reset time"); imgui_newline();
-        imgui_textf("Ctrl-o         -  open file dialog"); imgui_newline();
-        imgui_textf("Ctrl-q/Ctrl-w  -  exit"); imgui_newline();
-        imgui_separator();
     }
     return ret;
 }
@@ -223,15 +214,33 @@ void gui_draw_menu_bar()
             if (imgui_menu_item("Open", "Ctrl-O")) {
                 imgui_open_file_dialog();
             }
-            if (imgui_menu_item("Quit", "Alt-F4/Ctrl-w")) {
+            if (imgui_menu_item("Quit", "Alt-F4/Ctrl-W")) {
                 exit(0);
             }
             imgui_end_menu();
         }
-        if (imgui_begin_menu("Settings")) {
+        if (imgui_begin_menu("Options")) {
             imgui_show_dpi_override_setting();
             imgui_checkbox("Enable darkmode", &gui.dark_mode);
             imgui_set_darkmode(gui.dark_mode);
+            imgui_separator();
+            if (imgui_menu_item("Force reload", "Ctrl-R")) {
+                gui.should_reload = true;
+            }
+            if (imgui_menu_item("Reset time functions", "Ctrl-T")) {
+                shaq_reset_time(); 
+            }
+            if (imgui_menu_item("Toggle darkmode", "Ctrl-D")) {
+                gui_toggle_darkmode(); 
+            }
+            if (imgui_menu_item("Toggle maximized shader view", "Ctrl-F")) {
+                if (shaq_has_loaded_project()) {
+                    renderer_toggle_maximized_shader_view();
+                }
+            }
+            if (imgui_menu_item("Toggle fullscreen", "Alt-Enter")) {
+                renderer_toggle_fullscreen(); 
+            }
             imgui_end_menu();
         }
         if (imgui_begin_menu("Help")) {

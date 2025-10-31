@@ -205,7 +205,6 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
                 imgui_open_file_dialog();
             } break;
 
-            case GLFW_KEY_Q: 
             case GLFW_KEY_W: {
                 glfwSetWindowShouldClose(renderer_get_glfw_window(), true);
             } break;

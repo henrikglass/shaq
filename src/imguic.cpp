@@ -270,6 +270,11 @@ void imgui_newline()
     ImGui::NewLine();
 }
 
+b8 imgui_button(const char *label)
+{
+    return ImGui::Button(label);
+}
+
 void imgui_checkbox(const char *label, b8 *b)
 {
     ImGui::Checkbox(label, b);

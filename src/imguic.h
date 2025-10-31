@@ -58,6 +58,7 @@ void imgui_textf(const char *fmt, ...);
 void imgui_text_color(const char *str, u32 color);
 void imgui_separator(void);
 void imgui_newline(void);
+b8 imgui_button(const char *label);
 void imgui_checkbox(const char *label, b8 *b);
 void imgui_drag_int(const char *label, int *v, int min, int max);
 void imgui_input_int(const char *label, int *v);
