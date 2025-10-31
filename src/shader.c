@@ -297,18 +297,22 @@ void shader_update_uniforms(Shader *s)
                 glUniform1i(u->gl_uniform_location, texture_unit);
                 texture_unit++;
 
+                u32 texture_id = 0;
                 switch(idx.kind) {
                     case SHADER_CURRENT_RENDER_TEXTURE_INDEX: {
-                        glBindTexture(GL_TEXTURE_2D, shaq_get_shader_current_render_texture_by_index(idx.render_texture_index));
+                        texture_id = shaq_get_shader_current_render_texture_by_index(idx.render_texture_index);
                     } break;
 
                     case SHADER_LAST_RENDER_TEXTURE_INDEX: {
-                        glBindTexture(GL_TEXTURE_2D, shaq_get_shader_last_render_texture_by_index(idx.render_texture_index));
+                        texture_id = shaq_get_shader_last_render_texture_by_index(idx.render_texture_index);
                     } break;
 
                     case LOADED_TEXTURE_INDEX: {
-                        glBindTexture(GL_TEXTURE_2D, shaq_get_loaded_texture_by_index(idx.loaded_texture_index));
+                        texture_id = shaq_get_loaded_texture_by_index(idx.loaded_texture_index);
                     } break;
+                }
+                if (texture_id != 0) {
+                    glBindTexture(GL_TEXTURE_2D, texture_id);
                 }
             } break; 
             case TYPE_STR:

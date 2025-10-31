@@ -1,4 +1,5 @@
 #version 330 core
+precision highp float;
 
 out vec4 frag_color;
 
@@ -21,8 +22,7 @@ void main()
     vec2 uv, c, z; 
     int i;
 
-    uv = gl_FragCoord.xy / iresolution.y;
-    uv = uv * 2.0 - vec2(1.0);
+    uv = (2.0*gl_FragCoord.xy-iresolution.xy) / iresolution.y;
 
     if (animate) {
         c = position + uv * (1.0 / animate_zoom);

@@ -279,12 +279,20 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
 
 u32 shaq_get_shader_current_render_texture_by_index(u32 index)
 {
-    return shaq.shaders.arr[index].render_texture_current->gl_texture_id;
+    Shader *s = &shaq.shaders.arr[index];
+    if (shader_is_ok(s)) {
+        return s->render_texture_current->gl_texture_id;
+    }
+    return 0;
 }
 
 u32 shaq_get_shader_last_render_texture_by_index(u32 index)
 {
-    return shaq.shaders.arr[index].render_texture_last->gl_texture_id;
+    Shader *s = &shaq.shaders.arr[index];
+    if (shader_is_ok(s)) {
+        return s->render_texture_last->gl_texture_id;
+    }
+    return 0;
 }
 
 u32 shaq_get_loaded_texture_by_index(u32 index)
