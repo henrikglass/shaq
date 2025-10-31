@@ -252,23 +252,27 @@ out:
 }
 
 void sel_list_builtins(void) {
-    printf("Constants:\n");
+    printf("# Constants:\n");
+    printf("```\n");
     for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
-        printf("    %-80.*s TYPE: %s\n", 
+        printf("%-80.*s TYPE: %s\n", 
                SV_ARG(BUILTIN_CONSTANTS[i].id), 
                TYPE_TO_STR[BUILTIN_CONSTANTS[i].type]);
     }
+    printf("```\n");
     printf("\n");
-    printf("Functions:\n");
+    printf("# Functions:\n");
     for (Type t = (Type)0; t < N_TYPES; t++) {
-        printf("  Returning %s:\n", TYPE_TO_STR[t]);
+        printf("## Returning %s:\n", TYPE_TO_STR[t]);
+        printf("```\n");
         for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
             const Func *f = &BUILTIN_FUNCTIONS[i];
             if (f->type != t) {
                 continue;
             }
-            printf("    %-80s %s\n", f->synopsis, (f->desc != NULL) ? f->desc : "-");
+            printf("%-80s %s\n", f->synopsis, (f->desc != NULL) ? f->desc : "-");
         }
+        printf("```\n");
         printf("\n");
     }
 }

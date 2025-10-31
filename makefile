@@ -33,7 +33,7 @@ CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}
 C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
 C_LINK = gcc $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
 
-.PHONY: shaq imgui font debug release build
+.PHONY: shaq imgui font debug release build docs
 
 all: debug
 
@@ -45,6 +45,7 @@ release: prep
 
 build: shaq font imgui
 	$(call C_LINK, build/*.o build/imgui/*.o, $(TARGET))
+	@$(MAKE) docs
 
 shaq:
 	$(call CPP_COMPILE, src/*.cpp, build/)
@@ -62,15 +63,19 @@ endif
 font:
 	$(LD) -r -z noexecstack -b binary -o build/default_font.o src/fonts/default_font.ttf
 
+docs:
+	./$(TARGET) --list-builtins > docs/sel_functions.md
+
 prep:
 	@-mkdir -p build 
 	@-mkdir -p build/imgui 
+	@-mkdir -p docs
 
 clean:
 	-@rm build/*.o 2> /dev/null ||:
-	-@rm shaq 2> /dev/null ||:
+	-@rm $(TARGET) 2> /dev/null ||:
 
 cleaner:
 	-@rm -r build/ 2> /dev/null ||:
-	-@rm shaq 2> /dev/null ||:
+	-@rm $(TARGET) 2> /dev/null ||:
 
