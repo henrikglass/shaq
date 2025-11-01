@@ -55,8 +55,11 @@ static inline i32 negi(i32 *val);
 static inline f32 negf(f32 *val);
 
 static SelValue fn_load_image_(void *args);
+static SelValue fn_load_image_ex_(void *args);
 static SelValue fn_output_of_(void *args);
+static SelValue fn_output_of_ex_(void *args);
 static SelValue fn_last_output_of_(void *args);
+static SelValue fn_last_output_of_ex_(void *args);
 
 static SelValue fn_left_mouse_button_is_down_(void *args);
 static SelValue fn_right_mouse_button_is_down_(void *args);
@@ -211,10 +214,12 @@ static SelValue fn_copy_mat4_(void *args);
 
 const Func BUILTIN_FUNCTIONS[] = 
 {
-    { .id = SV_LIT("load_image"), .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_load_image_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture load_image(str filepath)", .desc = "Returns a reference to a texture loaded from `filepath`", },
-    //{ .id = SV_LIT("load_image_detailed"),  /* ... */ }, // TODO (specify min/mag filter, wrapping, etc.).
-    { .id = SV_LIT("output_of"),  .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_output_of_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader` in this frame. Calling this function implicitly defines the render order.", },
-    { .id = SV_LIT("last_output_of"),  .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_last_output_of_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture last_output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader` in the last frame.", },
+    { .id = SV_LIT("load_image"),        .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_load_image_,        .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture load_image(str filepath)", .desc = "Returns a reference to a texture loaded from `filepath`", },
+    { .id = SV_LIT("load_image_ex"),     .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_load_image_ex_,     .argtypes = {TYPE_STR, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "texture load_image_ex(str filepath, i32 filter, i32 wrap)", .desc = "Returns a reference to a texture loaded from `filepath` with the given filter and wrap mode", },
+    { .id = SV_LIT("output_of"),         .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_output_of_,         .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader` in this frame. Calling this function implicitly defines the render order.", },
+    { .id = SV_LIT("output_of_ex"),      .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_output_of_ex_,      .argtypes = {TYPE_STR, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "texture output_of_ex(str shader, i32 filter, i32 wrap)", .desc = "Returns a reference to a texture rendered to by the shader `shader` in this frame with the given filter and wrap mode. Calling this function implicitly defines the render order.", },
+    { .id = SV_LIT("last_output_of"),    .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_last_output_of_,    .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "texture last_output_of(str shader)", .desc = "Returns a reference to a texture rendered to by the shader `shader` in the last frame.", },
+    { .id = SV_LIT("last_output_of_ex"), .type = TYPE_TEXTURE, .qualifier = QUALIFIER_PURE, .impl = fn_last_output_of_ex_, .argtypes = {TYPE_STR, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "texture last_output_of_ex(str shader, i32 filter, i32 wrap)", .desc = "Returns a reference to a texture rendered to by the shader `shader` in the last frame with the given filter and wrap mode.", },
 
     { .id = SV_LIT("left_mouse_button_is_down"),      .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_left_mouse_button_is_down_, .argtypes = {TYPE_NIL},      .synopsis = "bool left_mouse_button_is_down()", .desc = "Returns true if the left mouse button is currently down", },
     { .id = SV_LIT("right_mouse_button_is_down"),     .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_right_mouse_button_is_down_, .argtypes = {TYPE_NIL},     .synopsis = "bool right_mouse_button_is_down()", .desc = "Returns true if the right mouse button is currently down", },
@@ -613,7 +618,36 @@ static SelValue fn_load_image_(void *args)
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
-    return (SelValue) { .val_tex = {.kind = LOADED_TEXTURE_INDEX, .loaded_texture_index = (u32) index}};
+    return (SelValue) {
+        .val_tex = {
+            .kind          = LOADED_TEXTURE,
+            .texture_index = (u32) index,
+            .filter        = GL_LINEAR,
+            .wrap          = GL_REPEAT,
+        }
+    };
+}
+
+static SelValue fn_load_image_ex_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView filepath = *(StringView *)args;
+    i32 filter          = *(i32 *)(args8 + sizeof(StringView));
+    i32 wrap            = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
+    i32 index = shaq_load_texture_if_necessary(filepath);
+    if (index == -1) {
+        return (SelValue) { .val_tex = {.error = 1}};
+    }
+    printf("filter = %u, wrap = %u\n", filter, wrap);
+    printf("GL_LINEAR = %d, GL_REPEAT = %d\n", GL_LINEAR, GL_REPEAT);
+    return (SelValue) {
+        .val_tex = {
+            .kind          = LOADED_TEXTURE,
+            .texture_index = (u32) index,
+            .filter        = filter,
+            .wrap          = wrap,
+        }
+    };
 }
 
 static SelValue fn_output_of_(void *args)
@@ -623,7 +657,34 @@ static SelValue fn_output_of_(void *args)
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
-    return (SelValue) { .val_tex = {.kind = SHADER_CURRENT_RENDER_TEXTURE_INDEX, .render_texture_index = (u32) index}};
+    return (SelValue) {
+        .val_tex = {
+            .kind          = SHADER_CURRENT_RENDER_TEXTURE,
+            .texture_index = (u32) index,
+            .filter        = GL_LINEAR,
+            .wrap          = GL_REPEAT,
+        }
+    };
+}
+
+static SelValue fn_output_of_ex_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView name = *(StringView *)args;
+    i32 filter      = *(i32 *)(args8 + sizeof(StringView));
+    i32 wrap        = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
+    i32 index = shaq_find_shader_id_by_name(name);
+    if (index == -1) {
+        return (SelValue) { .val_tex = {.error = 1}};
+    }
+    return (SelValue) {
+        .val_tex = {
+            .kind          = SHADER_CURRENT_RENDER_TEXTURE,
+            .texture_index = (u32) index,
+            .filter        = filter,
+            .wrap          = wrap,
+        }
+    };
 }
 
 static SelValue fn_last_output_of_(void *args)
@@ -633,7 +694,34 @@ static SelValue fn_last_output_of_(void *args)
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
-    return (SelValue) { .val_tex = {.kind = SHADER_LAST_RENDER_TEXTURE_INDEX, .render_texture_index = (u32) index}};
+    return (SelValue) {
+        .val_tex = {
+            .kind          = SHADER_LAST_RENDER_TEXTURE,
+            .texture_index = (u32) index,
+            .filter        = GL_LINEAR,
+            .wrap          = GL_REPEAT,
+        }
+    };
+}
+
+static SelValue fn_last_output_of_ex_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView name = *(StringView *)args;
+    i32 filter      = *(i32 *)(args8 + sizeof(StringView));
+    i32 wrap        = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
+    i32 index = shaq_find_shader_id_by_name(name);
+    if (index == -1) {
+        return (SelValue) { .val_tex = {.error = 1}};
+    }
+    return (SelValue) {
+        .val_tex = {
+            .kind          = SHADER_LAST_RENDER_TEXTURE,
+            .texture_index = (u32) index,
+            .filter        = filter,
+            .wrap          = wrap,
+        }
+    };
 }
 
 

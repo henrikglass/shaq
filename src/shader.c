@@ -109,8 +109,8 @@ void shader_determine_dependencies(Shader *s)
             continue;
         }
         SelValue r = sel_eval(u->exe, true);
-        if (r.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE_INDEX) {
-            array_push(&s->shader_depends, r.val_tex.render_texture_index);
+        if (r.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) {
+            array_push(&s->shader_depends, r.val_tex.texture_index);
         }
     } 
 }
@@ -292,27 +292,31 @@ void shader_update_uniforms(Shader *s)
             case TYPE_MAT3:  glUniformMatrix3fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat3); break;
             case TYPE_MAT4:  glUniformMatrix4fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat4); break;
             case TYPE_TEXTURE: {
-                TextureIndex idx = r.val_tex;
+                TextureDescriptor desc = r.val_tex;
                 glActiveTexture(GL_TEXTURE0 + texture_unit);
                 glUniform1i(u->gl_uniform_location, texture_unit);
                 texture_unit++;
 
                 u32 texture_id = 0;
-                switch(idx.kind) {
-                    case SHADER_CURRENT_RENDER_TEXTURE_INDEX: {
-                        texture_id = shaq_get_shader_current_render_texture_by_index(idx.render_texture_index);
+                switch(desc.kind) {
+                    case SHADER_CURRENT_RENDER_TEXTURE: {
+                        texture_id = shaq_get_shader_current_render_texture_by_index(desc.texture_index);
                     } break;
 
-                    case SHADER_LAST_RENDER_TEXTURE_INDEX: {
-                        texture_id = shaq_get_shader_last_render_texture_by_index(idx.render_texture_index);
+                    case SHADER_LAST_RENDER_TEXTURE: {
+                        texture_id = shaq_get_shader_last_render_texture_by_index(desc.texture_index);
                     } break;
 
-                    case LOADED_TEXTURE_INDEX: {
-                        texture_id = shaq_get_loaded_texture_by_index(idx.loaded_texture_index);
+                    case LOADED_TEXTURE: {
+                        texture_id = shaq_get_loaded_texture_by_index(desc.texture_index);
                     } break;
                 }
                 if (texture_id != 0) {
                     glBindTexture(GL_TEXTURE_2D, texture_id);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, desc.filter);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, desc.filter);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, desc.wrap);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, desc.wrap);
                 }
             } break; 
             case TYPE_STR:

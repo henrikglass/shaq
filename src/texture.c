@@ -50,7 +50,6 @@ Texture texture_load_from_file(StringView filepath)
     glGenTextures(1, &tex.gl_texture_id); 
     glBindTexture(GL_TEXTURE_2D, tex.gl_texture_id);
 
-    /* TODO Add support for specifying these in the *.ini file? */
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

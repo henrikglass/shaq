@@ -44,25 +44,25 @@ static_assert(N_TYPES <= 256, "");
 typedef enum
 {
     QUALIFIER_NONE  =  0,
-    QUALIFIER_CONST = (1 << 0), // for constant expression
+    QUALIFIER_CONST = (1 << 0), // for constÖant expression
     QUALIFIER_PURE  = (1 << 1), // for pure functions
 } TypeQualifier;
 
 typedef enum
 {
-    SHADER_CURRENT_RENDER_TEXTURE_INDEX,
-    SHADER_LAST_RENDER_TEXTURE_INDEX,
-    LOADED_TEXTURE_INDEX,
-} TextureIndexKind;
+    SHADER_CURRENT_RENDER_TEXTURE,
+    SHADER_LAST_RENDER_TEXTURE,
+    LOADED_TEXTURE,
+} TextureKind;
 
 typedef struct
 {
-    u32 error : 1;
-    TextureIndexKind kind  : 2;
-    u32 loaded_texture_index : 8;
-    u32 render_texture_index : 8;
-} TextureIndex;
-static_assert(sizeof(TextureIndex) == 4, "actually doesn't matter TODO remove");
+    u32 error; // TODO move
+    TextureKind kind;
+    u32 texture_index;
+    i32 filter; // Both min & mag filters
+    i32 wrap;   // Both S & T directions
+} TextureDescriptor;
 
 typedef union
 {
@@ -80,7 +80,7 @@ typedef union
     Mat3 val_mat3;
     Mat4 val_mat4;
     StringView val_str;
-    TextureIndex val_tex;
+    TextureDescriptor val_tex;
 } SelValue;
 
 typedef struct
@@ -172,7 +172,7 @@ static const u32 TYPE_TO_SIZE[] =
     [TYPE_MAT3]      = 36,
     [TYPE_MAT4]      = 64,
     [TYPE_STR]       = sizeof(StringView),
-    [TYPE_TEXTURE]   = sizeof(i32),
+    [TYPE_TEXTURE]   = sizeof(TextureDescriptor),
     [TYPE_AND_NAMECHECKER_ERROR_] = 0,
 };
 static_assert(sizeof(TYPE_TO_SIZE)/sizeof(TYPE_TO_SIZE[0]) == N_TYPES);

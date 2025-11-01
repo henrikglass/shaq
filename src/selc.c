@@ -213,12 +213,12 @@ const Const BUILTIN_CONSTANTS[] =
     {.id = SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32  =     2.7182818284},
     {.id = SV_LIT("TRUE"),               .type = TYPE_BOOL,  .value.val_bool = 1 },
     {.id = SV_LIT("FALSE"),              .type = TYPE_BOOL,  .value.val_bool = 0 },
-    {.id = SV_LIT("GL_NEAREST"),         .type = TYPE_UINT,  .value.val_f32  = GL_NEAREST },
-    {.id = SV_LIT("GL_LINEAR"),          .type = TYPE_UINT,  .value.val_f32  = GL_LINEAR },
-    {.id = SV_LIT("GL_REPEAT"),          .type = TYPE_UINT,  .value.val_f32  = GL_REPEAT },
-    {.id = SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_UINT,  .value.val_f32  = GL_MIRRORED_REPEAT },
-    {.id = SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_UINT,  .value.val_f32  = GL_CLAMP_TO_EDGE },
-    {.id = SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_UINT,  .value.val_f32  = GL_CLAMP_TO_BORDER },
+    {.id = SV_LIT("GL_NEAREST"),         .type = TYPE_INT,  .value.val_i32  = GL_NEAREST },
+    {.id = SV_LIT("GL_LINEAR"),          .type = TYPE_INT,  .value.val_i32  = GL_LINEAR },
+    {.id = SV_LIT("GL_REPEAT"),          .type = TYPE_INT,  .value.val_i32  = GL_REPEAT },
+    {.id = SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_INT,  .value.val_i32  = GL_MIRRORED_REPEAT },
+    {.id = SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_INT,  .value.val_i32  = GL_CLAMP_TO_EDGE },
+    {.id = SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_INT,  .value.val_i32  = GL_CLAMP_TO_BORDER },
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
@@ -296,8 +296,9 @@ void sel_print_value(Type t, SelValue v)
         case TYPE_STR:     printf("\""SV_FMT"\"" "\n", SV_ARG(v.val_str)); break;
         case TYPE_TEXTURE: {
             if (v.val_tex.error) printf("ERROR\n"); 
-            else if (v.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE_INDEX) printf("render texture: %u\n", v.val_tex.render_texture_index); 
-            else if (v.val_tex.kind == LOADED_TEXTURE_INDEX) printf("loaded texture: %u\n", v.val_tex.loaded_texture_index);
+            else if (v.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) printf("current render texture: %u\n", v.val_tex.texture_index); 
+            else if (v.val_tex.kind == SHADER_LAST_RENDER_TEXTURE) printf("last render texture: %u\n", v.val_tex.texture_index); 
+            else if (v.val_tex.kind == LOADED_TEXTURE) printf("loaded texture: %u\n", v.val_tex.texture_index);
         } break;
         case TYPE_NIL:     printf("<NIL>\n"); break;
         case TYPE_AND_NAMECHECKER_ERROR_:

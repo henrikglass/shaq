@@ -6,12 +6,12 @@ PHI                                                                             
 e                                                                                TYPE: float
 TRUE                                                                             TYPE: bool
 FALSE                                                                            TYPE: bool
-GL_NEAREST                                                                       TYPE: uint
-GL_LINEAR                                                                        TYPE: uint
-GL_REPEAT                                                                        TYPE: uint
-GL_MIRRORED_REPEAT                                                               TYPE: uint
-GL_CLAMP_TO_EDGE                                                                 TYPE: uint
-GL_CLAMP_TO_BORDER                                                               TYPE: uint
+GL_NEAREST                                                                       TYPE: int
+GL_LINEAR                                                                        TYPE: int
+GL_REPEAT                                                                        TYPE: int
+GL_MIRRORED_REPEAT                                                               TYPE: int
+GL_CLAMP_TO_EDGE                                                                 TYPE: int
+GL_CLAMP_TO_BORDER                                                               TYPE: int
 ```
 
 # Functions:
@@ -212,8 +212,11 @@ mat4 copy_mat4(str shader, str var)                                             
 ## Returning texture:
 ```
 texture load_image(str filepath)                                                 Returns a reference to a texture loaded from `filepath`
+texture load_image_ex(str filepath, i32 filter, i32 wrap)                        Returns a reference to a texture loaded from `filepath` with the given filter and wrap mode
 texture output_of(str shader)                                                    Returns a reference to a texture rendered to by the shader `shader` in this frame. Calling this function implicitly defines the render order.
+texture output_of_ex(str shader, i32 filter, i32 wrap)                           Returns a reference to a texture rendered to by the shader `shader` in this frame with the given filter and wrap mode. Calling this function implicitly defines the render order.
 texture last_output_of(str shader)                                               Returns a reference to a texture rendered to by the shader `shader` in the last frame.
+texture last_output_of_ex(str shader, i32 filter, i32 wrap)                      Returns a reference to a texture rendered to by the shader `shader` in the last frame with the given filter and wrap mode.
 ```
 
 ## Returning type-/namechecker error:
