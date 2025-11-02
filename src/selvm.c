@@ -347,7 +347,7 @@ const Func BUILTIN_FUNCTIONS[] =
 
     { .id = SV_LIT("input_float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_input_float_,      .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float input_float(str label, float default)", .desc = "Creates an input widget for floats with the label `label` and default value `default`", },
     { .id = SV_LIT("checkbox"),         .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_checkbox_,         .argtypes = {TYPE_STR, TYPE_BOOL, TYPE_NIL}, .synopsis = "bool checkbox(str label, bool default)", .desc = "Creates an checkbox widget with the label `label` and default value `default`", },
-    { .id = SV_LIT("drag_int"),         .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_drag_int_,         .argtypes = {TYPE_STR, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "int drag_int(str label, int min, int max, int default)", .desc = "Creates an integer slider widget with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`", },
+    { .id = SV_LIT("drag_int"),         .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_drag_int_,         .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "int drag_int(str label, float v, int min, int max, int default)", .desc = "Creates an integer slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`", },
     { .id = SV_LIT("slider_float"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_,     .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float(str label, float min, float max, float default)", .desc = "Creates an float slider widget with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`", },
     { .id = SV_LIT("slider_float_log"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_log_, .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float_log(str label, float min, float max, float default)", .desc = "Creates an float slider widget, with logarithmic scaling, with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`", },
     { .id = SV_LIT("input_int"),        .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_input_int_,        .argtypes = {TYPE_STR, TYPE_INT, TYPE_NIL}, .synopsis = "int input_int(str label, int default)", .desc = "Creates an input widget for integers with the label `label` and default value `default`", },
@@ -638,8 +638,6 @@ static SelValue fn_load_image_ex_(void *args)
     if (index == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
-    printf("filter = %u, wrap = %u\n", filter, wrap);
-    printf("GL_LINEAR = %d, GL_REPEAT = %d\n", GL_LINEAR, GL_REPEAT);
     return (SelValue) {
         .val_tex = {
             .kind          = LOADED_TEXTURE,
@@ -1493,7 +1491,7 @@ static SelValue fn_drag_int_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, DRAG_INT, secondary_args, 3*sizeof(i32));
+    return gui_get_dynamic_item_value(label, DRAG_INT, secondary_args, 3*sizeof(i32) + 1*sizeof(f32));
 }
 
 static SelValue fn_slider_float_(void *args)

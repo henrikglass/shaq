@@ -4,7 +4,7 @@
 #include "imguic.h"
 #include "shaq_core.h"
 #include "alloc.h"
-#include "constants.h"
+#include "shaq_config.h"
 #include "array.h"
 #include "renderer.h"
 #include "log.h"
@@ -306,7 +306,9 @@ SelValue gui_get_dynamic_item_value(StringView label,
 
 b8 gui_should_reload()
 {
-#if 0
+#if SHAQ_RELOAD_DURING_RESIZE
+    return gui.should_reload;
+#else
     /* 
      * Hold off on signaling that a reload is needed until the user stops 
      * interacting with the GUI. By doing this we avoid having to perform
@@ -320,8 +322,8 @@ b8 gui_should_reload()
     if (imgui_is_any_item_active()) {
         return false;
     }
-#endif
     return gui.should_reload;
+#endif
 }
 
 IVec2 gui_shader_window_position()
@@ -405,13 +407,15 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
 
         case DRAG_INT: {
             i32 *args_i32 = (i32*)item->secondary_args;
-            i32 min = args_i32[0];
-            i32 max = args_i32[1];
-            i32 default_value = args_i32[2];
+            f32 *args_f32 = (f32*)item->secondary_args;
+            f32 v = args_f32[0];
+            i32 min = args_i32[1];
+            i32 max = args_i32[2];
+            i32 default_value = args_i32[3];
             if (item->spawned_this_frame) {
                 item->value.val_i32 = default_value;
             }
-            imgui_drag_int(label_cstr, &item->value.val_i32, min, max); 
+            imgui_drag_int(label_cstr, &item->value.val_i32, v, min, max); 
         } break;
 
         case SLIDER_FLOAT:

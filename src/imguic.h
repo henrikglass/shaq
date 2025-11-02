@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #include "hgl_int.h"
+#include "hgl_float.h"
 #include <stdarg.h>
 #include <GLFW/glfw3.h>
 
@@ -60,7 +61,7 @@ void imgui_separator(void);
 void imgui_newline(void);
 b8 imgui_button(const char *label);
 void imgui_checkbox(const char *label, b8 *b);
-void imgui_drag_int(const char *label, int *v, int min, int max);
+void imgui_drag_int(const char *label, int *v, f32 speed, int min, int max);
 void imgui_input_int(const char *label, int *v);
 void imgui_input_float(const char *label, float *v);
 void imgui_input_float2(const char *label, float *v);

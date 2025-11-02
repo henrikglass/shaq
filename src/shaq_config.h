@@ -1,5 +1,5 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef SHAQ_CONFIG_H
+#define SHAQ_CONFIG_H
 
 #define SHAQ_MAX_N_SHADERS            64
 #define SHAQ_MAX_N_UNIFORMS           64
@@ -7,6 +7,7 @@
 #define SHAQ_MAX_N_LOADED_TEXTURES    16
 #define SHAQ_ENABLE_VSYNC              1
 #define SHAQ_FILEPATH_MAX_LEN        512
+#define SHAQ_RELOAD_DURING_RESIZE      0
 
-#endif /* CONSTANTS_H */
+#endif /* SHAQ_CONFIG_H */
 

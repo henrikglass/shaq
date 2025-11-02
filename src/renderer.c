@@ -3,7 +3,7 @@
 #include "renderer.h"
 
 #include "shaq_core.h"
-#include "constants.h"
+#include "shaq_config.h"
 #include "user_input.h"
 #include "hgl_int.h"
 #include "vecmath.h"

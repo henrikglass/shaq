@@ -4,7 +4,7 @@
 
 extern "C" {
     #include "alloc.h"
-    #include "constants.h"
+    #include "shaq_config.h"
     #include "log.h"
 }
 
@@ -280,9 +280,10 @@ void imgui_checkbox(const char *label, b8 *b)
     ImGui::Checkbox(label, b);
 }
 
-void imgui_drag_int(const char *label, int *v, int min, int max)
+void imgui_drag_int(const char *label, int *v, f32 speed, int min, int max)
 {
-    ImGui::DragInt(label, v, 1, min, max, "%d", ImGuiSliderFlags_Logarithmic);
+    //ImGui::DragInt(label, v, speed, min, max, "%d", ImGuiSliderFlags_Logarithmic);
+    ImGui::DragInt(label, v, speed, min, max, "%d");
 }
 
 void imgui_input_int(const char *label, int *v)

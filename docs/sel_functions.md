@@ -43,7 +43,7 @@ int frame_count()                                                               
 int iresolution_x()                                                              Returns the X dimension of the current window resolution
 int iresolution_y()                                                              Returns the Y dimension of the current window resolution
 int signed(uint x)                                                               Typecast uint to int.
-int drag_int(str label, int min, int max, int default)                           Creates an integer slider widget with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`
+int drag_int(str label, float v, int min, int max, int default)                  Creates an integer slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`
 int input_int(str label, int default)                                            Creates an input widget for integers with the label `label` and default value `default`
 int copy_int(str shader, str var)                                                Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ```

@@ -4,7 +4,7 @@
 
 #include "sel.h"
 #include "alloc.h"
-#include "constants.h"
+#include "shaq_config.h"
 #include "shader.h"
 #include "uniform.h"
 #include "texture.h"

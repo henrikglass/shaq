@@ -3,7 +3,7 @@
 
 /*--- Include files ---------------------------------------------------------------------*/
 
-#include "constants.h"
+#include "shaq_config.h"
 #include "uniform.h"
 #include "texture.h"
 #include "array.h"
