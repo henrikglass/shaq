@@ -28,6 +28,7 @@ typedef enum {
 /*--- Public function prototypes --------------------------------------------------------*/
 
 void gui_reload(void);
+void gui_clear_dynamic_gui_items(void);
 void gui_begin_frame(void);
 b8 gui_begin_main_window(void);
 b8 gui_begin_shader_window(void);

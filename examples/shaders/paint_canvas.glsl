@@ -4,7 +4,8 @@ out vec4 frag_color;
 
 uniform sampler2D tex;
 uniform ivec2 iresolution;
-uniform bool reloaded;
+uniform bool reloaded_this_frame;
+uniform bool reloaded_last_frame;
 
 uniform bool pen_down;
 uniform vec2 pen_position;
@@ -30,7 +31,7 @@ float sdf_line_segment(vec2 a, vec2 b, vec2 p)
 void main()
 {
     /* Erase canvas on the first frame */
-    if (reloaded) {
+    if (reloaded_this_frame || reloaded_last_frame) {
         frag_color = eraser_color;
         return;
     }

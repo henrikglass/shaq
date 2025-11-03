@@ -8,6 +8,7 @@
 #define SHAQ_ENABLE_VSYNC              1
 #define SHAQ_FILEPATH_MAX_LEN        512
 #define SHAQ_RELOAD_DURING_RESIZE      0
+#define SHAQ_HUGEPAGES                 0
 
 #endif /* SHAQ_CONFIG_H */
 

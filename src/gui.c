@@ -48,6 +48,10 @@ static struct
 void gui_reload()
 {
     gui.should_reload = false;
+}
+
+void gui_clear_dynamic_gui_items()
+{
     array_clear(&gui.dynamic_items);
 }
 

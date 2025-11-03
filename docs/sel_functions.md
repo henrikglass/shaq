@@ -28,6 +28,7 @@ bool right_mouse_button_was_clicked()                                           
 bool key_is_down(str key)                                                        Returns true if `key` is down. `key` can be any letter in the English alphabet.
 bool key_was_pressed(str key)                                                    Returns true if `key` was pressed . `key` can be any letter in the English alphabet.
 bool shaq_reloaded_this_frame()                                                  Returns true if Shaq performed an internal reload operation this frame.
+bool shaq_reloaded_last_frame()                                                  Returns true if Shaq performed an internal reload operation last frame.
 bool checkbox(str label, bool default)                                           Creates an checkbox widget with the label `label` and default value `default`
 bool copy_bool(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ```

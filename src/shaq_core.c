@@ -65,6 +65,7 @@ static struct
     b8 quiet;
     b8 should_reload;
     b8 reloaded_this_frame;
+    b8 reloaded_last_frame;
 
     i32 frame_count;
     u64 start_timestamp_ns;
@@ -103,6 +104,7 @@ b8 shaq_should_close()
 
 void shaq_new_frame()
 {
+    shaq.reloaded_last_frame = shaq.reloaded_this_frame;
     shaq.reloaded_this_frame = false;
     if (session_reload_needed()) {
         i32 err = reload_session();
@@ -128,12 +130,6 @@ void shaq_new_frame()
         Shader *s  = &shaq.shaders.arr[index];
         shader_swap_render_textures(s);
     }
-
-    /* for all shaders: update uniforms */
-    //for (u32 i = 0; i < shaq.render_order.count; i++) {
-    //    u32 index = shaq.render_order.arr[i];
-    //    Shader *s  = &shaq.shaders.arr[index];
-    //}
 
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
@@ -227,6 +223,11 @@ i32 shaq_frame_count()
 b8 shaq_reloaded_this_frame()
 {
     return shaq.reloaded_this_frame;
+}
+
+b8 shaq_reloaded_last_frame()
+{
+    return shaq.reloaded_last_frame;
 }
 
 b8 shaq_has_loaded_project()
@@ -351,9 +352,12 @@ static i32 reload_session()
         Texture *t = &shaq.loaded_textures.arr[i];
         texture_free(t);
     }
+
+    /* Upon loading a new project clear some additional stuff */
     if (shaq.project_ini_changed) {
         image_free_all_cached_images();
         shaq.project_ini_changed = false;
+        gui_clear_dynamic_gui_items();
     }
 
     /* reset state */

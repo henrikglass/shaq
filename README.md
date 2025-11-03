@@ -163,8 +163,10 @@ spell compositor, ok?
 
 * Embed a tiny text editor
 * Support uniform arrays
+* Option - toggle inhibit reload
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
 * SEL - load\_video()?
+* SEL - boolean arithmetic (&&, ||, !, etc.)
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined)
 
 # Credits

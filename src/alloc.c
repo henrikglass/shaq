@@ -3,6 +3,7 @@
 #include "alloc.h"
 
 #include "hgl_int.h"
+#include "shaq_config.h"
 
 #define HGL_ALLOC_IMPLEMENTATION
 #include "hgl_alloc.h"
@@ -29,12 +30,23 @@ void alloc_init()
                                                     .size = 1024*1024);    //   1 MiB
     r2r_arena_internal_            = hgl_alloc_make(.kind = HGL_STACK_ALLOCATOR, 
                                                     .size = 16*1024*1024); //  16 MiB
+#if SHAQ_HUGEPAGES
+    r2r_fs_allocator_internal_     = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
+                                                    .size = 32*1024*1024,  //  32 MiB
+                                                    .free_stack_capacity = 1024,
+                                                    .backend = HGL_MMAP_HUGEPAGE);
+    image_allocator_internal_      = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
+                                                    .size = 512*1024*1024, // 512 MiB
+                                                    .free_stack_capacity = 1024,
+                                                    .backend = HGL_MMAP_HUGEPAGE);
+#else
     r2r_fs_allocator_internal_     = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
                                                     .size = 32*1024*1024,  //  32 MiB
                                                     .free_stack_capacity = 1024);
     image_allocator_internal_      = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
                                                     .size = 512*1024*1024, // 512 MiB
                                                     .free_stack_capacity = 1024);
+#endif
 
     assert(r2r_fs_allocator_internal_.memory != NULL);
     assert(image_allocator_internal_.memory != NULL);

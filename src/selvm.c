@@ -68,6 +68,7 @@ static SelValue fn_right_mouse_button_was_clicked_(void *args);
 static SelValue fn_key_is_down_(void *args);
 static SelValue fn_key_was_pressed_(void *args);
 static SelValue fn_shaq_reloaded_this_frame_(void *args);
+static SelValue fn_shaq_reloaded_last_frame_(void *args);
 
 static SelValue fn_int_(void *args);
 static SelValue fn_unsigned_(void *args);
@@ -228,6 +229,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("key_is_down"),                    .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_key_is_down_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool key_is_down(str key)", .desc = "Returns true if `key` is down. `key` can be any letter in the English alphabet.", },
     { .id = SV_LIT("key_was_pressed"),                .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_key_was_pressed_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool key_was_pressed(str key)", .desc = "Returns true if `key` was pressed . `key` can be any letter in the English alphabet.", },
     { .id = SV_LIT("shaq_reloaded_this_frame"),       .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_shaq_reloaded_this_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool shaq_reloaded_this_frame()", .desc = "Returns true if Shaq performed an internal reload operation this frame.", },
+    { .id = SV_LIT("shaq_reloaded_last_frame"),       .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_shaq_reloaded_last_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool shaq_reloaded_last_frame()", .desc = "Returns true if Shaq performed an internal reload operation last frame.", },
 
     { .id = SV_LIT("int"),           .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,           .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = SV_LIT("unsigned"),      .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_unsigned_,      .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "uint unsigned(int x)", .desc = "Typecast int to uint.", },
@@ -780,6 +782,12 @@ static SelValue fn_shaq_reloaded_this_frame_(void *args)
 {
     (void) args;
     return (SelValue) {.val_bool = shaq_reloaded_this_frame()};
+}
+
+static SelValue fn_shaq_reloaded_last_frame_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = shaq_reloaded_last_frame()};
 }
 
 

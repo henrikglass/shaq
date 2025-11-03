@@ -27,6 +27,7 @@ f32 shaq_time(void);
 f32 shaq_deltatime(void);
 i32 shaq_frame_count(void);
 b8 shaq_reloaded_this_frame(void);
+b8 shaq_reloaded_last_frame(void);
 
 b8 shaq_has_loaded_project(void);
 Shader *shaq_find_shader_by_name(StringView name);
