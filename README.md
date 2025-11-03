@@ -161,7 +161,6 @@ spell compositor, ok?
 
 # Planned features and fixes
 
-* Some sort of LRU image caching-system to speed up reloads for projects with many large images
 * Embed a tiny text editor
 * Support uniform arrays
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
