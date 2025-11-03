@@ -16,8 +16,8 @@
 #include "log.h"
 #include "image.h"
 
-#define HGL_INI_ALLOC session_fs_alloc
-#define HGL_INI_REALLOC session_fs_realloc
+#define HGL_INI_ALLOC r2r_fs_alloc
+#define HGL_INI_REALLOC r2r_fs_realloc
 #define HGL_INI_FREE dummy_free /* handled by call to `hgl_free_all(g_session_fs_allocator)` */
 #define HGL_INI_IMPLEMENTATION
 #include "hgl_ini.h"
@@ -312,7 +312,7 @@ u32 shaq_get_loaded_texture_by_index(u32 index)
 
 static b8 session_reload_needed()
 {
-    if (shaq.should_reload) {
+    if (shaq.should_reload || user_input_should_reload()) {
         return true;
     }
 
@@ -335,8 +335,7 @@ static b8 session_reload_needed()
     }
 
     return renderer_should_reload() ||
-           gui_should_reload()      ||
-           user_input_should_reload();
+           gui_should_reload();
 }
 
 static i32 reload_session()
@@ -368,8 +367,8 @@ static i32 reload_session()
     gui_reload();
 
     /* collect garbage */
-    hgl_free_all(g_session_arena);
-    hgl_free_all(g_session_fs_allocator);
+    hgl_free_all(g_r2r_arena);
+    hgl_free_all(g_r2r_fs_allocator);
 
     /* Return early if no filepath is set */
     if (!shaq.project_ini_loaded) {
@@ -381,7 +380,6 @@ static i32 reload_session()
     shaq.project_ini = hgl_ini_open(shaq.project_ini_filepath);
     if (shaq.project_ini == NULL) {
         log_error("Failed to open or parse *.ini file.");
-        shaq.project_ini_loaded = false;
         goto out_error;
     }
 
@@ -411,11 +409,11 @@ static i32 reload_session()
         log_print_error_log();
     }
 
-#if 1
-    printf("frame arena          -- "); hgl_alloc_print_usage(g_frame_arena);
-    printf("session arena        -- "); hgl_alloc_print_usage(g_session_arena);
-    printf("session fs allocator -- "); hgl_alloc_print_usage(g_session_fs_allocator);
-    printf("image allocator      -- "); hgl_alloc_print_usage(g_image_allocator);
+#if 0
+    printf("frame arena      -- "); hgl_alloc_print_usage(g_frame_arena);
+    printf("r2r arena        -- "); hgl_alloc_print_usage(g_r2r_arena);
+    printf("r2r fs allocator -- "); hgl_alloc_print_usage(g_r2r_fs_allocator);
+    printf("image allocator  -- "); hgl_alloc_print_usage(g_image_allocator);
 #endif
 
     log_info("Session reloaded successfully (%s)", io_get_timestamp_str());

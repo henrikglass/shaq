@@ -70,7 +70,7 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     }
 
     /* load source. */ 
-    sh->frag_shader_src = io_read_entire_file(g_session_fs_allocator, sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
+    sh->frag_shader_src = io_read_entire_file(g_r2r_fs_allocator, sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
     if (sh->frag_shader_src == NULL) {
         log_error("Shader \"%s\": unable to load source file `" SV_FMT "`. "
                   "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
