@@ -48,6 +48,7 @@ static struct
 void gui_reload()
 {
     gui.should_reload = false;
+    array_clear(&gui.dynamic_items);
 }
 
 void gui_begin_frame()
@@ -170,9 +171,9 @@ void gui_end_frame()
         if (item->touched_this_frame) {
             item->touched_this_frame = false;
             item->spawned_this_frame = false;
-            continue;
+        } else {
+            array_delete(&gui.dynamic_items, i);
         }
-        array_delete(&gui.dynamic_items, i);
     }
 }
 
