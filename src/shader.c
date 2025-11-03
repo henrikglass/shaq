@@ -8,8 +8,6 @@
 #include "gui.h"
 #include "log.h"
 
-#include "hgl_profile.h"
-
 #include <errno.h>
 #include <string.h>
 
@@ -110,9 +108,7 @@ void shader_determine_dependencies(Shader *s)
         if (u->type != TYPE_TEXTURE) {
             continue;
         }
-        hgl_profile_begin("evaluate expression");
         SelValue r = sel_eval(u->exe, true);
-        hgl_profile_end();
         if (r.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) {
             array_push(&s->shader_depends, r.val_tex.texture_index);
         }

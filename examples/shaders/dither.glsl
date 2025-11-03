@@ -6,7 +6,7 @@ uniform sampler2D tex;
 uniform ivec2 iresolution;
 uniform vec4 background;
 
-uniform int bpp;
+uniform int color_depth;
 uniform float spread;
 uniform float bias;
 
@@ -24,7 +24,7 @@ void main()
     };
 
     vec4 c = texture(tex, uv);
-    int n_col = int(exp2(bpp));
+    int n_col = int(exp2(color_depth));
 
     float M = (1.0/16.0) * bayer4x4[y][x] - 0.5;
     float r = clamp(0.0, 1.0, c.r + M*spread + bias);

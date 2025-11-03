@@ -1,13 +1,10 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef IMAGE_H
+#define IMAGE_H
 
 /*--- Include files ---------------------------------------------------------------------*/
 
 #include "str.h"
-#include "vecmath.h"
 #include "hgl_int.h"
-#include "hgl_float.h"
-#include "image.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
@@ -15,17 +12,19 @@
 
 typedef struct
 {
-    Image *img;
-    u32 gl_texture_id;
-} Texture;
+    StringView filepath;
+    void *data;
+    i32 width;
+    i32 height;
+    i32 n_channels;
+} Image;
 
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-Texture texture_load_from_file(StringView filepath);
-Texture texture_make_empty(IVec2 resolution);
-void texture_free(Texture *t);
+Image *image_load_from_file(StringView filepath);
+void image_free_all_cached_images(void);
 
-#endif /* TEXTURE__H */
+#endif /* IMAGE_H */
 

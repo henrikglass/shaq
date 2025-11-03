@@ -10,6 +10,7 @@ extern Allocator *g_temp_allocator;
 extern Allocator *g_frame_arena;
 extern Allocator *g_session_arena;
 extern Allocator *g_session_fs_allocator;
+extern Allocator *g_image_allocator;
 
 void alloc_init(void);
 void alloc_final(void);
@@ -25,6 +26,9 @@ void  session_fs_free(void *ptr);
 void *dummy_alloc(size_t size);
 void *dummy_realloc(void *ptr, size_t size);
 void  dummy_free(void *ptr);
+void *image_alloc(size_t size);
+void *image_realloc(void *ptr, size_t size);
+void  image_free(void *ptr);
 
 #endif /* ALLOC_H */
 

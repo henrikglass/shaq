@@ -183,6 +183,14 @@ HglStringView hgl_sv_from_sb(HglStringBuilder *sb);
 HglStringView hgl_sv_from_cstr(const char *cstr);
 
 /**
+ * Create NULL-terminated `cstr` from `sv`, wrapped inside a HglStringView object. 
+ * If `mem_alloc` is not NULL, then it is used to allocate memory for the cstr copy, 
+ * otherwise HGL_STRING_ALLOC is used. The caller should ensure that the returned 
+ * string is freed correctly after use.
+ */
+HglStringView hgl_sv_make_copy(HglStringView sv, void *(*mem_alloc)(size_t));
+
+/**
  * Create NULL-terminated `cstr` from `sv`. If `mem_alloc` is not NULL, then
  * it is used to allocate memory for the cstr copy, otherwise HGL_STRING_ALLOC
  * is used. The caller should ensure that the returned string is freed
@@ -519,8 +527,16 @@ HglStringView hgl_sv_from_sb(HglStringBuilder *sb)
 HglStringView hgl_sv_from_cstr(const char *cstr)
 {
     return (HglStringView) {
-        .start = cstr,
+        .start  = cstr,
         .length = strlen(cstr)
+    };
+}
+
+HglStringView hgl_sv_make_copy(HglStringView sv, void *(*mem_alloc)(size_t))
+{
+    return (HglStringView) {
+        .start  = hgl_sv_make_cstr_copy(sv, mem_alloc),
+        .length = sv.length,
     };
 }
 
@@ -1208,6 +1224,7 @@ typedef HglStringBuilder StringBuilder;
 #define sv_from                  hgl_sv_from
 #define sv_from_sb               hgl_sv_from_sb
 #define sv_from_cstr             hgl_sv_from_cstr
+#define sv_make_copy             hgl_sv_make_copy
 #define sv_make_cstr_copy        hgl_sv_make_cstr_copy
 #define sv_op_begin              hgl_sv_op_begin
 #define sv_split_next            hgl_sv_split_next
