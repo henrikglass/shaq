@@ -58,8 +58,8 @@ void gui_begin_frame()
 
 b8 gui_begin_main_window()
 {
-    gui.smoothed_deltatime = 0.97f*gui.smoothed_deltatime +
-                             0.03f*shaq_deltatime();
+    gui.smoothed_deltatime = 0.90f*gui.smoothed_deltatime +
+                             0.10f*shaq_deltatime();
     b8 ret = imgui_begin("Main Window");
     if (ret) {
         imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
