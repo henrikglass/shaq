@@ -21,6 +21,9 @@
 #define HGL_INI_IMPLEMENTATION
 #include "hgl_ini.h"
 
+#define HGL_PROFILE_IMPLEMENTATION
+#include "hgl_profile.h"
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -333,6 +336,8 @@ static b8 session_reload_needed()
 
 static i32 reload_session()
 {
+    hgl_profile_reset();
+    hgl_profile_begin("reload_session");
     shaq.should_reload = false;
 
     /* Manually free OpenGL resources */
@@ -342,7 +347,7 @@ static i32 reload_session()
     }
     for (u32 i = 0; i < shaq.loaded_textures.count; i++) {
         Texture *t = &shaq.loaded_textures.arr[i];
-        texture_free_opengl_resources(t);
+        texture_free(t);
     }
 
     /* reset state */
@@ -361,12 +366,17 @@ static i32 reload_session()
 
     /* Return early if no filepath is set */
     if (!shaq.project_ini_loaded) {
+        hgl_profile_end();
         return -1;
     }
 
     /* Reload project ini file */
+    hgl_profile_begin("read modify time");
     shaq.project_ini_modifytime = io_get_file_modify_time(shaq.project_ini_filepath, false);
+    hgl_profile_end();
+    hgl_profile_begin("open ini");
     shaq.project_ini = hgl_ini_open(shaq.project_ini_filepath);
+    hgl_profile_end();
     if (shaq.project_ini == NULL) {
         log_error("Failed to open or parse *.ini file.");
         shaq.project_ini_loaded = false;
@@ -374,20 +384,26 @@ static i32 reload_session()
     }
 
     /* Parse project ini file contents + recompile simple expressions */
+    hgl_profile_begin("load ini state");
     i32 err = load_state_from_project_ini(shaq.project_ini);
+    hgl_profile_end();
     if (err != 0) {
         log_error("Failed to load anything meaningful from *.ini file.");
         goto out_error;
     }
 
     /* Determine render order */
+    hgl_profile_begin("determine render order");
     determine_render_order(); // TODO return err?
+    hgl_profile_end();
 
     /* Reload shaders */
+    hgl_profile_begin("reload shaders");
     for (u32 i = 0; i < shaq.shaders.count; i++) {
         Shader *s = &shaq.shaders.arr[i];
         shader_reload(s);
     }
+    hgl_profile_end();
 
     /* Reset visible shader idx if necessary */
     if ((shaq.visible_shader_idx >= (i32)shaq.shaders.count) ||
@@ -406,6 +422,8 @@ static i32 reload_session()
 #endif
 
     log_info("Session reloaded successfully (%s)", io_get_timestamp_str());
+    hgl_profile_end();
+    hgl_profile_report(HGL_PROFILE_TIME_ALL);
     return 0;
 
 out_error:
@@ -415,6 +433,7 @@ out_error:
         log_print_error_log();
     }
     log_error("Session reload failed (%s)", io_get_timestamp_str());
+    hgl_profile_end();
     return -1;
 }
 
@@ -451,11 +470,14 @@ static void determine_render_order()
 {
     array_clear(&shaq.render_order);
 
+    hgl_profile_begin("determine shader dependencies");
     /* determine per-shader dependencies (on other shaders) */
     for (u32 i = 0; i < shaq.shaders.count; i++) {
         shader_determine_dependencies(&shaq.shaders.arr[i]);
     }
+    hgl_profile_end();
 
+    hgl_profile_begin("satisfy shader dependencies");
     /* satisfy dependencies (on other shaders) for each shader */
     for (u32 i = 0; i < shaq.shaders.count; i++) {
         i32 err = satisfy_dependencies_for_shader(i, 0);
@@ -467,6 +489,7 @@ static void determine_render_order()
                      SV_FMT ".", SV_ARG(shaq.shaders.arr[i].name));
         }
     }
+    hgl_profile_end();
 }
 
 static i32 load_state_from_project_ini(HglIni *project_ini)

@@ -73,7 +73,7 @@ out:
     return ret;
 }
 
-u8 *io_read_entire_file(const char *filepath, size_t *size)
+u8 *io_read_entire_file(HglAllocator *allocator, const char *filepath, size_t *size)
 {
     u8 *data = NULL;
     *size = 0;
@@ -93,7 +93,7 @@ u8 *io_read_entire_file(const char *filepath, size_t *size)
     }
 
     /* allocate memory for data */
-    u8 *file_data = hgl_alloc(g_session_fs_allocator, file_size);
+    u8 *file_data = hgl_alloc(allocator, file_size);
     if (file_data == NULL) {
         goto out;
     }
@@ -101,7 +101,7 @@ u8 *io_read_entire_file(const char *filepath, size_t *size)
     /* read file */
     ssize_t n_read_bytes = fread(file_data, 1, file_size, fp);
     if (n_read_bytes != file_size) {
-        hgl_free(g_session_fs_allocator, file_data);
+        hgl_free(allocator, file_data);
         goto out;
     }
 

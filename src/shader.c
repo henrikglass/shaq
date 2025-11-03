@@ -8,6 +8,8 @@
 #include "gui.h"
 #include "log.h"
 
+#include "hgl_profile.h"
+
 #include <errno.h>
 #include <string.h>
 
@@ -70,7 +72,7 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     }
 
     /* load source. */ 
-    sh->frag_shader_src = io_read_entire_file(sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
+    sh->frag_shader_src = io_read_entire_file(g_session_fs_allocator, sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
     if (sh->frag_shader_src == NULL) {
         log_error("Shader \"%s\": unable to load source file `" SV_FMT "`. "
                   "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
@@ -108,7 +110,9 @@ void shader_determine_dependencies(Shader *s)
         if (u->type != TYPE_TEXTURE) {
             continue;
         }
+        hgl_profile_begin("evaluate expression");
         SelValue r = sel_eval(u->exe, true);
+        hgl_profile_end();
         if (r.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) {
             array_push(&s->shader_depends, r.val_tex.texture_index);
         }
@@ -148,8 +152,8 @@ void shader_reload(Shader *s)
         glDeleteProgram(s->gl_shader_program_id);
         s->gl_shader_program_id = 0;
     }
-    texture_free_opengl_resources(&s->render_texture[0]);
-    texture_free_opengl_resources(&s->render_texture[1]);
+    texture_free(&s->render_texture[0]);
+    texture_free(&s->render_texture[1]);
 
     u32 vert_shader = glCreateShader(GL_VERTEX_SHADER);
     u32 frag_shader = glCreateShader(GL_FRAGMENT_SHADER);

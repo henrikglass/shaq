@@ -22,6 +22,8 @@ static inline void stbi_free(void *ptr){ /*(void) ptr;*/ hgl_free(g_session_fs_a
 #include "stb_image.h"
 #pragma GCC diagnostic pop
 
+#include "hgl_profile.h"
+
 /*--- Private macros --------------------------------------------------------------------*/
 
 /*--- Private type definitions ----------------------------------------------------------*/
@@ -36,6 +38,7 @@ static inline void stbi_free(void *ptr){ /*(void) ptr;*/ hgl_free(g_session_fs_a
 
 Texture texture_load_from_file(StringView filepath)
 {
+    hgl_profile_begin("texture_load_from_file#load");
     const char *filepath_cstr = sv_make_cstr_copy(filepath, tmp_alloc);
     Texture tex = {
         .filepath = filepath,
@@ -44,9 +47,12 @@ Texture texture_load_from_file(StringView filepath)
     tex.data = stbi_load(filepath_cstr, &tex.w, &tex.h, &tex.n_channels, 0);
 
     if (tex.data == NULL) {
+        hgl_profile_end();
         return tex;
     }
+    hgl_profile_end();
 
+    hgl_profile_begin("texture_load_from_file#gl");
     glGenTextures(1, &tex.gl_texture_id); 
     glBindTexture(GL_TEXTURE_2D, tex.gl_texture_id);
 
@@ -62,6 +68,7 @@ Texture texture_load_from_file(StringView filepath)
         default: log_error("Texture loaded from `" SV_FMT "` has %d channels, for some reason?",
                            SV_ARG(filepath), tex.n_channels);
     }
+    hgl_profile_end();
 
     return tex;
 }
@@ -81,7 +88,7 @@ Texture texture_make_empty(IVec2 resolution)
     return tex;
 }
 
-void texture_free_opengl_resources(Texture *t)
+void texture_free(Texture *t)
 {
     glDeleteTextures(1, &t->gl_texture_id); 
 }

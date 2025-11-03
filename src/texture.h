@@ -18,10 +18,8 @@ typedef struct
     i32 w;
     i32 h;
     i32 n_channels;
-    u8 *data;
-
-    /* OpenGL */
     u32 gl_texture_id;
+    u8 *data;
 } Texture;
 
 /*--- Public variables ------------------------------------------------------------------*/
@@ -30,7 +28,7 @@ typedef struct
 
 Texture texture_load_from_file(StringView filepath);
 Texture texture_make_empty(IVec2 resolution);
-void texture_free_opengl_resources(Texture *t);
+void texture_free(Texture *t);
 
 #endif /* TEXTURE__H */
 
