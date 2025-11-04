@@ -164,6 +164,8 @@ spell compositor, ok?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
+* Support arbitrary OpengGL >=4.2 image load/stores, somehow
+* INT - Shader attributes (e.g. override resolution or specify render texture internal format)
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
 * SEL - load\_video()?
 * SEL - boolean arithmetic (&&, ||, !, etc.)
