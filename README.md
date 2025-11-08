@@ -169,7 +169,7 @@ spell compositor, ok?
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
 * SEL - load\_video()?
 * SEL - boolean arithmetic (&&, ||, !, etc.)
-* Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined)
+* Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined) (libffi?)
 
 # Credits
 This project uses open source components:
