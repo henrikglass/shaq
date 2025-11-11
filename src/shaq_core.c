@@ -366,8 +366,10 @@ static i32 reload_session()
     /* Upon loading a new project clear some additional stuff */
     if (shaq.project_ini_changed) {
         image_free_all_cached_images();
-        shaq.project_ini_changed = false;
         gui_clear_dynamic_gui_items();
+        shaq_reset_time();
+        shaq.visible_shader_idx = -1;
+        shaq.project_ini_changed = false;
     }
 
     /* reset state */
