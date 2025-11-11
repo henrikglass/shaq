@@ -204,6 +204,10 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
                 shaq_reset_time();
             } break;
 
+            case GLFW_KEY_P: {
+                shaq_toggle_time_pause();
+            } break;
+
             case GLFW_KEY_O: {
                 imgui_open_file_dialog();
             } break;

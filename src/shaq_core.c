@@ -72,10 +72,11 @@ static struct
     b8 reloaded_last_frame;
 
     i32 frame_count;
-    u64 start_timestamp_ns;
-    u64 last_frame_timestamp_ns;
-    f32 last_frame_deltatime_s;
-    f32 last_frame_time_s;
+    b8 time_paused;
+    u64 timestamp_ns;
+    u64 time_ns;
+    f32 deltatime_s;
+    f32 time_s;
 } shaq = {0};
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -92,9 +93,9 @@ void shaq_begin(const char *project_ini_filepath, bool quiet)
         shaq.project_ini_loaded = true;
     }
 
+    shaq.time_ns = 0;
     shaq.frame_count = 0;
-    shaq.start_timestamp_ns = util_get_time_nanos();
-    shaq.last_frame_timestamp_ns = shaq.start_timestamp_ns;
+    shaq.timestamp_ns = util_get_time_nanos();
     shaq.visible_shader_idx = (u32) -1;
     shaq.quiet = quiet;
 
@@ -118,12 +119,17 @@ void shaq_new_frame()
     }
 
     /* compute time */
-    u64 now_ns = util_get_time_nanos();
-    u64 dt_ns = now_ns - shaq.last_frame_timestamp_ns;
-    u64 t_ns = now_ns - shaq.start_timestamp_ns;
-    shaq.last_frame_timestamp_ns = now_ns;
-    shaq.last_frame_deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
-    shaq.last_frame_time_s = (f32)((f64)t_ns / 1000000000.0);
+    if (shaq.time_paused) {
+        shaq.timestamp_ns = util_get_time_nanos();
+    } else {
+        shaq.frame_count++;
+        u64 now_ns = util_get_time_nanos();
+        u64 dt_ns = now_ns - shaq.timestamp_ns;
+        shaq.time_ns += dt_ns;
+        shaq.time_s = (f32)((f64)shaq.time_ns / 1000000000.0);
+        shaq.deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
+        shaq.timestamp_ns = now_ns;
+    }
 
     /* poll inputs */
     user_input_poll();
@@ -193,9 +199,6 @@ void shaq_new_frame()
 
     /* collect garbage */
     hgl_free_all(g_frame_arena);
-
-    /* increment frame counter */
-    shaq.frame_count++;
 }
 
 void shaq_end()
@@ -205,23 +208,28 @@ void shaq_end()
 
 f32 shaq_time()
 {
-    return shaq.last_frame_time_s;
-}
-
-void shaq_reset_time()
-{
-    shaq.start_timestamp_ns = util_get_time_nanos();
-    shaq.frame_count = 0;
+    return shaq.time_s;
 }
 
 f32 shaq_deltatime()
 {
-    return shaq.last_frame_deltatime_s;
+    return shaq.deltatime_s;
 }
 
 i32 shaq_frame_count()
 {
     return shaq.frame_count;
+}
+
+void shaq_reset_time()
+{
+    shaq.time_ns     = 0;
+    shaq.frame_count = 0;
+}
+
+void shaq_toggle_time_pause()
+{
+    shaq.time_paused = !shaq.time_paused;
 }
 
 b8 shaq_reloaded_this_frame()

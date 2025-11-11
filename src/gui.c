@@ -230,8 +230,11 @@ void gui_draw_menu_bar()
             if (imgui_menu_item("Force reload", "Ctrl-R")) {
                 gui.should_reload = true;
             }
-            if (imgui_menu_item("Reset time functions", "Ctrl-T")) {
+            if (imgui_menu_item("Reset time", "Ctrl-T")) {
                 shaq_reset_time(); 
+            }
+            if (imgui_menu_item("Pause/Unpause time", "Ctrl-P")) {
+                shaq_toggle_time_pause(); 
             }
             if (imgui_menu_item("Toggle darkmode", "Ctrl-D")) {
                 gui_toggle_darkmode(); 
