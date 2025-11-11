@@ -6,6 +6,8 @@
 #include "shader.h"
 #include "sel.h"
 
+#include <GLFW/glfw3.h>
+
 /*--- Public macros ---------------------------------------------------------------------*/
 
 /*--- Public type definitions -----------------------------------------------------------*/
@@ -27,6 +29,8 @@ typedef enum {
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
+void gui_init(GLFWwindow *window, GLFWmonitor *monitor);
+void gui_final(void);
 void gui_reload(void);
 void gui_clear_dynamic_gui_items(void);
 void gui_begin_frame(void);

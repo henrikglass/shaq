@@ -45,6 +45,18 @@ static struct
 
 /*--- Public functions ------------------------------------------------------------------*/
 
+void gui_init(GLFWwindow *window, GLFWmonitor *monitor)
+{
+    imgui_init(window, monitor);
+    gui.dark_mode = true;
+    imgui_set_darkmode(gui.dark_mode);
+}
+
+void gui_final()
+{
+    imgui_final();
+}
+
 void gui_reload()
 {
     gui.should_reload = false;

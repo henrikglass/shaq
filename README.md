@@ -161,13 +161,14 @@ spell compositor, ok?
 
 # Planned features and fixes
 
+* Rework GUI a bit (e.g. play/pause symbol, collapsable info/controls per shader)
+* SEL - load\_video()?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
-* Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
-* SEL - load\_video()?
 * SEL - boolean arithmetic (&&, ||, !, etc.)
+* Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined) (libffi?)
 
 # Credits
