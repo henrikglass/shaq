@@ -8,24 +8,31 @@
 #include "texture.h"
 #include "array.h"
 #include "str.h"
+#include "vecmath.h"
 
 /*--- Public macros ---------------------------------------------------------------------*/
 
 /*--- Public type definitions -----------------------------------------------------------*/
 
 typedef struct {
-    //const char *name;
-    //const char *src;
     StringView name;
-    StringView filepath;
-    u8 *frag_shader_src;
-    size_t frag_shader_src_size;
-    i64 modifytime;
+
+    struct {
+        StringView source;
+        IVec2 output_resolution;
+        i32 output_format;
+        Array(StringView, SHAQ_MAX_N_SHADERS) render_after;
+    } attributes;
+
     Array(Uniform, SHAQ_MAX_N_SHADERS) uniforms;
     Array(u32, SHAQ_MAX_N_SHADERS) shader_depends;
     Texture render_texture[2];
     Texture *render_texture_current;
     Texture *render_texture_last;
+
+    u8 *frag_shader_src;
+    size_t frag_shader_src_size;
+    i64 modifytime;
 
     /* OpenGL */
     u32 gl_shader_program_id;

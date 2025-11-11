@@ -57,6 +57,10 @@ static struct
     b8 project_ini_loaded;
     b8 project_ini_changed;
     i64 project_ini_modifytime;
+    struct {
+        const char *name;
+        const char *desc;
+    } project_info;
 
     Array(Shader, SHAQ_MAX_N_SHADERS) shaders;
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
@@ -286,27 +290,27 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     return -1; 
 }
 
-u32 shaq_get_shader_current_render_texture_by_index(u32 index)
+u32 shaq_get_shader_current_render_texture_by_shader_id(u32 id)
 {
-    Shader *s = &shaq.shaders.arr[index];
+    Shader *s = &shaq.shaders.arr[id];
     if (shader_is_ok(s)) {
         return s->render_texture_current->gl_texture_id;
     }
     return 0;
 }
 
-u32 shaq_get_shader_last_render_texture_by_index(u32 index)
+u32 shaq_get_shader_last_render_texture_by_shader_id(u32 id)
 {
-    Shader *s = &shaq.shaders.arr[index];
+    Shader *s = &shaq.shaders.arr[id];
     if (shader_is_ok(s)) {
         return s->render_texture_last->gl_texture_id;
     }
     return 0;
 }
 
-u32 shaq_get_loaded_texture_by_index(u32 index)
+u32 shaq_get_loaded_texture_by_texture_id(u32 id)
 {
-    return shaq.loaded_textures.arr[index].gl_texture_id;
+    return shaq.loaded_textures.arr[id].gl_texture_id;
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
@@ -420,6 +424,8 @@ static i32 reload_session()
     printf("image allocator  -- "); hgl_alloc_print_usage(g_image_allocator);
 #endif
 
+    log_info("name = \"%s\"", shaq.project_info.name);
+    log_info("desc = \"%s\"", shaq.project_info.desc);
     log_info("Session reloaded successfully (%s)", io_get_timestamp_str());
     return 0;
 
@@ -493,6 +499,15 @@ static i32 load_state_from_project_ini(HglIni *project_ini)
         if(s == NULL) {
             break;
         }
+
+        /* Handle project info section */
+        if (0 == strcasecmp(s->name, "Project")) {
+            shaq.project_info.name = hgl_ini_get_in_section(s, "name");  
+            shaq.project_info.desc = hgl_ini_get_in_section(s, "description");  
+            continue;
+        }
+
+        /* Handle shader sections */
         int err = shader_parse_from_ini_section(&shaq.shaders.arr[shader_count], s);
         if (err == 0) {
             shader_count++;

@@ -24,7 +24,7 @@ typedef struct
 /*--- Public function prototypes --------------------------------------------------------*/
 
 Texture texture_load_from_file(StringView filepath);
-Texture texture_make_empty(IVec2 resolution);
+Texture texture_make_empty(IVec2 resolution, i32 internal_format);
 void texture_free(Texture *t);
 
 #endif /* TEXTURE__H */

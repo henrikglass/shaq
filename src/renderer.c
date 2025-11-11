@@ -104,7 +104,7 @@ void renderer_init()
     glEnableVertexAttribArray(0);
     glGenFramebuffers(1, &renderer.offscreen_fb);
     glViewport(0, 0, renderer.window_size.x, renderer.window_size.y);
-    glClearColor(0.117f, 0.117f, 0.117f, 1.0f);
+    glClearColor(0.117f, 0.617f, 0.117f, 1.0f);
 
     shader_make_last_pass_shader(&renderer.last_pass_shader);
     imgui_init(renderer.window, glfwGetPrimaryMonitor());
@@ -133,6 +133,7 @@ void renderer_do_shader_pass(Shader *s)
     }
 
     glUseProgram(s->gl_shader_program_id);
+    glViewport(0, 0, s->attributes.output_resolution.x, s->attributes.output_resolution.y);
 
     /* prepare offscreen frame buffer */
     glBindFramebuffer(GL_FRAMEBUFFER, renderer.offscreen_fb);
@@ -153,6 +154,7 @@ void renderer_draw_fullscreen_shader(Shader *s)
         return;
     }
 
+    glViewport(0, 0, renderer.window_size.x, renderer.window_size.y);
     glUniform1i(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "tex"), 0);
     glUniform2iv(glGetUniformLocation(renderer.last_pass_shader.gl_shader_program_id, "iresolution"), 
                  1, (i32 *)&renderer.window_size); 
@@ -172,7 +174,9 @@ void renderer_begin_final_pass()
 void renderer_end_final_pass()
 {
     glfwSwapBuffers(renderer.window);
-    gl_check_errors();
+    if (-1 == gl_check_errors()) {
+        log_error("[Renderer] Internal OpenGL error.");
+    }
 }
 
 void renderer_toggle_fullscreen()

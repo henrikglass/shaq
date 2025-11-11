@@ -33,9 +33,9 @@ b8 shaq_has_loaded_project(void);
 Shader *shaq_find_shader_by_name(StringView name);
 i32 shaq_find_shader_id_by_name(StringView name);
 i32 shaq_load_texture_if_necessary(StringView filepath);
-u32 shaq_get_shader_current_render_texture_by_index(u32 index);
-u32 shaq_get_shader_last_render_texture_by_index(u32 index);
-u32 shaq_get_loaded_texture_by_index(u32 index);
+u32 shaq_get_shader_current_render_texture_by_shader_id(u32 id);
+u32 shaq_get_shader_last_render_texture_by_shader_id(u32 id);
+u32 shaq_get_loaded_texture_by_texture_id(u32 id);
 
 
 #endif /* SHAQ_CORE_H */

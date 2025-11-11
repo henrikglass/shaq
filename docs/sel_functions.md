@@ -12,6 +12,19 @@ GL_REPEAT                                                                       
 GL_MIRRORED_REPEAT                                                               TYPE: int
 GL_CLAMP_TO_EDGE                                                                 TYPE: int
 GL_CLAMP_TO_BORDER                                                               TYPE: int
+GL_RGBA                                                                          TYPE: int
+GL_RGB                                                                           TYPE: int
+GL_RG                                                                            TYPE: int
+GL_RED                                                                           TYPE: int
+GL_RGBA8                                                                         TYPE: int
+GL_RGB8                                                                          TYPE: int
+GL_RG8                                                                           TYPE: int
+GL_R8                                                                            TYPE: int
+GL_R32F                                                                          TYPE: int
+GL_RGBA32F                                                                       TYPE: int
+GL_R3_G3_B2                                                                      TYPE: int
+GL_SRGB8                                                                         TYPE: int
+GL_SRGB8_ALPHA8                                                                  TYPE: int
 ```
 
 # Functions:

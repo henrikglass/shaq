@@ -44,7 +44,7 @@ static_assert(N_TYPES <= 256, "");
 typedef enum
 {
     QUALIFIER_NONE  =  0,
-    QUALIFIER_CONST = (1 << 0), // for constÖant expression
+    QUALIFIER_CONST = (1 << 0), // for constant expression
     QUALIFIER_PURE  = (1 << 1), // for pure functions
 } TypeQualifier;
 

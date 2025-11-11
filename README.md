@@ -92,7 +92,7 @@ Here is the entire `readme_example.ini` project file:
 
 ; Renders the Mandelbrot set
 [Mandelbrot]
-source                            = examples/shaders/mandelbrot.glsl
+attribute source                  = "examples/shaders/mandelbrot.glsl"
 uniform ivec2 iresolution         = iresolution()
 uniform float zoom                = slider_float_log("zoom", 1.0, 1000000.0, 1.0)
 uniform int max_iterations        = drag_int("max_n_iterations", 1, 1000, 192)
@@ -102,7 +102,7 @@ uniform float animate_zoom        = min(pow(0.01*slider_float("Animation Speed",
 
 ; Applies a 2 to 4 step color gradient on a grayscale image
 [Gradient]
-source                            = examples/shaders/gradient.glsl
+attribute source                  = "examples/shaders/gradient.glsl"
 uniform ivec2 iresolution         = iresolution()
 uniform sampler2D input_texture   = output_of("Mandelbrot")
 uniform vec4 gradient_1           = color_picker("gradient #1", rgba(0x1E1E1EFF))
@@ -115,7 +115,7 @@ uniform float gamma               = slider_float_log("gamma", 0.1, 10.0, PHI)
 
 ; Draws a split view of two images
 [Split]
-source                            = examples/shaders/split_view.glsl
+attribute source                  = "examples/shaders/split_view.glsl"
 uniform ivec2 iresolution         = iresolution()
 uniform sampler2D input_texture_1 = output_of("Mandelbrot")
 uniform sampler2D input_texture_2 = output_of("Gradient")
@@ -164,8 +164,7 @@ spell compositor, ok?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
-* Support arbitrary OpengGL >=4.2 image load/stores, somehow
-* INT - Shader attributes (e.g. override resolution or specify render texture internal format)
+* Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
 * SEL - load\_video()?
 * SEL - boolean arithmetic (&&, ||, !, etc.)

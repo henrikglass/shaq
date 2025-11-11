@@ -44,13 +44,13 @@ Texture texture_load_from_file(StringView filepath)
     return tex;
 }
 
-Texture texture_make_empty(IVec2 resolution)
+Texture texture_make_empty(IVec2 resolution, i32 internal_format)
 {
     Texture tex = {0};
 
     glGenTextures(1, &tex.gl_texture_id); 
     glBindTexture(GL_TEXTURE_2D, tex.gl_texture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, resolution.x, resolution.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, resolution.x, resolution.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

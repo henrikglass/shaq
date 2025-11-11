@@ -17,7 +17,9 @@
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
-u32 make_shader_program(u8 *frag_shader_src);
+u32 make_shader_program(u8 *frag_shader_src); // TODO remove?
+static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv);
+static size_t whitespace_lexeme(StringView sv);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -58,32 +60,10 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     array_clear(&sh->uniforms); // not necessary
     array_clear(&sh->shader_depends); // not necessary
 
-    /* parse name + source + etc. */ 
-    //printf("PARSING SECTION: %s\n", s->name);
+    /* get name */ 
     sh->name = sv_from_cstr(s->name);
-    const char *tmp = hgl_ini_get_in_section(s, "source");
-    if (tmp == NULL) {
-        log_error("Shader \"%s\" is missing a `source` entry.", s->name);
-        return -1;
-    } else {
-        sh->filepath = sv_from_cstr(tmp);
-    }
 
-    /* load source. */ 
-    sh->frag_shader_src = io_read_entire_file(g_r2r_fs_allocator, sh->filepath.start, &sh->frag_shader_src_size); // Ok, since sh->filepath was created from a cstr.
-    if (sh->frag_shader_src == NULL) {
-        log_error("Shader \"%s\": unable to load source file `" SV_FMT "`. "
-                  "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
-        return -1;
-    }
-    sh->modifytime = io_get_file_modify_time(sh->filepath.start, true); 
-    if (sh->modifytime == -1) {
-        log_error("Shader \"%s\": unable to get modifytime for `" SV_FMT "`. "
-                  "Errno = %s.", s->name, SV_ARG(sh->filepath), strerror(errno));
-        return -1;
-    }
-
-    /* parse uniforms */ 
+    /* parse key-value pairs */ 
     hgl_ini_reset_kv_pair_iterator(s);
     u32 uniform_idx = 0; 
     while (true) {
@@ -91,11 +71,50 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
         if(kv == NULL) {
             break;
         }
-        if (uniform_parse_from_ini_kv_pair(&sh->uniforms.arr[uniform_idx], kv) == 0) {
-            uniform_idx++;
+        StringView key = sv_trim(sv_from_cstr(kv->key));
+        if (sv_starts_with(&key, "uniform")) {
+            int err = uniform_parse_from_ini_kv_pair(&sh->uniforms.arr[uniform_idx], kv);
+            if (err == 0) {
+                uniform_idx++;
+            }
+        } else if (sv_starts_with(&key, "attribute")) {
+            parse_attribute_from_kv_pair(sh, kv);
+        } else {
+            log_error("Expected either `attribute` or `uniform` for key-value pair `%s = %s`.", kv->key, kv->val);
         }
     }
     sh->uniforms.count = uniform_idx;
+
+    /* Assert all necessary attributes have been specified. */ 
+    if (sh->attributes.source.start == NULL) {
+        log_error("Shader \"%s\" is missing a `source` entry.", s->name);
+        return -1;
+    }
+
+    /* load fragment shader source. */ 
+    sh->frag_shader_src = io_read_entire_file(g_r2r_fs_allocator, sh->attributes.source.start, &sh->frag_shader_src_size); // Ok, since sh->source was created from a cstr.
+    if (sh->frag_shader_src == NULL) {
+        log_error("Shader \"%s\": unable to load source file `" SV_FMT "`. "
+                  "Errno = %s.", s->name, SV_ARG(sh->attributes.source), strerror(errno));
+        return -1;
+    }
+
+    /* update modify time. */ 
+    sh->modifytime = io_get_file_modify_time(sh->attributes.source.start, true); 
+    if (sh->modifytime == -1) {
+        log_error("Shader \"%s\": unable to get modifytime for `" SV_FMT "`. "
+                  "Errno = %s.", s->name, SV_ARG(sh->attributes.source), strerror(errno));
+        return -1;
+    }
+
+    /* if output_resolution && output_format are unspecified, give them default values */ 
+    if (sh->attributes.output_format == 0) {
+        sh->attributes.output_format = GL_RGBA;
+    }
+    if (sh->attributes.output_resolution.x == 0 &&
+        sh->attributes.output_resolution.y == 0) {
+        sh->attributes.output_resolution = renderer_shader_viewport_size();
+    } 
 
     return 0;
 }
@@ -113,11 +132,21 @@ void shader_determine_dependencies(Shader *s)
             array_push(&s->shader_depends, r.val_tex.texture_index);
         }
     } 
+    for (u32 i = 0; i < s->attributes.render_after.count; i++) {
+        StringView sv = s->attributes.render_after.arr[i]; 
+        i32 sid = shaq_find_shader_id_by_name(sv);
+        if (sid == -1) {
+            log_error("Shader \"" SV_FMT "\": In explicit `render_after` attribute - No such shader: \"" SV_FMT "\"", 
+                      SV_ARG(s->name), SV_ARG(sv));
+        } else {
+            array_push(&s->shader_depends, sid);
+        }
+    }
 }
 
 b8 shader_was_modified(Shader *s)
 {
-    i64 modifytime = io_get_file_modify_time(s->filepath.start, true); 
+    i64 modifytime = io_get_file_modify_time(s->attributes.source.start, true); 
     if (s->modifytime == -1) {
         return false; // File was probably moved, deleted, or in the processs of being modified. 
                       // Don't immediately ruin everything for the user.
@@ -187,8 +216,10 @@ void shader_reload(Shader *s)
     }
 
     s->gl_shader_program_id = shader_program;
-    s->render_texture[0] = texture_make_empty(renderer_shader_viewport_size());
-    s->render_texture[1] = texture_make_empty(renderer_shader_viewport_size());
+    s->render_texture[0] = texture_make_empty(s->attributes.output_resolution, 
+                                              s->attributes.output_format);
+    s->render_texture[1] = texture_make_empty(s->attributes.output_resolution, 
+                                              s->attributes.output_format);
     s->render_texture_current = &s->render_texture[0];
     s->render_texture_last = &s->render_texture[1];
 
@@ -300,15 +331,15 @@ void shader_update_uniforms(Shader *s)
                 u32 texture_id = 0;
                 switch(desc.kind) {
                     case SHADER_CURRENT_RENDER_TEXTURE: {
-                        texture_id = shaq_get_shader_current_render_texture_by_index(desc.texture_index);
+                        texture_id = shaq_get_shader_current_render_texture_by_shader_id(desc.texture_index);
                     } break;
 
                     case SHADER_LAST_RENDER_TEXTURE: {
-                        texture_id = shaq_get_shader_last_render_texture_by_index(desc.texture_index);
+                        texture_id = shaq_get_shader_last_render_texture_by_shader_id(desc.texture_index);
                     } break;
 
                     case LOADED_TEXTURE: {
-                        texture_id = shaq_get_loaded_texture_by_index(desc.texture_index);
+                        texture_id = shaq_get_loaded_texture_by_texture_id(desc.texture_index);
                     } break;
                 }
                 if (texture_id != 0) {
@@ -342,4 +373,68 @@ Uniform *shader_find_uniform_by_name(Shader *s, StringView name)
 
 /*--- Private functions -----------------------------------------------------------------*/
 
+
+static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv)
+{
+    StringView k = sv_trim(sv_from_cstr(kv->key));
+
+    if (!sv_starts_with_lchop(&k, "attribute")) {
+        log_error("Expected keyword `attribute` in left-hand-side expression: `%s`.", kv->key);
+        return;
+    }
+
+    /* expect whitespace */
+    if (!sv_starts_with_lexeme(&k, whitespace_lexeme)) {
+        log_error("Malformed left-hand-side expression: `%s`.", kv->key);
+        return;
+    }
+
+    k = sv_ltrim(k);
+    ExeExpr *exe = sel_compile(kv->val);
+    if (exe == NULL) {
+        log_error("Could not compile shader attribute expression: `%s`.", kv->val);
+        return;
+    }
+
+    if ((exe->qualifier & QUALIFIER_CONST) == 0) {
+        log_error("Shader attributes `%s` has a non-constant expression `%s`\n", kv->key, kv->val);
+        return;
+    }
+
+    /* Parse `source` attribute */
+    if (sv_starts_with_lchop(&k, "source") && sv_trim(k).length == 0) {
+        if (exe->type != TYPE_STR) {
+            log_error("Shader `" SV_FMT "`: Attribute `source` attribute must have type `str`.", SV_ARG(s->name));
+            return;
+        }
+        s->attributes.source = sv_make_copy(sel_eval(exe, true).val_str, r2r_fs_alloc);
+    } else if (sv_starts_with_lchop(&k, "output_format") && sv_trim(k).length == 0) {
+        if (exe->type != TYPE_INT) {
+            log_error("Shader `" SV_FMT "`: Attribute `output_format` attribute must have type `int`.", SV_ARG(s->name));
+            return;
+        }
+        s->attributes.output_format = sel_eval(exe, true).val_i32;
+    } else if (sv_starts_with_lchop(&k, "output_resolution") && sv_trim(k).length == 0) {
+        if (exe->type != TYPE_IVEC2) {
+            log_error("Shader `" SV_FMT "`: Attribute `output_resolution` attribute must have type `ivec2`.", SV_ARG(s->name));
+            return;
+        }
+        s->attributes.output_resolution = sel_eval(exe, true).val_ivec2;
+    } else if (sv_starts_with_lchop(&k, "render_after") && sv_trim(k).length == 0) {
+        if (exe->type != TYPE_STR) {
+            log_error("Shader `" SV_FMT "`: Attribute `render_after` attribute must have type `str`.", SV_ARG(s->name));
+            return;
+        }
+        array_push(&s->attributes.render_after, sv_make_copy(sel_eval(exe, true).val_str, r2r_fs_alloc));
+    } else {
+        log_error("Shader `" SV_FMT "`: Unrecognized attribute `" SV_FMT "`", SV_ARG(s->name), SV_ARG(k));
+    }
+}
+
+static size_t whitespace_lexeme(StringView sv)
+{
+    if (sv.length < 1) return 0;
+    if (isspace(sv.start[0])) return 1;
+    return 0;
+}
 

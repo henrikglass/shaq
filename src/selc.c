@@ -219,6 +219,19 @@ const Const BUILTIN_CONSTANTS[] =
     {.id = SV_LIT("GL_MIRRORED_REPEAT"), .type = TYPE_INT,  .value.val_i32  = GL_MIRRORED_REPEAT },
     {.id = SV_LIT("GL_CLAMP_TO_EDGE"),   .type = TYPE_INT,  .value.val_i32  = GL_CLAMP_TO_EDGE },
     {.id = SV_LIT("GL_CLAMP_TO_BORDER"), .type = TYPE_INT,  .value.val_i32  = GL_CLAMP_TO_BORDER },
+    {.id = SV_LIT("GL_RGBA"),            .type = TYPE_INT,  .value.val_i32  = GL_RGBA },
+    {.id = SV_LIT("GL_RGB"),             .type = TYPE_INT,  .value.val_i32  = GL_RGB },
+    {.id = SV_LIT("GL_RG"),              .type = TYPE_INT,  .value.val_i32  = GL_RG },
+    {.id = SV_LIT("GL_RED"),             .type = TYPE_INT,  .value.val_i32  = GL_RED },
+    {.id = SV_LIT("GL_RGBA8"),           .type = TYPE_INT,  .value.val_i32  = GL_RGBA8 },
+    {.id = SV_LIT("GL_RGB8"),            .type = TYPE_INT,  .value.val_i32  = GL_RGB8 },
+    {.id = SV_LIT("GL_RG8"),             .type = TYPE_INT,  .value.val_i32  = GL_RG8 },
+    {.id = SV_LIT("GL_R8"),              .type = TYPE_INT,  .value.val_i32  = GL_R8 },
+    {.id = SV_LIT("GL_R32F"),            .type = TYPE_INT,  .value.val_i32  = GL_R32F },
+    {.id = SV_LIT("GL_RGBA32F"),         .type = TYPE_INT,  .value.val_i32  = GL_RGBA32F },
+    {.id = SV_LIT("GL_R3_G3_B2"),        .type = TYPE_INT,  .value.val_i32  = GL_R3_G3_B2 },
+    {.id = SV_LIT("GL_SRGB8"),           .type = TYPE_INT,  .value.val_i32  = GL_SRGB8 },
+    {.id = SV_LIT("GL_SRGB8_ALPHA8"),    .type = TYPE_INT,  .value.val_i32  = GL_SRGB8_ALPHA8 },
 };
 static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
