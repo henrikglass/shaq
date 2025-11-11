@@ -119,16 +119,14 @@ void shaq_new_frame()
     }
 
     /* compute time */
-    if (shaq.time_paused) {
-        shaq.timestamp_ns = util_get_time_nanos();
-    } else {
-        shaq.frame_count++;
-        u64 now_ns = util_get_time_nanos();
-        u64 dt_ns = now_ns - shaq.timestamp_ns;
+    u64 now_ns = util_get_time_nanos();
+    u64 dt_ns = now_ns - shaq.timestamp_ns;
+    shaq.deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
+    shaq.timestamp_ns = now_ns;
+    shaq.frame_count++;
+    if (!shaq.time_paused) {
         shaq.time_ns += dt_ns;
         shaq.time_s = (f32)((f64)shaq.time_ns / 1000000000.0);
-        shaq.deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
-        shaq.timestamp_ns = now_ns;
     }
 
     /* poll inputs */
