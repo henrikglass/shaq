@@ -161,11 +161,12 @@ spell compositor, ok?
 
 # Planned features and fixes
 
-* Rework GUI a bit (e.g. play/pause symbol, collapsable info/controls per shader)
+* Rework GUI a bit (e.g. play/pause symbol)
 * SEL - load\_video()?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
+* SEL - dot-operator (e.g `viewport_resolution().x`), maybe swizzling?
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
 * SEL - boolean arithmetic (&&, ||, !, etc.)
 * Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
