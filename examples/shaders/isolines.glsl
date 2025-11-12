@@ -5,7 +5,7 @@
 out vec4 frag_color;
 
 uniform sampler2D bnoise;
-uniform vec2 resolution;
+uniform ivec2 iresolution;
 uniform float time;
 uniform int octaves;
 
@@ -42,7 +42,7 @@ float fbm(vec2 x) {
 
 void main()
 {
-    vec2 uv = gl_FragCoord.xy / resolution;
+    vec2 uv = gl_FragCoord.xy / iresolution;
     vec2 uv2 = 0.01*gl_FragCoord.xy;
 
     //float d = abs(fract((uv.x + 0.7*noise(uv*0.46 + vec2(time)))*50) - 0.5);

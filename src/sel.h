@@ -12,6 +12,7 @@
 /*--- Public macros ---------------------------------------------------------------------*/
 
 #define SEL_FUNC_MAX_N_ARGS 8
+#define SEL_EMPTY_SVM_CONTEXT (SVMContext){.shader = NULL}
 
 /*--- Public type definitions -----------------------------------------------------------*/
 
@@ -129,6 +130,15 @@ typedef struct
     const char *source_code;
 } ExeExpr;
 
+/* 
+ * Describes the context in which an executable expression
+ * is evaluated.
+ */
+typedef struct
+{
+    struct Shader *shader;
+} SVMContext;
+
 /*--- Public variables ------------------------------------------------------------------*/
 
 extern const Func BUILTIN_FUNCTIONS[];
@@ -184,7 +194,7 @@ ExeExpr *sel_compile(const char *src); // selc.c
 void sel_list_builtins(void); // selc.c
 void sel_print_value(Type t, SelValue v); // selc.c
 
-SelValue sel_eval(ExeExpr *exe, b8 force_recompute); // selvm.c
+SelValue sel_eval(ExeExpr *exe, SVMContext ctx, b8 force_recompute); // selvm.c
 
 #endif /* SEL_H */
 

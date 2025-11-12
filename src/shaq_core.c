@@ -318,7 +318,12 @@ static b8 session_reload_needed()
 
     i64 ts = io_get_file_modify_time(shaq.project_ini_filepath, true);
     if (ts == -1) {
-        return false; // File is probably in the process of being saved. Hold off for a bit.
+        /* 
+         * Unable to get file modify time (after many tries.. -.-). Assume no
+         * such file exists.
+         */
+        shaq.project_ini_loaded = false;
+        return false;
     } else if (shaq.project_ini_modifytime != ts) {
         return true;
     }

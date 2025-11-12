@@ -111,7 +111,7 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     if (sh->attributes.format == 0) {
         sh->attributes.format = GL_RGBA;
     }
-    if (sh->attributes.resolution.x == 0 &&
+    if (sh->attributes.resolution.x == 0 ||
         sh->attributes.resolution.y == 0) {
         sh->attributes.resolution = renderer_shader_viewport_size();
     } 
@@ -127,7 +127,7 @@ void shader_determine_dependencies(Shader *s)
         if (u->type != TYPE_TEXTURE) {
             continue;
         }
-        SelValue r = sel_eval(u->exe, true);
+        SelValue r = sel_eval(u->exe, (SVMContext){s}, true);
         if (r.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) {
             array_push(&s->shader_depends, r.val_tex.id);
         }
@@ -306,7 +306,7 @@ void shader_update_uniforms(Shader *s)
             continue;
         }
 
-        SelValue r = sel_eval(u->exe, false);
+        SelValue r = sel_eval(u->exe, (SVMContext){s}, false);
 
         switch (u->type) {
             case TYPE_BOOL:  glUniform1i(u->gl_uniform_location,  r.val_bool); break;
@@ -407,35 +407,36 @@ static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv)
     }
 
     if ((exe->qualifier & QUALIFIER_CONST) == 0) {
-        log_error("Shader attributes `%s` has a non-constant expression `%s`\n", kv->key, kv->val);
+        log_error("Shader attribute `%s` has a non-constant expression `%s`\n", kv->key, kv->val);
         return;
     }
 
     /* Parse `source` attribute */
+    SVMContext svm_ctx = (SVMContext){ .shader = s};
     if (sv_starts_with_lchop(&k, "source") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_STR) {
             log_error("Shader `" SV_FMT "`: Attribute `source` attribute must have type `str`.", SV_ARG(s->name));
             return;
         }
-        s->attributes.source = sv_make_copy(sel_eval(exe, true).val_str, r2r_fs_alloc);
+        s->attributes.source = sv_make_copy(sel_eval(exe, svm_ctx, true).val_str, r2r_fs_alloc);
     } else if (sv_starts_with_lchop(&k, "format") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_INT) {
             log_error("Shader `" SV_FMT "`: Attribute `format` attribute must have type `int`.", SV_ARG(s->name));
             return;
         }
-        s->attributes.format = sel_eval(exe, true).val_i32;
+        s->attributes.format = sel_eval(exe, svm_ctx, true).val_i32;
     } else if (sv_starts_with_lchop(&k, "resolution") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_IVEC2) {
             log_error("Shader `" SV_FMT "`: Attribute `resolution` attribute must have type `ivec2`.", SV_ARG(s->name));
             return;
         }
-        s->attributes.resolution = sel_eval(exe, true).val_ivec2;
+        s->attributes.resolution = sel_eval(exe, svm_ctx, true).val_ivec2;
     } else if (sv_starts_with_lchop(&k, "render_after") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_STR) {
             log_error("Shader `" SV_FMT "`: Attribute `render_after` attribute must have type `str`.", SV_ARG(s->name));
             return;
         }
-        array_push(&s->attributes.render_after, sv_make_copy(sel_eval(exe, true).val_str, r2r_fs_alloc));
+        array_push(&s->attributes.render_after, sv_make_copy(sel_eval(exe, svm_ctx, true).val_str, r2r_fs_alloc));
     } else {
         log_error("Shader `" SV_FMT "`: Unrecognized attribute `" SV_FMT "`", SV_ARG(s->name), SV_ARG(k));
     }

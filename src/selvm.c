@@ -77,8 +77,8 @@ static SelValue fn_maxi_(void *args);
 static SelValue fn_randi_(void *args);
 static SelValue fn_iota_(void *args);
 static SelValue fn_frame_count_(void *args);
-static SelValue fn_iresolution_x_(void *args);
-static SelValue fn_iresolution_y_(void *args);
+static SelValue fn_viewport_resolution_x_(void *args);
+static SelValue fn_viewport_resolution_y_(void *args);
 
 static SelValue fn_signed_(void *args);
 static SelValue fn_xor_(void *args);
@@ -122,8 +122,6 @@ static SelValue fn_smoothstep_(void *args);
 static SelValue fn_radians_(void *args);
 static SelValue fn_perlin3D_(void *args);
 static SelValue fn_aspect_ratio_(void *args);
-static SelValue fn_resolution_x_(void *args);
-static SelValue fn_resolution_y_(void *args);
 
 static SelValue fn_vec2_(void *args);
 static SelValue fn_vec2_from_polar_(void *args);
@@ -137,7 +135,6 @@ static SelValue fn_vec2_slerp_(void *args);
 static SelValue fn_mouse_position_(void *args);
 static SelValue fn_mouse_position_last_(void *args);
 static SelValue fn_mouse_drag_position_(void *args);
-static SelValue fn_resolution_(void *args);
 
 static SelValue fn_vec3_(void *args);
 static SelValue fn_vec3_from_spherical_(void *args);
@@ -161,7 +158,9 @@ static SelValue fn_vec4_xyz_(void *args);
 static SelValue fn_rgba_(void *args);
 
 static SelValue fn_ivec2_(void *args);
-static SelValue fn_iresolution_(void *args);
+static SelValue fn_viewport_resolution_(void *args);
+static SelValue fn_resolution_of_(void *args);
+static SelValue fn_resolution_(void *args);
 
 static SelValue fn_ivec3_(void *args);
 
@@ -238,8 +237,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("randi"),         .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_randi_,         .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int randi(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
     { .id = SV_LIT("iota"),          .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_iota_,          .argtypes = {TYPE_NIL},                      .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
     { .id = SV_LIT("frame_count"),   .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_frame_count_,   .argtypes = {TYPE_NIL},                      .synopsis = "int frame_count()", .desc = "Returns the frame count.", },
-    { .id = SV_LIT("iresolution_x"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_iresolution_x_, .argtypes = {TYPE_NIL},                      .synopsis = "int iresolution_x()", .desc = "Returns the X dimension of the current window resolution", },
-    { .id = SV_LIT("iresolution_y"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_iresolution_y_, .argtypes = {TYPE_NIL},                      .synopsis = "int iresolution_y()", .desc = "Returns the Y dimension of the current window resolution", },
+    { .id = SV_LIT("viewport_resolution_x"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_viewport_resolution_x_, .argtypes = {TYPE_NIL},                      .synopsis = "int viewport_resolution_x()", .desc = "Returns the X dimension of the current window resolution", },
+    { .id = SV_LIT("viewport_resolution_y"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_viewport_resolution_y_, .argtypes = {TYPE_NIL},                      .synopsis = "int viewport_resolution_y()", .desc = "Returns the Y dimension of the current window resolution", },
 
     { .id = SV_LIT("signed"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_signed_, .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "int signed(uint x)", .desc = "Typecast uint to int.", },
     { .id = SV_LIT("xor"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_xor_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint xor(uint a, uint b)", .desc = "bitwise XOR of `a` and `b`.", },
@@ -283,8 +282,6 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("radians"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_radians_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float radians(float degrees)", .desc = "Converts degrees into radians", },
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
-    { .id = SV_LIT("resolution_x"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_resolution_x_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float resolution_x()", .desc = "Returns the X dimension of the current window resolution", },
-    { .id = SV_LIT("resolution_y"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_resolution_y_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float resolution_y()", .desc = "Returns the Y dimension of the current window resolution", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
     { .id = SV_LIT("vec2_from_polar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_polar_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = "Creates a 2D vector from the polar coordinates `r` and `phi`", },
@@ -298,7 +295,6 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("mouse_position"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,      .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = "Returns the current mouse position, in pixel coordinates.", },
     { .id = SV_LIT("mouse_position_last"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_last_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position_last()", .desc = "Returns the mouse position from the last frame, in pixel coordinates.", },
     { .id = SV_LIT("mouse_drag_position"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_drag_position_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_drag_position()", .desc = "Returns the mouse position from when the left mouse button was last held, in pixel coordinates.", },
-    { .id = SV_LIT("resolution"),          .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_resolution_,          .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 resolution()", .desc = "Returns the current window resolution", },
 
     { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = "Creates a 3D vector with components `x`, `y`, and `z`", },
     { .id = SV_LIT("vec2_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = "Creates a 2D vector from the spherical coordinates `r`, `phi`, and `theta`", },
@@ -321,8 +317,10 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("vec4_xyz"),        .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_xyz_,        .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec3 vec3_xyz(vec4 v)",                         .desc = "Returns the x,y, and z components of `v` as a vec3", },
     { .id = SV_LIT("rgba"),            .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,            .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
 
-    { .id = SV_LIT("ivec2"),           .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_ivec2_,       .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "ivec2 ivec2(int x, int y)", .desc = "Creates a 2D integer vector with components `x` and `y`", },
-    { .id = SV_LIT("iresolution"),     .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_iresolution_, .argtypes = {TYPE_NIL},                     .synopsis = "ivec2 iresolution()",       .desc = "Returns the current window resolution", },
+    { .id = SV_LIT("ivec2"),               .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_ivec2_,               .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},   .synopsis = "ivec2 ivec2(int x, int y)",       .desc = "Creates a 2D integer vector with components `x` and `y`", },
+    { .id = SV_LIT("viewport_resolution"), .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_viewport_resolution_, .argtypes = {TYPE_NIL},                       .synopsis = "ivec2 viewport_resolution()",     .desc = "Returns the current viewport/window resolution", },
+    { .id = SV_LIT("resolution_of"),       .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_resolution_of_,       .argtypes = {TYPE_STR, TYPE_NIL},             .synopsis = "ivec2 resolution_of(str shader)", .desc = "Returns the resolution of `shader`", },
+    { .id = SV_LIT("resolution"),          .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_resolution_,          .argtypes = {TYPE_NIL},                       .synopsis = "ivec2 resolution()",              .desc = "Returns the resolution of the shader to which the current attribute/uniform belongs", },
 
     { .id = SV_LIT("ivec3"),      .type = TYPE_IVEC3, .qualifier = QUALIFIER_PURE, .impl = fn_ivec3_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL},           .synopsis = "ivec3 ivec3(int x, int y, int z)", .desc = "Creates a 3D integer vector with components `x`, `y`, and `z`", },
 
@@ -382,11 +380,12 @@ static struct SVM {
     u8 stack[SVM_STACK_SIZE];
     u32 pc;
     u32 sp;
+    SVMContext ctx;
 } svm = {0};
 
 /*--- Public functions ------------------------------------------------------------------*/
 
-SelValue sel_eval(ExeExpr *exe, b8 force_recompute)
+SelValue sel_eval(ExeExpr *exe, SVMContext ctx, b8 force_recompute)
 {
     if (exe == NULL) {
         //return (SelValue) {.val_i32 = -1};
@@ -399,9 +398,10 @@ SelValue sel_eval(ExeExpr *exe, b8 force_recompute)
         return exe->cached_computed_value;
     }
 
-    /* Reset SVM & load program */
+    /* Reset SVM, load program, and load context */
     svm_reset();
     svm.exe = exe;
+    svm.ctx = ctx;
 
     /* Execute in interpreter */
     svm_run(); 
@@ -654,14 +654,20 @@ static SelValue fn_load_image_ex_(void *args)
 static SelValue fn_output_of_(void *args)
 {
     StringView name = *(StringView *)args;
-    i32 id = shaq_find_shader_id_by_name(name);
-    if (id == -1) {
+    i32 sid = shaq_find_shader_id_by_name(name);
+    if (sid == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
+    }
+    Shader *s = shaq_get_shader_by_id(sid);
+    if (s == svm.ctx.shader) {
+        log_error("SEL: In call to output_of(\"" SV_FMT "\") - "
+                  "Shader name refers to the current shader", 
+                  SV_ARG(name));
     }
     return (SelValue) {
         .val_tex = {
             .kind   = SHADER_CURRENT_RENDER_TEXTURE,
-            .id     = (u32) id,
+            .id     = (u32) sid,
             .filter = GL_LINEAR,
             .wrap   = GL_REPEAT,
         }
@@ -674,14 +680,20 @@ static SelValue fn_output_of_ex_(void *args)
     StringView name = *(StringView *)args;
     i32 filter      = *(i32 *)(args8 + sizeof(StringView));
     i32 wrap        = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
-    i32 id = shaq_find_shader_id_by_name(name);
-    if (id == -1) {
+    i32 sid = shaq_find_shader_id_by_name(name);
+    if (sid == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
+    }
+    Shader *s = shaq_get_shader_by_id(sid);
+    if (s == svm.ctx.shader) {
+        log_error("SEL: In call to output_of_ex(\"" SV_FMT "\") - "
+                  "Shader name refers to the current shader", 
+                  SV_ARG(name));
     }
     return (SelValue) {
         .val_tex = {
             .kind   = SHADER_CURRENT_RENDER_TEXTURE,
-            .id     = (u32) id,
+            .id     = (u32) sid,
             .filter = filter,
             .wrap   = wrap,
         }
@@ -839,13 +851,13 @@ static SelValue fn_frame_count_(void *args)
     return (SelValue) {.val_i32 = shaq_frame_count()};
 }
 
-static SelValue fn_iresolution_x_(void *args)
+static SelValue fn_viewport_resolution_x_(void *args)
 {
     (void) args;
     return (SelValue) {.val_i32 = renderer_shader_viewport_size().x};
 }
 
-static SelValue fn_iresolution_y_(void *args)
+static SelValue fn_viewport_resolution_y_(void *args)
 {
     (void) args;
     return (SelValue) {.val_i32 = renderer_shader_viewport_size().y};
@@ -1118,17 +1130,6 @@ static SelValue fn_aspect_ratio_(void *args)
     return (SelValue) {.val_f32 = (f32)ires.x / (f32)ires.y}; 
 }
 
-static SelValue fn_resolution_x_(void *args)
-{
-    (void) args;
-    return (SelValue) {.val_f32 = (f32)renderer_shader_viewport_size().x};
-}
-
-static SelValue fn_resolution_y_(void *args)
-{
-    (void) args;
-    return (SelValue) {.val_f32 = (f32)renderer_shader_viewport_size().y};
-}
 
 /* ----------------------- VEC2 functions -------------------- */
 
@@ -1202,13 +1203,6 @@ static SelValue fn_mouse_drag_position_(void *args)
 {
     (void) args;
     return (SelValue) {.val_vec2 = user_input_mouse_drag_position()};
-}
-
-static SelValue fn_resolution_(void *args)
-{
-    (void) args;
-    IVec2 ires = renderer_shader_viewport_size();
-    return (SelValue) {.val_vec2 = vec2_make((f32)ires.x, (f32)ires.y)};
 }
 
 
@@ -1344,12 +1338,37 @@ static SelValue fn_ivec2_(void *args)
     return (SelValue) {.val_ivec2 = hglm_ivec2_make(args_i32[0], args_i32[1])};
 }
 
-static SelValue fn_iresolution_(void *args)
+static SelValue fn_viewport_resolution_(void *args)
 {
     (void) args;
     return (SelValue) {.val_ivec2 = renderer_shader_viewport_size()};
 }
 
+static SelValue fn_resolution_of_(void *args)
+{
+    StringView name = *(StringView *)args;
+    i32 sid = shaq_find_shader_id_by_name(name);
+    Shader *s = shaq_get_shader_by_id(sid);
+    if (s == NULL) {
+        log_error("SEL: In call to resolution_of(\"" SV_FMT "\") - "
+                  "No shader with such a name found", SV_ARG(name));
+        return (SelValue) {.val_ivec2 = ivec2_make(0, 0)};
+    } else {
+        return (SelValue) {.val_ivec2 = s->attributes.resolution};
+    }
+}
+
+static SelValue fn_resolution_(void *args)
+{
+    (void) args;
+    Shader *s = svm.ctx.shader;
+    if (s == NULL) {
+        log_error("SEL: In call to resolution() - No shader bound in the current context");
+        return (SelValue) {.val_ivec2 = ivec2_make(0, 0)};
+    } else {
+        return (SelValue) {.val_ivec2 = s->attributes.resolution};
+    }
+}
 
 /* ---------------------- IVEC4 functions -------------------- */
 

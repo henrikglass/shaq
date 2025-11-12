@@ -14,7 +14,7 @@
 
 /*--- Public type definitions -----------------------------------------------------------*/
 
-typedef struct {
+typedef struct Shader {
     StringView name;
 
     struct {
