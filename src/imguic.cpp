@@ -131,7 +131,22 @@ void imgui_begin_child(const char *label, u32 color)
 
 void imgui_begin_table(const char *label, i32 n_cols)
 {
-    ImGui::BeginTable(label, n_cols);
+    ImGui::BeginTable(label, n_cols, ImGuiTableFlags_SizingFixedFit);
+}
+
+b8 imgui_collapsing_header(const char *label)
+{
+    return ImGui::CollapsingHeader(label);
+}
+
+b8 imgui_tree_node(const char *label)
+{
+    return ImGui::TreeNode(label);
+}
+
+void imgui_tree_pop()
+{
+    ImGui::TreePop();
 }
 
 b8 imgui_begin_combo(const char *label, const char *preview_value)
@@ -382,7 +397,9 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-    //ImGui::ShowDemoWindow();
+#if 0
+    ImGui::ShowDemoWindow();
+#endif
     ImGui::EndFrame();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

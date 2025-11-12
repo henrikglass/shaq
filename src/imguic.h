@@ -36,8 +36,10 @@ void imgui_begin_frame(void);
 b8 imgui_begin(const char *str);
 void imgui_begin_child(const char *label, u32 color);
 void imgui_begin_table(const char *label, i32 n_cols);
+b8 imgui_collapsing_header(const char *label);
+b8 imgui_tree_node(const char *label);
+void imgui_tree_pop(void);
 b8 imgui_begin_combo(const char *label, const char *preview_value);
-
 b8 imgui_begin_main_menu_bar(void);
 b8 imgui_begin_menu(const char *label);
 b8 imgui_menu_item(const char *label, const char *shortcut);
@@ -47,7 +49,6 @@ void imgui_open_file_dialog(void);
 void imgui_close_file_dialog(void);
 b8 imgui_file_dialog_is_open(void);
 b8 imgui_display_file_dialog(char *filepath);
-
 void imgui_show_dpi_override_setting(void);
 void imgui_open_about_modal(void);
 void imgui_show_about_modal(void);

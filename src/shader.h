@@ -19,8 +19,8 @@ typedef struct {
 
     struct {
         StringView source;
-        IVec2 output_resolution;
-        i32 output_format;
+        IVec2 resolution;
+        i32 format;
         Array(StringView, SHAQ_MAX_N_SHADERS) render_after;
     } attributes;
 

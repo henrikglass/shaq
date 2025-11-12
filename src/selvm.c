@@ -616,7 +616,7 @@ static inline f32 negf(f32 *val) { return -(*val); }
 static SelValue fn_load_image_(void *args)
 {
     StringView filepath = *(StringView *)args;
-    i32 id = shaq_fetch_texture_id(filepath);
+    i32 id = shaq_find_texture_id_by_name(filepath, true);
     if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
@@ -634,9 +634,10 @@ static SelValue fn_load_image_ex_(void *args)
 {
     u8 *args8 = (u8 *) args;
     StringView filepath = *(StringView *)args;
-    i32 filter          = *(i32 *)(args8 + sizeof(StringView));
-    i32 wrap            = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
-    i32 id = shaq_fetch_texture_id(filepath);
+    i32 filter = *(i32 *)(args8 + sizeof(StringView));
+    i32 wrap = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
+    i32 id = shaq_find_texture_id_by_name(filepath, true);
+
     if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
@@ -1566,7 +1567,8 @@ static SelValue fn_copy_helper_(void *args, Type t)
     StringView shader_name = *(StringView *)args;
     StringView var_name = *(StringView *)(args8 + sizeof(StringView));
 
-    Shader *s = shaq_find_shader_by_name(shader_name);
+    i32 sid = shaq_find_shader_id_by_name(shader_name);
+    Shader *s = shaq_get_shader_by_id(sid);
     if (s == NULL) {
         if (shaq_reloaded_this_frame()) {
             log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "

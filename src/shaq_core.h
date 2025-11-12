@@ -32,10 +32,10 @@ b8 shaq_reloaded_last_frame(void);
 
 b8 shaq_has_loaded_project(void);
 Shader *shaq_find_shader_by_name(StringView name);
-Shader *shaq_find_shader_by_id(u32 id);
 i32 shaq_find_shader_id_by_name(StringView name);
-i32 shaq_fetch_texture_id(StringView filepath);
-Texture *shaq_get_texture_by_id(u32 id);
+i32 shaq_find_texture_id_by_name(StringView filepath, b8 load_if_necessary);
+Shader *shaq_get_shader_by_id(i32 id);
+Texture *shaq_get_texture_by_id(i32 id);
 
 
 #endif /* SHAQ_CORE_H */

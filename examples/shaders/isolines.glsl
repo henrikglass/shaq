@@ -53,7 +53,7 @@ void main()
     //d = smoothstep(0.00, fwidth(d), abs(d));
     //d = smoothstep(0.06, 1.05, d/fwidth(d));
     //d = smoothstep(-g, g, d);
-    float gg = step(0.3, g);
+    float gg = step(0.5, g);
     d = 1-mix(smoothstep(0, 1.2, d/g), 1, gg);
     //d = 1-mix(smoothstep(0, 1.0*length(texture(bnoise, uv2).yx), d/g), 1, gg);
     vec3 bg = vec3(0.99, 0.98, 0.96) + 0.05*vec3((texture(bnoise, uv2).rgb*2.0 - 1));

@@ -245,25 +245,6 @@ b8 shaq_has_loaded_project()
     return shaq.project_ini_loaded;
 }
 
-Shader *shaq_find_shader_by_name(StringView name)
-{
-    /* look up shader */
-    for (u32 i = 0; i < shaq.shaders.count; i++) {
-        Shader *s  = &shaq.shaders.arr[i];
-        if (sv_equals(s->name, name)) {
-            return s;
-        }
-    }
-
-    /* no shader with name `name` */
-    return NULL;
-}
-
-Shader *shaq_find_shader_by_id(u32 id)
-{
-    return &shaq.shaders.arr[id];
-}
-
 i32 shaq_find_shader_id_by_name(StringView name)
 {
     /* look up shader id */
@@ -279,7 +260,7 @@ i32 shaq_find_shader_id_by_name(StringView name)
     return -1;    
 }
 
-i32 shaq_fetch_texture_id(StringView filepath)
+i32 shaq_find_texture_id_by_name(StringView filepath, b8 load_if_necessary)
 {
     /* look up texture id */
     for (u32 i = 0; i < shaq.textures.count; i++) {
@@ -287,6 +268,10 @@ i32 shaq_fetch_texture_id(StringView filepath)
         if (sv_equals(t->img->filepath, filepath)) {
             return i;
         }
+    }
+
+    if (!load_if_necessary) {
+        return -1;
     }
 
     /* not found? load it.*/
@@ -301,10 +286,22 @@ i32 shaq_fetch_texture_id(StringView filepath)
     return -1; 
 }
 
-Texture *shaq_get_texture_by_id(u32 id)
+Shader *shaq_get_shader_by_id(i32 id)
 {
+    if (id > (i32)shaq.shaders.count || id < 0) {
+        return NULL;
+    }
+    return &shaq.shaders.arr[id];
+}
+
+Texture *shaq_get_texture_by_id(i32 id)
+{
+    if (id > (i32)shaq.textures.count || id < 0) {
+        return NULL;
+    }
     return &shaq.textures.arr[id];
 }
+
 
 /*--- Private functions -----------------------------------------------------------------*/
 

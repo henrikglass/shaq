@@ -107,13 +107,13 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
         return -1;
     }
 
-    /* if output_resolution && output_format are unspecified, give them default values */ 
-    if (sh->attributes.output_format == 0) {
-        sh->attributes.output_format = GL_RGBA;
+    /* if resolution && format are unspecified, give them default values */ 
+    if (sh->attributes.format == 0) {
+        sh->attributes.format = GL_RGBA;
     }
-    if (sh->attributes.output_resolution.x == 0 &&
-        sh->attributes.output_resolution.y == 0) {
-        sh->attributes.output_resolution = renderer_shader_viewport_size();
+    if (sh->attributes.resolution.x == 0 &&
+        sh->attributes.resolution.y == 0) {
+        sh->attributes.resolution = renderer_shader_viewport_size();
     } 
 
     return 0;
@@ -216,10 +216,10 @@ void shader_reload(Shader *s)
     }
 
     s->gl_shader_program_id = shader_program;
-    s->render_texture[0] = texture_make_empty(s->attributes.output_resolution, 
-                                              s->attributes.output_format);
-    s->render_texture[1] = texture_make_empty(s->attributes.output_resolution, 
-                                              s->attributes.output_format);
+    s->render_texture[0] = texture_make_empty(s->attributes.resolution, 
+                                              s->attributes.format);
+    s->render_texture[1] = texture_make_empty(s->attributes.resolution, 
+                                              s->attributes.format);
     s->render_texture_current = &s->render_texture[0];
     s->render_texture_last = &s->render_texture[1];
 
@@ -333,7 +333,7 @@ void shader_update_uniforms(Shader *s)
                 switch(desc.kind) {
                     case SHADER_CURRENT_RENDER_TEXTURE:
                     case SHADER_LAST_RENDER_TEXTURE: {
-                        Shader *sh = shaq_find_shader_by_id(desc.id);
+                        Shader *sh = shaq_get_shader_by_id(desc.id);
                         if (sh == NULL || !shader_is_ok(sh)) {
                             break;
                         } else if (desc.kind == SHADER_CURRENT_RENDER_TEXTURE) {
@@ -418,18 +418,18 @@ static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv)
             return;
         }
         s->attributes.source = sv_make_copy(sel_eval(exe, true).val_str, r2r_fs_alloc);
-    } else if (sv_starts_with_lchop(&k, "output_format") && sv_trim(k).length == 0) {
+    } else if (sv_starts_with_lchop(&k, "format") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_INT) {
-            log_error("Shader `" SV_FMT "`: Attribute `output_format` attribute must have type `int`.", SV_ARG(s->name));
+            log_error("Shader `" SV_FMT "`: Attribute `format` attribute must have type `int`.", SV_ARG(s->name));
             return;
         }
-        s->attributes.output_format = sel_eval(exe, true).val_i32;
-    } else if (sv_starts_with_lchop(&k, "output_resolution") && sv_trim(k).length == 0) {
+        s->attributes.format = sel_eval(exe, true).val_i32;
+    } else if (sv_starts_with_lchop(&k, "resolution") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_IVEC2) {
-            log_error("Shader `" SV_FMT "`: Attribute `output_resolution` attribute must have type `ivec2`.", SV_ARG(s->name));
+            log_error("Shader `" SV_FMT "`: Attribute `resolution` attribute must have type `ivec2`.", SV_ARG(s->name));
             return;
         }
-        s->attributes.output_resolution = sel_eval(exe, true).val_ivec2;
+        s->attributes.resolution = sel_eval(exe, true).val_ivec2;
     } else if (sv_starts_with_lchop(&k, "render_after") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_STR) {
             log_error("Shader `" SV_FMT "`: Attribute `render_after` attribute must have type `str`.", SV_ARG(s->name));

@@ -135,14 +135,56 @@ i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_sha
 
 void gui_draw_shader_info(const Shader *s)
 {
-    imgui_textf("[" SV_FMT "]", SV_ARG(s->name));
-    imgui_newline();
-    imgui_begin_table(" ", 2);
-    for (u32 j = 0; j < s->uniforms.count; j++) {
-        draw_uniform(&s->uniforms.arr[j]);
+    /* TODO have this elsewhere - make linear search instead? */
+    static const char *glint_to_str[] = {
+        [GL_RGBA]         = "GL_RGBA",
+        [GL_RGB]          = "GL_RGB",
+        [GL_RG]           = "GL_RG",
+        [GL_RED]          = "GL_RED",
+        [GL_RGBA8]        = "GL_RGBA8",
+        [GL_RGB8]         = "GL_RGB8",
+        [GL_RG8]          = "GL_RG8",
+        [GL_R8]           = "GL_R8",
+        [GL_R32F]         = "GL_R32F",
+        [GL_RGBA32F]      = "GL_RGBA32F",
+        [GL_R3_G3_B2]     = "GL_R3_G3_B2",
+        [GL_SRGB8]        = "GL_SRGB8",
+        [GL_SRGB8_ALPHA8] = "GL_SRGB8_ALPHA8",
+    };
+    //imgui_textf("[" SV_FMT "]", SV_ARG(s->name));
+    char *label_cstr = sv_make_cstr_copy(s->name, tmp_alloc);
+    if (imgui_tree_node(label_cstr)) {
+        if (imgui_tree_node("Attributes")) {
+            imgui_begin_table(" ", 2);
+            imgui_table_next_row();
+            imgui_table_next_col();
+            imgui_textf("source");
+            imgui_table_next_col();
+            imgui_textf(" = " SV_FMT, SV_ARG(s->attributes.source));
+            imgui_table_next_row();
+            imgui_table_next_col();
+            imgui_textf("resolution");
+            imgui_table_next_col();
+            imgui_textf(" = {%d, %d}", s->attributes.resolution.x, 
+                                    s->attributes.resolution.y);
+            imgui_table_next_row();
+            imgui_table_next_col();
+            imgui_textf("format");
+            imgui_table_next_col();
+            imgui_textf(" = %s", glint_to_str[s->attributes.format]);
+            imgui_end_table();
+            imgui_tree_pop();
+        }
+        if (imgui_tree_node("Uniforms")) {
+            imgui_begin_table(" ", 2);
+            for (u32 j = 0; j < s->uniforms.count; j++) {
+                draw_uniform(&s->uniforms.arr[j]);
+            }
+            imgui_end_table();
+            imgui_tree_pop();
+        }
+        imgui_tree_pop();
     }
-    imgui_end_table();
-    imgui_separator();
 }
 
 void gui_draw_shader(const Shader *s)
@@ -358,13 +400,20 @@ IVec2 gui_shader_window_size()
 
 static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
 {
-    char *label_cstr = hgl_sv_make_cstr_copy(item->label, tmp_alloc);
+    StringBuilder sb = sb_make(.initial_capacity = 256,
+                               .mem_alloc        = tmp_alloc,
+                               .mem_realloc      = dummy_realloc,
+                               .mem_free         = dummy_free);
+    sb_append_sv(&sb, &item->label);
+    sb_append_cstr(&sb, "##dynitem");
+    char *label_cstr = sb.cstr;
 
     /**
      * TODO: Figure out why this happens. It doesn't seem to cause any
      *       unexpected behaviors though.
      */
     if (strlen(label_cstr) == 0) {
+        assert(false && "Huh?");
         return;
     }
 
@@ -463,26 +512,25 @@ static inline void draw_uniform(const Uniform *u)
 {
     imgui_table_next_row();
     imgui_table_next_col();
-    imgui_textf("uniform %s " SV_FMT, 
-                TYPE_TO_STR[u->type], SV_ARG(u->name));
+    imgui_textf("%s " SV_FMT, TYPE_TO_STR[u->type], SV_ARG(u->name));
     imgui_table_next_col();
     SelValue v = u->exe->cached_computed_value;
     switch (u->type) {
-        case TYPE_BOOL:   imgui_textf(v.val_bool ? " = true" : " = false"); break;
-        case TYPE_INT:    imgui_textf(" = %d", v.val_i32);  break;
-        case TYPE_UINT:   imgui_textf(" = %u", v.val_u32);  break;
-        case TYPE_FLOAT:  imgui_textf(" = %f", (f64)v.val_f32);  break;
-        case TYPE_VEC2:   imgui_textf(" = {%f, %f}", (f64)v.val_vec2.x, (f64)v.val_vec2.y);  break;
-        case TYPE_VEC3:   imgui_textf(" = {%f, %f, %f}", (f64)v.val_vec3.x, (f64)v.val_vec3.y, (f64)v.val_vec3.y);  break;
-        case TYPE_VEC4:   imgui_textf(" = {%f, %f, %f, %f}", (f64)v.val_vec4.x, (f64)v.val_vec4.y, (f64)v.val_vec4.y, (f64)v.val_vec4.w);  break;
-        case TYPE_IVEC2:  imgui_textf(" = {%d, %d}", v.val_ivec2.x, v.val_ivec2.y);  break;
-        case TYPE_IVEC3:  imgui_textf(" = {%d, %d, %d}", v.val_ivec3.x, v.val_ivec3.y, v.val_ivec3.y);  break;
-        case TYPE_IVEC4:  imgui_textf(" = {%d, %d, %d, %d}", v.val_ivec4.x, v.val_ivec4.y, v.val_ivec4.y, v.val_ivec4.w);  break;
-        case TYPE_MAT2:   imgui_textf(" = mat2 TODO"); break;
-        case TYPE_MAT3:   imgui_textf(" = mat3 TODO"); break;
-        case TYPE_MAT4:   imgui_textf(" = mat4 TODO"); break;
-        case TYPE_TEXTURE: imgui_textf(" ="); imgui_textf(u->exe->source_code); break;
-        case TYPE_STR: imgui_textf("str TODO"); break;
+        case TYPE_BOOL:    imgui_textf(v.val_bool ? "= true" : "= false"); break;
+        case TYPE_INT:     imgui_textf("= %d", v.val_i32);  break;
+        case TYPE_UINT:    imgui_textf("= %u", v.val_u32);  break;
+        case TYPE_FLOAT:   imgui_textf("= %f", (f64)v.val_f32);  break;
+        case TYPE_VEC2:    imgui_textf("= {%f, %f}", (f64)v.val_vec2.x, (f64)v.val_vec2.y);  break;
+        case TYPE_VEC3:    imgui_textf("= {%f, %f, %f}", (f64)v.val_vec3.x, (f64)v.val_vec3.y, (f64)v.val_vec3.y);  break;
+        case TYPE_VEC4:    imgui_textf("= {%f, %f, %f, %f}", (f64)v.val_vec4.x, (f64)v.val_vec4.y, (f64)v.val_vec4.y, (f64)v.val_vec4.w);  break;
+        case TYPE_IVEC2:   imgui_textf("= {%d, %d}", v.val_ivec2.x, v.val_ivec2.y);  break;
+        case TYPE_IVEC3:   imgui_textf("= {%d, %d, %d}", v.val_ivec3.x, v.val_ivec3.y, v.val_ivec3.y);  break;
+        case TYPE_IVEC4:   imgui_textf("= {%d, %d, %d, %d}", v.val_ivec4.x, v.val_ivec4.y, v.val_ivec4.y, v.val_ivec4.w);  break;
+        case TYPE_MAT2:    imgui_textf("= mat2 TODO"); break;
+        case TYPE_MAT3:    imgui_textf("= mat3 TODO"); break;
+        case TYPE_MAT4:    imgui_textf("= mat4 TODO"); break;
+        case TYPE_TEXTURE: imgui_textf("="); imgui_textf(u->exe->source_code); break;
+        case TYPE_STR:     imgui_textf("str TODO"); break;
         case TYPE_NIL:
         case TYPE_AND_NAMECHECKER_ERROR_:
         case N_TYPES:

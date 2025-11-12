@@ -132,7 +132,7 @@ void renderer_do_shader_pass(Shader *s)
     }
 
     glUseProgram(s->gl_shader_program_id);
-    glViewport(0, 0, s->attributes.output_resolution.x, s->attributes.output_resolution.y);
+    glViewport(0, 0, s->attributes.resolution.x, s->attributes.resolution.y);
 
     /* prepare offscreen frame buffer */
     glBindFramebuffer(GL_FRAMEBUFFER, renderer.offscreen_fb);
