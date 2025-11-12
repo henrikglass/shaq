@@ -59,7 +59,7 @@ typedef struct
 {
     u32 error; // TODO move
     TextureKind kind;
-    u32 texture_index;
+    u32 id;
     i32 filter; // Both min & mag filters
     i32 wrap;   // Both S & T directions
 } TextureDescriptor;

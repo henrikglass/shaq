@@ -309,9 +309,9 @@ void sel_print_value(Type t, SelValue v)
         case TYPE_STR:     printf("\""SV_FMT"\"" "\n", SV_ARG(v.val_str)); break;
         case TYPE_TEXTURE: {
             if (v.val_tex.error) printf("ERROR\n"); 
-            else if (v.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) printf("current render texture: %u\n", v.val_tex.texture_index); 
-            else if (v.val_tex.kind == SHADER_LAST_RENDER_TEXTURE) printf("last render texture: %u\n", v.val_tex.texture_index); 
-            else if (v.val_tex.kind == LOADED_TEXTURE) printf("loaded texture: %u\n", v.val_tex.texture_index);
+            else if (v.val_tex.kind == SHADER_CURRENT_RENDER_TEXTURE) printf("current render texture: %u\n", v.val_tex.id); 
+            else if (v.val_tex.kind == SHADER_LAST_RENDER_TEXTURE) printf("last render texture: %u\n", v.val_tex.id); 
+            else if (v.val_tex.kind == LOADED_TEXTURE) printf("loaded texture: %u\n", v.val_tex.id);
         } break;
         case TYPE_NIL:     printf("<NIL>\n"); break;
         case TYPE_AND_NAMECHECKER_ERROR_:

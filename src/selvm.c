@@ -616,16 +616,16 @@ static inline f32 negf(f32 *val) { return -(*val); }
 static SelValue fn_load_image_(void *args)
 {
     StringView filepath = *(StringView *)args;
-    i32 index = shaq_load_texture_if_necessary(filepath);
-    if (index == -1) {
+    i32 id = shaq_fetch_texture_id(filepath);
+    if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
     return (SelValue) {
         .val_tex = {
-            .kind          = LOADED_TEXTURE,
-            .texture_index = (u32) index,
-            .filter        = GL_LINEAR,
-            .wrap          = GL_REPEAT,
+            .kind    = LOADED_TEXTURE,
+            .id      = (u32) id,
+            .filter  = GL_LINEAR,
+            .wrap    = GL_REPEAT,
         }
     };
 }
@@ -636,16 +636,16 @@ static SelValue fn_load_image_ex_(void *args)
     StringView filepath = *(StringView *)args;
     i32 filter          = *(i32 *)(args8 + sizeof(StringView));
     i32 wrap            = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
-    i32 index = shaq_load_texture_if_necessary(filepath);
-    if (index == -1) {
+    i32 id = shaq_fetch_texture_id(filepath);
+    if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
     return (SelValue) {
         .val_tex = {
-            .kind          = LOADED_TEXTURE,
-            .texture_index = (u32) index,
-            .filter        = filter,
-            .wrap          = wrap,
+            .kind   = LOADED_TEXTURE,
+            .id     = (u32) id,
+            .filter = filter,
+            .wrap   = wrap,
         }
     };
 }
@@ -653,16 +653,16 @@ static SelValue fn_load_image_ex_(void *args)
 static SelValue fn_output_of_(void *args)
 {
     StringView name = *(StringView *)args;
-    i32 index = shaq_find_shader_id_by_name(name);
-    if (index == -1) {
+    i32 id = shaq_find_shader_id_by_name(name);
+    if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
     return (SelValue) {
         .val_tex = {
-            .kind          = SHADER_CURRENT_RENDER_TEXTURE,
-            .texture_index = (u32) index,
-            .filter        = GL_LINEAR,
-            .wrap          = GL_REPEAT,
+            .kind   = SHADER_CURRENT_RENDER_TEXTURE,
+            .id     = (u32) id,
+            .filter = GL_LINEAR,
+            .wrap   = GL_REPEAT,
         }
     };
 }
@@ -673,16 +673,16 @@ static SelValue fn_output_of_ex_(void *args)
     StringView name = *(StringView *)args;
     i32 filter      = *(i32 *)(args8 + sizeof(StringView));
     i32 wrap        = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
-    i32 index = shaq_find_shader_id_by_name(name);
-    if (index == -1) {
+    i32 id = shaq_find_shader_id_by_name(name);
+    if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
     return (SelValue) {
         .val_tex = {
-            .kind          = SHADER_CURRENT_RENDER_TEXTURE,
-            .texture_index = (u32) index,
-            .filter        = filter,
-            .wrap          = wrap,
+            .kind   = SHADER_CURRENT_RENDER_TEXTURE,
+            .id     = (u32) id,
+            .filter = filter,
+            .wrap   = wrap,
         }
     };
 }
@@ -690,16 +690,16 @@ static SelValue fn_output_of_ex_(void *args)
 static SelValue fn_last_output_of_(void *args)
 {
     StringView name = *(StringView *)args;
-    i32 index = shaq_find_shader_id_by_name(name);
-    if (index == -1) {
+    i32 id = shaq_find_shader_id_by_name(name);
+    if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
     return (SelValue) {
         .val_tex = {
-            .kind          = SHADER_LAST_RENDER_TEXTURE,
-            .texture_index = (u32) index,
-            .filter        = GL_LINEAR,
-            .wrap          = GL_REPEAT,
+            .kind   = SHADER_LAST_RENDER_TEXTURE,
+            .id     = (u32) id,
+            .filter = GL_LINEAR,
+            .wrap   = GL_REPEAT,
         }
     };
 }
@@ -710,16 +710,16 @@ static SelValue fn_last_output_of_ex_(void *args)
     StringView name = *(StringView *)args;
     i32 filter      = *(i32 *)(args8 + sizeof(StringView));
     i32 wrap        = *(i32 *)(args8 + sizeof(StringView) + sizeof(i32));
-    i32 index = shaq_find_shader_id_by_name(name);
-    if (index == -1) {
+    i32 id = shaq_find_shader_id_by_name(name);
+    if (id == -1) {
         return (SelValue) { .val_tex = {.error = 1}};
     }
     return (SelValue) {
         .val_tex = {
-            .kind          = SHADER_LAST_RENDER_TEXTURE,
-            .texture_index = (u32) index,
-            .filter        = filter,
-            .wrap          = wrap,
+            .kind   = SHADER_LAST_RENDER_TEXTURE,
+            .id     = (u32) id,
+            .filter = filter,
+            .wrap   = wrap,
         }
     };
 }

@@ -64,7 +64,7 @@ static struct
 
     Array(Shader, SHAQ_MAX_N_SHADERS) shaders;
     Array(u32, SHAQ_MAX_N_SHADERS) render_order;
-    Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) loaded_textures;
+    Array(Texture, SHAQ_MAX_N_LOADED_TEXTURES) textures;
     i32 visible_shader_idx;
     b8 quiet;
     b8 should_reload;
@@ -259,6 +259,11 @@ Shader *shaq_find_shader_by_name(StringView name)
     return NULL;
 }
 
+Shader *shaq_find_shader_by_id(u32 id)
+{
+    return &shaq.shaders.arr[id];
+}
+
 i32 shaq_find_shader_id_by_name(StringView name)
 {
     /* look up shader id */
@@ -274,11 +279,11 @@ i32 shaq_find_shader_id_by_name(StringView name)
     return -1;    
 }
 
-i32 shaq_load_texture_if_necessary(StringView filepath)
+i32 shaq_fetch_texture_id(StringView filepath)
 {
     /* look up texture id */
-    for (u32 i = 0; i < shaq.loaded_textures.count; i++) {
-        Texture *t  = &shaq.loaded_textures.arr[i];
+    for (u32 i = 0; i < shaq.textures.count; i++) {
+        Texture *t  = &shaq.textures.arr[i];
         if (sv_equals(t->img->filepath, filepath)) {
             return i;
         }
@@ -287,8 +292,8 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     /* not found? load it.*/
     Texture t = texture_load_from_file(filepath);
     if (t.img->data != NULL) {
-        array_push(&shaq.loaded_textures, t);
-        return shaq.loaded_textures.count - 1;
+        array_push(&shaq.textures, t);
+        return shaq.textures.count - 1;
     }
 
     /* Unable to load texture */
@@ -296,27 +301,9 @@ i32 shaq_load_texture_if_necessary(StringView filepath)
     return -1; 
 }
 
-u32 shaq_get_shader_current_render_texture_by_shader_id(u32 id)
+Texture *shaq_get_texture_by_id(u32 id)
 {
-    Shader *s = &shaq.shaders.arr[id];
-    if (shader_is_ok(s)) {
-        return s->render_texture_current->gl_texture_id;
-    }
-    return 0;
-}
-
-u32 shaq_get_shader_last_render_texture_by_shader_id(u32 id)
-{
-    Shader *s = &shaq.shaders.arr[id];
-    if (shader_is_ok(s)) {
-        return s->render_texture_last->gl_texture_id;
-    }
-    return 0;
-}
-
-u32 shaq_get_loaded_texture_by_texture_id(u32 id)
-{
-    return shaq.loaded_textures.arr[id].gl_texture_id;
+    return &shaq.textures.arr[id];
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
@@ -358,8 +345,8 @@ static i32 reload_session()
         Shader *s = &shaq.shaders.arr[i];
         shader_free_opengl_resources(s);
     }
-    for (u32 i = 0; i < shaq.loaded_textures.count; i++) {
-        Texture *t = &shaq.loaded_textures.arr[i];
+    for (u32 i = 0; i < shaq.textures.count; i++) {
+        Texture *t = &shaq.textures.arr[i];
         texture_free(t);
     }
 
@@ -369,13 +356,15 @@ static i32 reload_session()
         gui_clear_dynamic_gui_items();
         shaq_reset_time();
         shaq.visible_shader_idx = -1;
+        shaq.project_info.name = NULL;
+        shaq.project_info.desc = NULL;
         shaq.project_ini_changed = false;
     }
 
     /* reset state */
     array_clear(&shaq.shaders);
     array_clear(&shaq.render_order);
-    array_clear(&shaq.loaded_textures);
+    array_clear(&shaq.textures);
     log_clear_all_logs();
 
     /* "Reload" renderer & GUI */
