@@ -393,3 +393,5 @@ void hgl_profile_cleanup(void)
 }
 
 #endif
+
+// TODO HGL_PROFILE_DISABLE - for all functions

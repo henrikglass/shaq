@@ -43,6 +43,12 @@ void log_clear_all_logs()
     logs.error_iterator = 0;
 }
 
+void log_reset_iterators()
+{
+    logs.info_iterator  = 0;
+    logs.error_iterator = 0;
+}
+
 void log_info(const char *fmt, ...)
 {
     va_list args;

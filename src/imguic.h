@@ -34,6 +34,7 @@ void imgui_set_darkmode(b8 enable);
 b8 imgui_is_any_item_active(void);
 void imgui_begin_frame(void);
 b8 imgui_begin(const char *str);
+b8 imgui_begin_overlay_bottom_left(const char *str);
 void imgui_begin_child(const char *label, u32 color);
 void imgui_begin_table(const char *label, i32 n_cols);
 b8 imgui_collapsing_header(const char *label);

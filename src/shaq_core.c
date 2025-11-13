@@ -22,7 +22,7 @@
 #define HGL_INI_IMPLEMENTATION
 #include "hgl_ini.h"
 
-#if 0
+#if SHAQ_PROFILE
 #define HGL_PROFILE_IMPLEMENTATION
 #include "hgl_profile.h"
 #endif
@@ -153,6 +153,11 @@ void shaq_new_frame()
     if (renderer_shader_view_is_maximized()) {
         /* Draw visible shader directly onto the default frame buffer */
         renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
+
+        /* Draw error log overlay if there are errors */
+        if (!log_error_log_is_empty()) {
+            gui_draw_error_log_overlay();
+        }
     } else {
 
         /* Draw visible shader into shader window */
@@ -168,7 +173,7 @@ void shaq_new_frame()
             shaq.visible_shader_idx = gui_draw_shader_display_selector(shaq.visible_shader_idx, 
                                                                        shaq.shaders.arr, 
                                                                        shaq.shaders.count);
-            gui_draw_dymanic_gui_items();
+            gui_draw_widgets();
             for (u32 i = 0; i < shaq.render_order.count; i++) {
                 Shader *s  = &shaq.shaders.arr[i];
                 assert(s != NULL);
@@ -185,17 +190,13 @@ void shaq_new_frame()
     }
 
     /* Draw file dialog (maybe) */
-    if (gui_draw_file_dialog(shaq.project_ini_filepath)) {
-        /* 
-         * Things go wrong if the shader view is maximized. This is a
-         * workaround. TODO: Fix at some point.
-         */
-        if (renderer_shader_view_is_maximized()) {
-            renderer_toggle_maximized_shader_view();
+    if (gui_file_dialog_is_open()) {
+        b8 file_selected = gui_draw_file_dialog(shaq.project_ini_filepath);
+        if (file_selected) {
+            shaq.project_ini_loaded  = true;
+            shaq.should_reload       = true;
+            shaq.project_ini_changed = true;
         }
-        shaq.project_ini_loaded = true;
-        shaq.should_reload = true;
-        shaq.project_ini_changed = true;
     }
 
     gui_end_frame();
@@ -227,6 +228,7 @@ i32 shaq_frame_count()
 
 void shaq_reset_time()
 {
+    shaq.time_s      = 0.0f;
     shaq.time_ns     = 0;
     shaq.frame_count = 0;
 }
@@ -346,6 +348,10 @@ static b8 session_reload_needed()
 
 static i32 reload_session()
 {
+#if SHAQ_PROFILE
+    hgl_profile_begin("reload session");
+#endif
+
     shaq.should_reload = false;
 
     /* Manually free OpenGL resources */
@@ -361,7 +367,7 @@ static i32 reload_session()
     /* Upon loading a new project clear some additional stuff */
     if (shaq.project_ini_changed) {
         image_free_all_cached_images();
-        gui_clear_dynamic_gui_items();
+        gui_clear_widgets();
         shaq_reset_time();
         shaq.visible_shader_idx = -1;
         shaq.project_info.name = NULL;
@@ -385,6 +391,9 @@ static i32 reload_session()
 
     /* Return early if no filepath is set */
     if (!shaq.project_ini_loaded) {
+#if SHAQ_PROFILE
+        hgl_profile_end();
+#endif
         return -1;
     }
 
@@ -429,12 +438,19 @@ static i32 reload_session()
     printf("image allocator  -- "); hgl_alloc_print_usage(g_image_allocator);
 #endif
 
+#if SHAQ_PROFILE
+    hgl_profile_end();
+    hgl_profile_report(HGL_PROFILE_TIME_ALL);
+#endif
     log_info("name = \"%s\"", shaq.project_info.name);
     log_info("desc = \"%s\"", shaq.project_info.desc);
     log_info("Session reloaded successfully (%s)", io_get_timestamp_str());
     return 0;
 
 out_error:
+#if SHAQ_PROFILE
+    hgl_profile_end();
+#endif
     shaq.visible_shader_idx = -1;
     if (!shaq.quiet) {
         log_print_info_log();

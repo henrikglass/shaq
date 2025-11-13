@@ -18,6 +18,7 @@
 void log_info(const char *fmt, ...);
 void log_error(const char *fmt, ...);
 void log_clear_all_logs(void);
+void log_reset_iterators(void);
 void log_print_info_log(void);
 void log_print_error_log(void);
 b8 log_info_log_is_empty(void);

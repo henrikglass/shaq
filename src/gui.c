@@ -18,15 +18,14 @@ typedef struct
 {
     StringView label;
     SelValue value;
-    DynamicGuiItemKind kind;
+    WidgetKind kind;
     u8 secondary_args[64];
     b8 touched_this_frame;
-    b8 spawned_this_frame;
-} DynamicGuiItem;
+} Widget;
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
-static inline void draw_and_update_dynamic_item(DynamicGuiItem *item);
+static inline void draw_and_update_widget(Widget *w);
 static inline void draw_uniform(const Uniform *u);
 
 /*--- Public variables ------------------------------------------------------------------*/
@@ -35,7 +34,7 @@ static inline void draw_uniform(const Uniform *u);
 
 static struct
 {
-    Array(DynamicGuiItem, SHAQ_MAX_N_DYNAMIC_GUI_ITEMS) dynamic_items;
+    Array(Widget, SHAQ_MAX_N_DYNAMIC_GUI_ITEMS) widgets;
     b8 dark_mode;
     b8 should_reload;
     IVec2 shader_window_position;
@@ -62,9 +61,9 @@ void gui_reload()
     gui.should_reload = false;
 }
 
-void gui_clear_dynamic_gui_items()
+void gui_clear_widgets()
 {
-    array_clear(&gui.dynamic_items);
+    array_clear(&gui.widgets);
 }
 
 void gui_begin_frame()
@@ -198,12 +197,12 @@ void gui_draw_shader(const Shader *s)
                        gui.shader_window_size.y);
 }
 
-void gui_draw_dymanic_gui_items()
+void gui_draw_widgets()
 {
-    imgui_textf("User-defined items:"); imgui_newline();
-    for (u32 i = 0; i < gui.dynamic_items.count; i++) {
-        DynamicGuiItem *item = &gui.dynamic_items.arr[i];
-        draw_and_update_dynamic_item(item);
+    imgui_textf("Widgets:"); imgui_newline();
+    for (u32 i = 0; i < gui.widgets.count; i++) {
+        Widget *w = &gui.widgets.arr[i];
+        draw_and_update_widget(w);
     }
     imgui_separator();
 }
@@ -222,24 +221,24 @@ void gui_end_main_window()
 void gui_end_frame()
 {
     imgui_end_frame();
-    for (u32 i = 0; i < gui.dynamic_items.count; i++) {
-        DynamicGuiItem *item = &gui.dynamic_items.arr[i];
-        if (item->touched_this_frame) {
-            item->touched_this_frame = false;
-            item->spawned_this_frame = false;
+    for (u32 i = 0; i < gui.widgets.count; i++) {
+        Widget *w = &gui.widgets.arr[i];
+        if (w->touched_this_frame) {
+            w->touched_this_frame = false;
         } else {
-            array_delete(&gui.dynamic_items, i);
+            array_delete(&gui.widgets, i);
         }
     }
 }
 
 void gui_draw_log_window()
 {
-    b8 ret = imgui_begin("Log");
+    b8 ret = imgui_begin("Log##window");
     if (!ret) {
         imgui_end();
         return;
     }
+    log_reset_iterators();
     imgui_begin_child("Log", gui.dark_mode ? 0x282828FF : 0xD1D1D1FF);
     while (true) {
         u32 msg_len;
@@ -260,6 +259,26 @@ void gui_draw_log_window()
         imgui_text_unformatted(msg, msg_len); 
     }
     imgui_end_child();
+    imgui_end();
+}
+
+void gui_draw_error_log_overlay()
+{
+    b8 ret = imgui_begin_overlay_bottom_left("Log##overlay");
+    if (!ret) {
+        imgui_end();
+        return;
+    }
+    log_reset_iterators();
+    while (true) {
+        u32 msg_len;
+        const char *msg = log_get_next_error_msg(&msg_len);
+        if (msg == NULL) {
+            break;
+        }
+        imgui_text_color("Error: ", 0xE04050FF);
+        imgui_text_unformatted(msg, msg_len); 
+    }
     imgui_end();
 }
 
@@ -317,6 +336,11 @@ void gui_draw_menu_bar()
     imgui_end_main_menu_bar();
 }
 
+b8 gui_file_dialog_is_open()
+{
+    return imgui_file_dialog_is_open();
+}
+
 b8 gui_draw_file_dialog(char *ini_filepath)
 {
     return imgui_display_file_dialog(ini_filepath);
@@ -328,38 +352,56 @@ void gui_toggle_darkmode()
     imgui_set_darkmode(gui.dark_mode);
 }
 
-SelValue gui_get_dynamic_item_value(StringView label,
-                                    DynamicGuiItemKind kind,
-                                    void *secondary_args,
-                                    u32 secondary_args_size)
+SelValue gui_get_widget_value(StringView label,
+                              WidgetKind kind,
+                              void *secondary_args,
+                              u32 secondary_args_size)
 {
     // TODO cache items somehow?
 
     /* try lookup */
-    for (u32 i = 0; i < gui.dynamic_items.count; i++) {
-        DynamicGuiItem *item = &gui.dynamic_items.arr[i];
-        if (item->kind != kind) {
+    for (u32 i = 0; i < gui.widgets.count; i++) {
+        Widget *w = &gui.widgets.arr[i];
+        if (w->kind != kind) {
             continue;
         }
-        if (!sv_equals(item->label, label)) {
+        if (!sv_equals(w->label, label)) {
             continue;
         }
-        if (0 != memcmp(item->secondary_args, secondary_args, secondary_args_size)) {
+        if (0 != memcmp(w->secondary_args, secondary_args, secondary_args_size)) {
             continue;
         }
-        item->touched_this_frame = true;
-        return item->value;
+        w->touched_this_frame = true;
+        return w->value;
     }
     
     /* not found - insert */
-    DynamicGuiItem item = (DynamicGuiItem) {
+    i32 *args_i32   = (i32 *)secondary_args;
+    f32 *args_f32   = (f32 *)secondary_args;
+    Vec2 *args_vec2 = (Vec2 *)secondary_args;
+    Vec3 *args_vec3 = (Vec3 *)secondary_args;
+    Vec4 *args_vec4 = (Vec4 *)secondary_args;
+    SelValue default_value;
+    switch (kind) {
+        case INPUT_INT:        default_value.val_i32  = args_i32[0];  break;
+        case INPUT_FLOAT:      default_value.val_f32  = args_f32[0];  break;
+        case INPUT_VEC2:       default_value.val_vec2 = args_vec2[0]; break;
+        case INPUT_VEC3:       default_value.val_vec3 = args_vec3[0]; break;
+        case INPUT_VEC4:       default_value.val_vec4 = args_vec4[0]; break;
+        case CHECKBOX:         default_value.val_bool = args_i32[0];  break;
+        case DRAG_INT:         default_value.val_i32  = args_i32[3];  break;
+        case SLIDER_FLOAT:     default_value.val_f32  = args_f32[2];  break;
+        case SLIDER_FLOAT_LOG: default_value.val_f32  = args_f32[2];  break;
+        case COLOR_PICKER:     default_value.val_vec4 = args_vec4[0]; break;
+    } 
+    Widget w = (Widget) {
         .label              = label,
         .kind               = kind,
+        .value              = default_value,
         .touched_this_frame = true,
-        .spawned_this_frame = true,
     };
-    memcpy(item.secondary_args, secondary_args, secondary_args_size);
-    array_push(&gui.dynamic_items, item);
+    memcpy(w.secondary_args, secondary_args, secondary_args_size);
+    array_push(&gui.widgets, w);
 
     return (SelValue) {0};
 }
@@ -398,14 +440,14 @@ IVec2 gui_shader_window_size()
 
 /*--- Private functions -----------------------------------------------------------------*/
 
-static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
+static inline void draw_and_update_widget(Widget *w)
 {
     StringBuilder sb = sb_make(.initial_capacity = 256,
                                .mem_alloc        = tmp_alloc,
                                .mem_realloc      = dummy_realloc,
                                .mem_free         = dummy_free);
-    sb_append_sv(&sb, &item->label);
-    sb_append_cstr(&sb, "##dynitem");
+    sb_append_sv(&sb, &w->label);
+    sb_append_cstr(&sb, "##widget");
     char *label_cstr = sb.cstr;
 
     /**
@@ -417,93 +459,50 @@ static inline void draw_and_update_dynamic_item(DynamicGuiItem *item)
         return;
     }
 
-    switch (item->kind) {
+    switch (w->kind) {
         case INPUT_INT: {
-            i32 *args_i32 = (i32*)item->secondary_args;
-            i32 default_value = args_i32[0];
-            if (item->spawned_this_frame) {
-                item->value.val_i32 = default_value;
-            }
-            imgui_input_int(label_cstr, &item->value.val_i32);
+            imgui_input_int(label_cstr, &w->value.val_i32);
         } break;
 
         case INPUT_FLOAT: {
-            f32 *args_f32 = (f32*)item->secondary_args;
-            f32 default_value = args_f32[0];
-            if (item->spawned_this_frame) {
-                item->value.val_f32 = default_value;
-            }
-            imgui_input_float(label_cstr, &item->value.val_f32);
+            imgui_input_float(label_cstr, &w->value.val_f32);
         } break;
 
         case INPUT_VEC2: {
-            Vec2 *args_vec2 = (Vec2*)item->secondary_args;
-            Vec2 default_value = args_vec2[0];
-            if (item->spawned_this_frame) {
-                item->value.val_vec2 = default_value;
-            }
-            imgui_input_float2(label_cstr, (f32 *)&item->value.val_vec2);
+            imgui_input_float2(label_cstr, (f32 *)&w->value.val_vec2);
         } break;
 
         case INPUT_VEC3: {
-            Vec3 *args_vec4 = (Vec3*)item->secondary_args;
-            Vec3 default_value = args_vec4[0];
-            if (item->spawned_this_frame) {
-                item->value.val_vec3 = default_value;
-            }
-            imgui_input_float3(label_cstr, (f32 *)&item->value.val_vec3);
+            imgui_input_float3(label_cstr, (f32 *)&w->value.val_vec3);
         } break;
 
         case INPUT_VEC4: {
-            Vec4 *args_vec4 = (Vec4*)item->secondary_args;
-            Vec4 default_value = args_vec4[0];
-            if (item->spawned_this_frame) {
-                item->value.val_vec4 = default_value;
-            }
-            imgui_input_float4(label_cstr, (f32 *)&item->value.val_vec4);
+            imgui_input_float4(label_cstr, (f32 *)&w->value.val_vec4);
         } break;
 
         case CHECKBOX: {
-            i32 *args_i32 = (i32*)item->secondary_args;
-            i32 default_value = args_i32[0];
-            if (item->spawned_this_frame) {
-                item->value.val_bool = default_value;
-            }
-            imgui_checkbox(label_cstr, (bool *)&item->value.val_bool);
+            imgui_checkbox(label_cstr, (bool *)&w->value.val_bool);
         } break;
 
         case DRAG_INT: {
-            i32 *args_i32 = (i32*)item->secondary_args;
-            f32 *args_f32 = (f32*)item->secondary_args;
+            i32 *args_i32 = (i32*)w->secondary_args;
+            f32 *args_f32 = (f32*)w->secondary_args;
             f32 v = args_f32[0];
             i32 min = args_i32[1];
             i32 max = args_i32[2];
-            i32 default_value = args_i32[3];
-            if (item->spawned_this_frame) {
-                item->value.val_i32 = default_value;
-            }
-            imgui_drag_int(label_cstr, &item->value.val_i32, v, min, max); 
+            imgui_drag_int(label_cstr, &w->value.val_i32, v, min, max); 
         } break;
 
         case SLIDER_FLOAT:
         case SLIDER_FLOAT_LOG: {
-            f32 *args_f32 = (f32*)item->secondary_args;
+            f32 *args_f32 = (f32*)w->secondary_args;
             f32 min = args_f32[0];
             f32 max = args_f32[1];
-            f32 default_value = args_f32[2];
-            if (item->spawned_this_frame) {
-                item->value.val_f32 = default_value;
-            }
-            imgui_slider_float(label_cstr, &item->value.val_f32, min, max, item->kind == SLIDER_FLOAT_LOG); 
+            imgui_slider_float(label_cstr, &w->value.val_f32, min, max, w->kind == SLIDER_FLOAT_LOG); 
         } break;
 
         case COLOR_PICKER: {
-            Vec4 *args_vec4 = (Vec4*)item->secondary_args;
-            Vec4 default_value = args_vec4[0];
-            if (item->spawned_this_frame) {
-                item->value.val_vec4 = default_value;
-            }
-            imgui_color_picker(label_cstr, (f32 *)&item->value.val_vec4);
+            imgui_color_picker(label_cstr, (f32 *)&w->value.val_vec4);
         } break;
     }
 }

@@ -1503,7 +1503,7 @@ static SelValue fn_input_float_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, INPUT_FLOAT, secondary_args, 1*sizeof(f32));
+    return gui_get_widget_value(label, INPUT_FLOAT, secondary_args, 1*sizeof(f32));
 }
 
 static SelValue fn_checkbox_(void *args)
@@ -1511,7 +1511,7 @@ static SelValue fn_checkbox_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, CHECKBOX, secondary_args, 1*sizeof(f32));
+    return gui_get_widget_value(label, CHECKBOX, secondary_args, 1*sizeof(f32));
 }
 
 static SelValue fn_drag_int_(void *args)
@@ -1519,7 +1519,7 @@ static SelValue fn_drag_int_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, DRAG_INT, secondary_args, 3*sizeof(i32) + 1*sizeof(f32));
+    return gui_get_widget_value(label, DRAG_INT, secondary_args, 3*sizeof(i32) + 1*sizeof(f32));
 }
 
 static SelValue fn_slider_float_(void *args)
@@ -1527,7 +1527,7 @@ static SelValue fn_slider_float_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, SLIDER_FLOAT, secondary_args, 3*sizeof(f32));
+    return gui_get_widget_value(label, SLIDER_FLOAT, secondary_args, 3*sizeof(f32));
 }
 
 static SelValue fn_slider_float_log_(void *args)
@@ -1535,7 +1535,7 @@ static SelValue fn_slider_float_log_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, SLIDER_FLOAT_LOG, secondary_args, 3*sizeof(f32));
+    return gui_get_widget_value(label, SLIDER_FLOAT_LOG, secondary_args, 3*sizeof(f32));
 }
 
 static SelValue fn_input_int_(void *args)
@@ -1543,7 +1543,7 @@ static SelValue fn_input_int_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, INPUT_INT, secondary_args, sizeof(i32));
+    return gui_get_widget_value(label, INPUT_INT, secondary_args, sizeof(i32));
 }
 
 static SelValue fn_input_vec2_(void *args)
@@ -1551,7 +1551,7 @@ static SelValue fn_input_vec2_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, INPUT_VEC2, secondary_args, sizeof(Vec2));
+    return gui_get_widget_value(label, INPUT_VEC2, secondary_args, sizeof(Vec2));
 }
 
 static SelValue fn_input_vec3_(void *args)
@@ -1559,7 +1559,7 @@ static SelValue fn_input_vec3_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, INPUT_VEC3, secondary_args, sizeof(Vec3));
+    return gui_get_widget_value(label, INPUT_VEC3, secondary_args, sizeof(Vec3));
 }
 
 static SelValue fn_input_vec4_(void *args)
@@ -1567,7 +1567,7 @@ static SelValue fn_input_vec4_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, INPUT_VEC4, secondary_args, sizeof(Vec4));
+    return gui_get_widget_value(label, INPUT_VEC4, secondary_args, sizeof(Vec4));
 }
 
 static SelValue fn_color_picker_(void *args)
@@ -1575,7 +1575,7 @@ static SelValue fn_color_picker_(void *args)
     u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
-    return gui_get_dynamic_item_value(label, COLOR_PICKER, secondary_args, sizeof(Vec4));
+    return gui_get_widget_value(label, COLOR_PICKER, secondary_args, sizeof(Vec4));
 }
 
 /* ---------------------- Copy functions -------------------- */

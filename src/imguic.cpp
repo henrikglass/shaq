@@ -120,6 +120,30 @@ b8 imgui_begin(const char *str)
     return ImGui::Begin(str);
 }
 
+b8 imgui_begin_overlay_bottom_left(const char *str)
+{
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration       | 
+                             ImGuiWindowFlags_NoDocking          | 
+                             ImGuiWindowFlags_AlwaysAutoResize   | 
+                             ImGuiWindowFlags_NoSavedSettings    | 
+                             ImGuiWindowFlags_NoFocusOnAppearing | 
+                             ImGuiWindowFlags_NoMove             |
+                             ImGuiWindowFlags_NoNav;
+    const float pad = 10.0f;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImVec2 work_pos = viewport->WorkPos;
+    ImVec2 work_size = viewport->WorkSize;
+    ImVec2 window_pos, window_pos_pivot;
+    window_pos.x = pad;
+    window_pos.y = work_pos.y + work_size.y - pad;
+    window_pos_pivot.x = 0.0f;
+    window_pos_pivot.y = 1.0f;
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::SetNextWindowBgAlpha(0.80f);
+    return ImGui::Begin(str, NULL, flags);
+}
+
 void imgui_begin_child(const char *label, u32 color)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32((color >> 24) & 0xFF,
