@@ -161,7 +161,7 @@ spell compositor, ok?
 
 # Planned features and fixes
 
-* Rework GUI a bit (e.g. play/pause symbol)
+* Rework GUI a bit (e.g. play/pause symbol, show error log in popup when shader view is maximized)
 * SEL - load\_video()?
 * Embed a tiny text editor
 * Support uniform arrays
