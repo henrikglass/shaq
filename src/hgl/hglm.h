@@ -405,7 +405,7 @@ static HGL_INLINE float hglm_ivec2_len(HglmIVec2 v)
 
 static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, float s)
 {
-    return (HglmIVec2) {.x = s * v.x, .y = s * v.y};
+    return (HglmIVec2) {.x = (int)(s * v.x), .y = (int)(s * v.y)};
 }
 
 static HGL_INLINE HglmIVec2 hglm_ivec2_lerp(HglmIVec2 a, HglmIVec2 b, float amount)

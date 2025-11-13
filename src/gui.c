@@ -313,9 +313,7 @@ void gui_draw_menu_bar()
                 gui_toggle_darkmode(); 
             }
             if (imgui_menu_item("Toggle maximized shader view", "Ctrl-F")) {
-                if (shaq_has_loaded_project()) {
-                    renderer_toggle_maximized_shader_view();
-                }
+                renderer_toggle_maximized_shader_view();
             }
             if (imgui_menu_item("Toggle fullscreen", "Alt-Enter/F11")) {
                 renderer_toggle_fullscreen(); 
@@ -344,6 +342,11 @@ b8 gui_file_dialog_is_open()
 b8 gui_draw_file_dialog(char *ini_filepath)
 {
     return imgui_display_file_dialog(ini_filepath);
+}
+
+b8 gui_darkmode_is_enabled()
+{
+    return gui.dark_mode;
 }
 
 void gui_toggle_darkmode()

@@ -11,7 +11,7 @@ C_WARNINGS := -Werror -Wall -Wlogical-op -Wextra -Wvla -Wnull-dereference \
               -Wno-override-init -Wno-error=cpp
 C_INCLUDES := -Isrc -Isrc/hgl -Isrc/glad -Isrc/stb -Isrc/imgui -Isrc/ImGuiFileDialog
 C_FLAGS    := $(C_WARNINGS) $(C_INCLUDES) --std=c17 -D_DEFAULT_SOURCE -DGLFW_INCLUDE_NONE -fno-strict-aliasing #-fsanitize=address
-CPP_FLAGS  := $(C_INCLUDES) --std=c++11 
+CPP_FLAGS  := $(C_INCLUDES) --std=c++11
 L_FLAGS    := -Llib -lm -lstdc++ -lglfw -ldl -lglfw
 
 ifeq ($(BUILD_TYPE), debug)

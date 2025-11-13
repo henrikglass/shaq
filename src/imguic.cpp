@@ -94,11 +94,13 @@ void imgui_set_darkmode(b8 enable)
     ImGuiStyle& style = ImGui::GetStyle();
     if (enable) {
         ImGui::StyleColorsDark();
-        style.Colors[ImGuiCol_WindowBg]      = RGBA(0x1E, 0x1E, 0x1E, 0xFF);
-        style.Colors[ImGuiCol_TitleBg]       = RGBA(0x25, 0x25, 0x25, 0xFF);
+        style.Colors[ImGuiCol_WindowBg] = SHAQ_COLOR_DARKMODE_WINDOW_BG;
+        style.Colors[ImGuiCol_TitleBg]  = SHAQ_COLOR_DARKMODE_TITLE_BG;
     } else {
         ImGui::StyleColorsLight();
-        style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_WindowBg];
+        style.Colors[ImGuiCol_WindowBg] = SHAQ_COLOR_LIGHTMODE_WINDOW_BG;
+        style.Colors[ImGuiCol_TitleBg]  = SHAQ_COLOR_LIGHTMODE_TITLE_BG;
+        style.Colors[ImGuiCol_PopupBg]  = style.Colors[ImGuiCol_WindowBg];
     }
 }
 

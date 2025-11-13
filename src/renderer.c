@@ -6,12 +6,16 @@
 #include "shaq_config.h"
 #include "user_input.h"
 #include "hgl_int.h"
-#include "vecmath.h"
 #include "gl_util.h"
 #include "log.h"
 #include "gui.h"
 
 /*--- Private macros --------------------------------------------------------------------*/
+
+#define RGBA(r, g, b, a) (float)r / 255.0f, \
+                         (float)g / 255.0f, \
+                         (float)g / 255.0f, \
+                         (float)a / 255.0f
 
 /*--- Private type definitions ----------------------------------------------------------*/
 
@@ -168,6 +172,11 @@ void renderer_begin_final_pass()
     glUseProgram(renderer.last_pass_shader.gl_shader_program_id);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    if (gui_darkmode_is_enabled()) {
+        glClearColor(SHAQ_COLOR_DARKMODE_WINDOW_BG);
+    } else {
+        glClearColor(SHAQ_COLOR_LIGHTMODE_WINDOW_BG);
+    }
     glClear(GL_COLOR_BUFFER_BIT);
 }
 

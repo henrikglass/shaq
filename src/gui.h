@@ -49,6 +49,7 @@ void gui_draw_error_log_overlay(void);
 void gui_draw_menu_bar(void);
 b8 gui_file_dialog_is_open(void);
 b8 gui_draw_file_dialog(char *ini_filepath);
+b8 gui_darkmode_is_enabled(void);
 void gui_toggle_darkmode(void);
 SelValue gui_get_widget_value(StringView label,
                               WidgetKind kind,

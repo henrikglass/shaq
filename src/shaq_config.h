@@ -11,5 +11,10 @@
 #define SHAQ_HUGEPAGES                 0
 #define SHAQ_PROFILE                   0
 
+#define SHAQ_COLOR_DARKMODE_WINDOW_BG   RGBA(0x1E, 0x1E, 0x1E, 0xFF)
+#define SHAQ_COLOR_DARKMODE_TITLE_BG    RGBA(0x25, 0x25, 0x25, 0xFF)
+#define SHAQ_COLOR_LIGHTMODE_WINDOW_BG  RGBA(0xF0, 0xF0, 0xF0, 0xFF)
+#define SHAQ_COLOR_LIGHTMODE_TITLE_BG   RGBA(0xF5, 0xF5, 0xF5, 0xFF)
+
 #endif /* SHAQ_CONFIG_H */
 
