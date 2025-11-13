@@ -37,7 +37,7 @@ static struct {
 
     b8 should_reload;
     b8 is_fullscreen;
-    b8 shader_view_is_maximized;
+    b8 shader_view_is_maximized; // TODO move this to gui.h/.c
 
     Vec2 mouse_position;
     Vec2 mouse_drag_position;
@@ -80,6 +80,7 @@ void renderer_init()
     glfwMakeContextCurrent(renderer.window);
     glfwSetFramebufferSizeCallback(renderer.window, resize_callback);
     glfwSetKeyCallback(renderer.window, user_input_glfw_key_callback);
+    glfwSetWindowAttrib(renderer.window, GLFW_AUTO_ICONIFY, false);
     glfwSwapInterval(SHAQ_ENABLE_VSYNC ? 1 : 0);
 
     i32 err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -103,7 +104,7 @@ void renderer_init()
     glEnableVertexAttribArray(0);
     glGenFramebuffers(1, &renderer.offscreen_fb);
     glViewport(0, 0, renderer.window_size.x, renderer.window_size.y);
-    glClearColor(0.117f, 0.617f, 0.117f, 1.0f);
+    glClearColor(0.117f, 0.117f, 0.117f, 1.0f);
 
     shader_make_last_pass_shader(&renderer.last_pass_shader);
     gui_init(renderer.window, glfwGetPrimaryMonitor());
@@ -184,12 +185,14 @@ void renderer_toggle_fullscreen()
     static IVec2 old_size = {0};
 
     if (renderer.is_fullscreen) {
+        printf("Set fullscreen OFF\n");
         glfwSetWindowMonitor(renderer.window, NULL, 0, 0, 
                              old_size.x, old_size.y, 
                              GLFW_DONT_CARE);
         glfwSetWindowPos(renderer.window, old_position.x, old_position.y);
         renderer.is_fullscreen = false;
     } else {
+        printf("Set fullscreen ON\n");
         GLFWmonitor *monitor = get_current_monitor(renderer.window);
         const GLFWvidmode *mode = glfwGetVideoMode(monitor);
         old_size = renderer.window_size;

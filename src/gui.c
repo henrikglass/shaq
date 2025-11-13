@@ -317,7 +317,7 @@ void gui_draw_menu_bar()
                     renderer_toggle_maximized_shader_view();
                 }
             }
-            if (imgui_menu_item("Toggle fullscreen", "Alt-Enter")) {
+            if (imgui_menu_item("Toggle fullscreen", "Alt-Enter/F11")) {
                 renderer_toggle_fullscreen(); 
             }
             imgui_end_menu();

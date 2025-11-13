@@ -152,7 +152,9 @@ void shaq_new_frame()
     gui_begin_frame();
     if (renderer_shader_view_is_maximized()) {
         /* Draw visible shader directly onto the default frame buffer */
-        renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
+        if (shaq.visible_shader_idx != -1) {
+            renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
+        }
 
         /* Draw error log overlay if there are errors */
         if (!log_error_log_is_empty()) {

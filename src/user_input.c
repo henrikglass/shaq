@@ -164,6 +164,12 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
                 }
             } break;
 
+            case GLFW_KEY_F11: {
+                if (action == GLFW_PRESS) {
+                    renderer_toggle_fullscreen();
+                }
+            } break;
+
             case GLFW_KEY_A ... GLFW_KEY_Z: {
                 u32 bit_pos = key - GLFW_KEY_A;
                 if (action == GLFW_PRESS) {
