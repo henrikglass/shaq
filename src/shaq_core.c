@@ -149,12 +149,11 @@ void shaq_new_frame()
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
+    gui_begin_frame();
     if (renderer_shader_view_is_maximized()) {
-        /* No GUI: Draw visible shader directly onto the default frame buffer */
+        /* Draw visible shader directly onto the default frame buffer */
         renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
     } else {
-        /* Show GUI */
-        gui_begin_frame();
 
         /* Draw visible shader into shader window */
         if (gui_begin_shader_window()) {
@@ -181,18 +180,25 @@ void shaq_new_frame()
         /* Draw log window */
         gui_draw_log_window();
 
-        /* Draw file dialog (maybe) */
-        if (gui_draw_file_dialog(shaq.project_ini_filepath)) {
-            shaq.project_ini_loaded = true;
-            shaq.should_reload = true;
-            shaq.project_ini_changed = true;
-        }
-
         /* Draw menu bar */
         gui_draw_menu_bar();
-
-        gui_end_frame();
     }
+
+    /* Draw file dialog (maybe) */
+    if (gui_draw_file_dialog(shaq.project_ini_filepath)) {
+        /* 
+         * Things go wrong if the shader view is maximized. This is a
+         * workaround. TODO: Fix at some point.
+         */
+        if (renderer_shader_view_is_maximized()) {
+            renderer_toggle_maximized_shader_view();
+        }
+        shaq.project_ini_loaded = true;
+        shaq.should_reload = true;
+        shaq.project_ini_changed = true;
+    }
+
+    gui_end_frame();
     renderer_end_final_pass();
 
     /* collect garbage */

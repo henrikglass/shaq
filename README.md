@@ -161,6 +161,7 @@ spell compositor, ok?
 
 # Planned features and fixes
 
+* Fix continuous reload on GLFW window resize.
 * Rework GUI a bit (e.g. play/pause symbol, show error log in popup when shader view is maximized)
 * SEL - load\_video()?
 * Embed a tiny text editor

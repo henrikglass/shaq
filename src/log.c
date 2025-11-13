@@ -93,6 +93,16 @@ void log_print_error_log()
     fflush(stderr);
 }
 
+b8 log_info_log_is_empty()
+{
+    return 0 == logs.info_entries.count;
+}
+
+b8 log_error_log_is_empty()
+{
+    return 0 == logs.error_entries.count;
+}
+
 //const char *log_get_info_log(u32 *length)
 //{
 //    *length = logs.info_buffer.count;

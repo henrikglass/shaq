@@ -107,7 +107,7 @@ void imgui_begin_frame()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::DockSpaceOverViewport(0, NULL /*, ImGuiDockNodeFlags_PassthruCentralNode */);
+    ImGui::DockSpaceOverViewport(0, NULL, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 b8 imgui_is_any_item_active()
