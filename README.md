@@ -167,7 +167,7 @@ spell compositor, ok?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
-* SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
+* SEL - Matmat, matvec, matscalar, vecscalar, etc. multiplication, 
 * SEL - boolean arithmetic (&&, ||, !, etc.)
 * Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined) (libffi?)
