@@ -119,7 +119,7 @@ attribute source                  = "examples/shaders/split_view.glsl"
 uniform ivec2 iresolution         = resolution()
 uniform sampler2D input_texture_1 = output_of("Mandelbrot")
 uniform sampler2D input_texture_2 = output_of("Gradient")
-uniform vec2 splitter_position    = mouse_drag_position()
+uniform float splitter_position   = mouse_drag_position().x
 uniform float splitter_thickness  = 1.0
 uniform vec4 splitter_color       = color_picker("splitter color", rgba(0xA02010FF))
 ```
@@ -167,7 +167,6 @@ spell compositor, ok?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
-* SEL - dot-operator (e.g `viewport_resolution().x`), maybe swizzling?
 * SEL - Add missing basic functions, e.g. vector add/sub & matrix multiplication.
 * SEL - boolean arithmetic (&&, ||, !, etc.)
 * Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
