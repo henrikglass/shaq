@@ -113,7 +113,7 @@ i32 shader_parse_from_ini_section(Shader *sh, HglIniSection *s)
     }
     if (sh->attributes.resolution.x == 0 ||
         sh->attributes.resolution.y == 0) {
-        sh->attributes.resolution = renderer_shader_viewport_size();
+        sh->attributes.resolution = gui_shader_window_size();
     } 
 
     return 0;

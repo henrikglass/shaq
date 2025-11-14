@@ -25,14 +25,11 @@ void renderer_draw_fullscreen_shader(Shader *s);
 void renderer_begin_final_pass(void);
 void renderer_end_final_pass(void);
 void renderer_toggle_fullscreen(void);
-void renderer_toggle_maximized_shader_view(void);
 GLFWwindow *renderer_get_glfw_window(void);
 b8 renderer_should_close(void);
 b8 renderer_should_reload(void);
-b8 renderer_shader_view_is_maximized(void);
 b8 renderer_is_fullscreen(void);
 IVec2 renderer_window_size(void);
-IVec2 renderer_shader_viewport_size(void);
 
 #endif /* RENDERER_H */
 

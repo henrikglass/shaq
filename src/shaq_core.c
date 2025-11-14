@@ -153,7 +153,7 @@ void shaq_new_frame()
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
-    if (renderer_shader_view_is_maximized()) {
+    if (gui_shader_window_is_maximized()) {
         //renderer_clear_current_framebuffer();
 
         /* Draw visible shader directly onto the default frame buffer */

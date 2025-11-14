@@ -41,7 +41,6 @@ static struct {
 
     b8 should_reload;
     b8 is_fullscreen;
-    b8 shader_view_is_maximized; // TODO move this to gui.h/.c
 
     Vec2 mouse_position;
     Vec2 mouse_drag_position;
@@ -69,7 +68,6 @@ void renderer_init()
 
     renderer.should_reload = false;
     renderer.is_fullscreen = false;
-    renderer.shader_view_is_maximized = false;
     renderer.window_size = ivec2_make(1680, 1050);
     renderer.window = glfwCreateWindow(renderer.window_size.x, 
                                        renderer.window_size.y, 
@@ -223,12 +221,6 @@ void renderer_toggle_fullscreen()
     renderer.should_reload = true;
 }
 
-void renderer_toggle_maximized_shader_view()
-{
-    renderer.shader_view_is_maximized = !renderer.shader_view_is_maximized;
-    renderer.should_reload = true;
-}
-
 GLFWwindow *renderer_get_glfw_window()
 {
     return renderer.window;
@@ -244,11 +236,6 @@ b8 renderer_should_reload()
     return renderer.should_reload;
 }
 
-b8 renderer_shader_view_is_maximized()
-{
-    return renderer.shader_view_is_maximized;
-}
-
 b8 renderer_is_fullscreen()
 {
     return renderer.is_fullscreen;
@@ -257,14 +244,6 @@ b8 renderer_is_fullscreen()
 IVec2 renderer_window_size()
 {
     return renderer.window_size;
-}
-
-IVec2 renderer_shader_viewport_size()
-{
-    if (renderer.shader_view_is_maximized) {
-        return renderer.window_size;
-    }
-    return gui_shader_window_size();
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

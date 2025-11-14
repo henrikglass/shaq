@@ -1141,7 +1141,7 @@ static SelValue fn_perlin3D_(void *args)
 static SelValue fn_aspect_ratio_(void *args)
 {
     (void) args;
-    IVec2 ires = renderer_shader_viewport_size();
+    IVec2 ires = gui_shader_window_size();
     return (SelValue) {.val_f32 = (f32)ires.x / (f32)ires.y}; 
 }
 
@@ -1350,7 +1350,7 @@ static SelValue fn_ivec2_(void *args)
 static SelValue fn_viewport_resolution_(void *args)
 {
     (void) args;
-    return (SelValue) {.val_ivec2 = renderer_shader_viewport_size()};
+    return (SelValue) {.val_ivec2 = gui_shader_window_size()};
 }
 
 static SelValue fn_resolution_of_(void *args)

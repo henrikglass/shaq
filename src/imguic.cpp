@@ -146,6 +146,21 @@ b8 imgui_begin_overlay_bottom_left(const char *str)
     return ImGui::Begin(str, NULL, flags);
 }
 
+b8 imgui_current_window_is_hovered()
+{
+    return ImGui::IsWindowHovered();
+}
+
+b8 imgui_any_window_is_hovered()
+{
+    return ImGui::IsWindowHovered(ImGuiFocusedFlags_AnyWindow);
+}
+
+b8 imgui_any_item_is_hovered()
+{
+    return 0 != ImGui::IsAnyItemHovered();
+}
+
 void imgui_begin_child(const char *label, u32 color)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32((color >> 24) & 0xFF,
@@ -363,7 +378,7 @@ void imgui_slider_float(const char *label, float *v, float min, float max, b8 lo
 
 void imgui_color_picker(const char *label, float *v)
 {
-    ImGui::ColorEdit4(label, v);
+    ImGui::ColorEdit4(label, v, ImGuiColorEditFlags_AlphaBar);
 }
 
 b8 imgui_selectable(const char *label, b8 is_selected)
@@ -423,7 +438,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-#if 0
+#if 1
     ImGui::ShowDemoWindow();
 #endif
     ImGui::EndFrame();

@@ -34,6 +34,11 @@ void gui_final(void);
 void gui_reload(void);
 void gui_clear_widgets(void);
 void gui_begin_frame(void);
+void gui_toggle_maximized_shader_window(void);
+b8 gui_shader_window_is_maximized(void);
+b8 gui_shader_window_is_active(void);
+IVec2 gui_shader_window_position(void);
+IVec2 gui_shader_window_size(void);
 b8 gui_begin_main_window(void);
 b8 gui_begin_shader_window(void);
 void gui_draw_help(void);
@@ -56,8 +61,6 @@ SelValue gui_get_widget_value(StringView label,
                               void *secondary_args,
                               u32 secondary_args_size);
 b8 gui_should_reload(void);
-IVec2 gui_shader_window_position(void);
-IVec2 gui_shader_window_size(void);
 
 #endif /* GUI_HELPERS_H */
 

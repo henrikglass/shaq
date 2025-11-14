@@ -46,7 +46,7 @@ void user_input_poll()
     f64 x, y;
     glfwGetCursorPos(w, &x, &y);
     user_input.mouse_position = vec2_make(x, y);
-    if (!renderer_shader_view_is_maximized()) {
+    if (!gui_shader_window_is_maximized()) {
         IVec2 shader_window_pos = gui_shader_window_position();
         user_input.mouse_position.x -= shader_window_pos.x;
         user_input.mouse_position.y -= shader_window_pos.y;
@@ -58,8 +58,10 @@ void user_input_poll()
     /* Update mouse button state */
     user_input.lmb_was_down_last_frame = user_input.lmb_is_down;
     user_input.rmb_was_down_last_frame = user_input.rmb_is_down;
-    user_input.lmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-    user_input.rmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    if (gui_shader_window_is_active()) {
+        user_input.lmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        user_input.rmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    }
 
     /* 
      * Update mouse drag position
@@ -67,8 +69,8 @@ void user_input_poll()
      * TODO: Handle this in a better way. Currently, mouse_drag_position may be updated
      *       when, for instance, the shader view window is being resized
      */
-    if (user_input.lmb_is_down /*&& !imgui_is_any_item_active()*/) {
-        if (renderer_shader_view_is_maximized()) {
+    if (user_input.lmb_is_down && gui_shader_window_is_active()) {
+        if (gui_shader_window_is_maximized()) {
             user_input.mouse_drag_position = user_input.mouse_position;
         } else {
             IVec2 swsize = gui_shader_window_size();
@@ -197,7 +199,7 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
             } break;
 
             case GLFW_KEY_F: {
-                renderer_toggle_maximized_shader_view();
+                gui_toggle_maximized_shader_window();
             } break;
 
             case GLFW_KEY_R: {

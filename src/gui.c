@@ -37,6 +37,8 @@ static struct
     Array(Widget, SHAQ_MAX_N_DYNAMIC_GUI_ITEMS) widgets;
     b8 dark_mode;
     b8 should_reload;
+    b8 shader_window_is_active;
+    b8 shader_window_is_maximized;
     IVec2 shader_window_position;
     IVec2 shader_window_size;
     f32 smoothed_deltatime;
@@ -48,6 +50,8 @@ void gui_init(GLFWwindow *window, GLFWmonitor *monitor)
 {
     imgui_init(window, monitor);
     gui.dark_mode = true;
+    gui.shader_window_is_maximized = false;
+    gui.shader_window_is_active = false;
     imgui_set_darkmode(gui.dark_mode);
 }
 
@@ -69,6 +73,39 @@ void gui_clear_widgets()
 void gui_begin_frame()
 {
     imgui_begin_frame();
+    if (gui.shader_window_is_maximized) {
+        gui.shader_window_is_active = !imgui_any_window_is_hovered();
+    }
+    printf("%d\n", gui.shader_window_is_active);
+}
+
+void gui_toggle_maximized_shader_window()
+{
+    gui.shader_window_is_maximized = !gui.shader_window_is_maximized;
+    gui.should_reload = true;
+}
+
+b8 gui_shader_window_is_maximized()
+{
+    return gui.shader_window_is_maximized;
+}
+
+b8 gui_shader_window_is_active()
+{
+    return gui.shader_window_is_active;
+}
+
+IVec2 gui_shader_window_position()
+{
+    return gui.shader_window_position; 
+}
+
+IVec2 gui_shader_window_size()
+{
+    if (gui.shader_window_is_maximized) {
+        return renderer_window_size();
+    }
+    return gui.shader_window_size;
 }
 
 b8 gui_begin_main_window()
@@ -102,6 +139,16 @@ b8 gui_begin_shader_window()
             gui.should_reload = true;
         }
     }
+
+    /* 
+     * Yes, I read the "IMPORTANT" comment in imgui.cpp for the definition
+     * of ImGui::IsAnyItemHovered(). Using io.WantCaptureMouse will not work,
+     * since unless the shader "window" is maximized (i.e. being drawn directly
+     * to the framebuffer and not, ironically, to a window) it will report `true`
+     * whenever the shader window is hovered.
+     */
+    gui.shader_window_is_active = imgui_current_window_is_hovered() && 
+                                 !imgui_any_item_is_hovered();
     return ret;
 }
 
@@ -313,7 +360,7 @@ void gui_draw_menu_bar()
                 gui_toggle_darkmode(); 
             }
             if (imgui_menu_item("Toggle maximized shader view", "Ctrl-F")) {
-                renderer_toggle_maximized_shader_view();
+                gui_toggle_maximized_shader_window();
             }
             if (imgui_menu_item("Toggle fullscreen", "Alt-Enter/F11")) {
                 renderer_toggle_fullscreen(); 
@@ -429,16 +476,6 @@ b8 gui_should_reload()
     }
     return gui.should_reload;
 #endif
-}
-
-IVec2 gui_shader_window_position()
-{
-    return gui.shader_window_position; 
-}
-
-IVec2 gui_shader_window_size()
-{
-    return gui.shader_window_size; 
 }
 
 /*--- Private functions -----------------------------------------------------------------*/
