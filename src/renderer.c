@@ -130,6 +130,11 @@ void renderer_reload()
     renderer.should_reload = false;
 }
 
+void renderer_clear_current_framebuffer()
+{ 
+    glClear(GL_COLOR_BUFFER_BIT);
+}  
+
 void renderer_do_shader_pass(Shader *s)
 {
     if (!shader_is_ok(s)) {
@@ -148,7 +153,7 @@ void renderer_do_shader_pass(Shader *s)
     }
 
     /* Draw */
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -177,7 +182,7 @@ void renderer_begin_final_pass()
     } else {
         glClearColor(SHAQ_COLOR_LIGHTMODE_WINDOW_BG);
     }
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void renderer_end_final_pass()

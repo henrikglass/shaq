@@ -9,6 +9,22 @@
 #include <time.h>
 #include <stdlib.h>
 
+/* DEBUG */
+static inline void hgl_sleep_ns(uint64_t ns)
+{
+    struct timespec t;
+    t.tv_sec = ns / 1000000000u;
+    t.tv_nsec = ns % 1000000000u;
+    while (-1 == nanosleep(&t, &t));
+}
+
+static inline void hgl_sleep_ms(float milliseconds)
+{
+    uint64_t ns = (uint64_t) (milliseconds * 1000000.0f);
+    hgl_sleep_ns(ns);
+}
+/* END DEBUG */
+
 int main(int argc, char *argv[])
 {
     const char **opt_input = hgl_flags_add_str("-i,--input", "The input project (.ini) file to run", NULL, 0);
@@ -33,6 +49,7 @@ int main(int argc, char *argv[])
 
     shaq_begin(*opt_input, *opt_quiet);
     while (!shaq_should_close()) {
+        //hgl_sleep_ms(200.0);
         shaq_new_frame();
     }
     shaq_end();

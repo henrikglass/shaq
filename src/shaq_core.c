@@ -109,6 +109,7 @@ b8 shaq_should_close()
 
 void shaq_new_frame()
 {
+    /* Reload if necessary */
     shaq.reloaded_last_frame = shaq.reloaded_this_frame;
     shaq.reloaded_this_frame = false;
     if (session_reload_needed()) {
@@ -129,15 +130,18 @@ void shaq_new_frame()
         shaq.time_s = (f32)((f64)shaq.time_ns / 1000000000.0);
     }
 
-    /* poll inputs */
-    user_input_poll();
-
     /* for all shaders: swap current and last frame render textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
         Shader *s  = &shaq.shaders.arr[index];
         shader_swap_render_textures(s);
     }
+
+    /* poll inputs */
+    user_input_poll();
+
+    /* begin gui frame */
+    gui_begin_frame();
 
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
@@ -149,8 +153,9 @@ void shaq_new_frame()
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
-    gui_begin_frame();
     if (renderer_shader_view_is_maximized()) {
+        renderer_clear_current_framebuffer();
+
         /* Draw visible shader directly onto the default frame buffer */
         if (shaq.visible_shader_idx != -1) {
             renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
@@ -201,8 +206,9 @@ void shaq_new_frame()
         }
     }
 
-    gui_end_frame();
+    /* end of frame */
     renderer_end_final_pass();
+    gui_end_frame();
 
     /* collect garbage */
     hgl_free_all(g_frame_arena);

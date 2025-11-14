@@ -19,6 +19,7 @@
 void renderer_init(void);
 void renderer_final(void);
 void renderer_reload(void);
+void renderer_clear_current_framebuffer(void);
 void renderer_do_shader_pass(Shader *s);
 void renderer_draw_fullscreen_shader(Shader *s);
 void renderer_begin_final_pass(void);
