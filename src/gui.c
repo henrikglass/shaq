@@ -76,7 +76,6 @@ void gui_begin_frame()
     if (gui.shader_window_is_maximized) {
         gui.shader_window_is_active = !imgui_any_window_is_hovered();
     }
-    printf("%d\n", gui.shader_window_is_active);
 }
 
 void gui_toggle_maximized_shader_window()
