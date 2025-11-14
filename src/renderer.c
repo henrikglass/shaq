@@ -182,7 +182,7 @@ void renderer_begin_final_pass()
     } else {
         glClearColor(SHAQ_COLOR_LIGHTMODE_WINDOW_BG);
     }
-    //glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void renderer_end_final_pass()

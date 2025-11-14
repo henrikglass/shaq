@@ -140,9 +140,6 @@ void shaq_new_frame()
     /* poll inputs */
     user_input_poll();
 
-    /* begin gui frame */
-    gui_begin_frame();
-
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
@@ -153,8 +150,9 @@ void shaq_new_frame()
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
+    gui_begin_frame();
     if (renderer_shader_view_is_maximized()) {
-        renderer_clear_current_framebuffer();
+        //renderer_clear_current_framebuffer();
 
         /* Draw visible shader directly onto the default frame buffer */
         if (shaq.visible_shader_idx != -1) {
@@ -207,8 +205,8 @@ void shaq_new_frame()
     }
 
     /* end of frame */
-    renderer_end_final_pass();
     gui_end_frame();
+    renderer_end_final_pass();
 
     /* collect garbage */
     hgl_free_all(g_frame_arena);
