@@ -53,7 +53,7 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
     else if (sv_starts_with_lchop(&k, "mat4"))      { u->type = TYPE_MAT4;    }
     else if (sv_starts_with_lchop(&k, "sampler2D")) { u->type = TYPE_TEXTURE; }
     else {
-        log_error("[SHAQ] Error: Unknown or unsupported type in left-hand-side expression: `%s`.", kv->key);
+        log_error("Unknown or unsupported type in left-hand-side expression: `%s`.", kv->key);
         return -1;
     }
 
@@ -87,12 +87,45 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
     return 0;
 }
 
-void uniform_determine_location_in_shader_program(Uniform *u, u32 shader_program)
+void uniform_map_shader_uniform(Uniform *u, u32 shader_program)
 {
-    char *name_cstr = hgl_sv_make_cstr_copy(u->name, tmp_alloc);
+    static const i32 sel_to_gl_type[N_TYPES] = {
+        [TYPE_BOOL]    = GL_BOOL,
+        [TYPE_INT]     = GL_INT,
+        [TYPE_UINT]    = GL_UNSIGNED_INT,
+        [TYPE_FLOAT]   = GL_FLOAT,
+        [TYPE_VEC2]    = GL_FLOAT_VEC2,
+        [TYPE_VEC3]    = GL_FLOAT_VEC3,
+        [TYPE_VEC4]    = GL_FLOAT_VEC4,
+        [TYPE_IVEC2]   = GL_INT_VEC2,
+        [TYPE_IVEC3]   = GL_INT_VEC3,
+        [TYPE_IVEC4]   = GL_INT_VEC4,
+        [TYPE_MAT2]    = GL_FLOAT_MAT2,
+        [TYPE_MAT3]    = GL_FLOAT_MAT3,
+        [TYPE_MAT4]    = GL_FLOAT_MAT4,
+        [TYPE_TEXTURE] = GL_SAMPLER_2D,
+    };
+
+    u->gl_uniform_location = -1;
+    u32 index = GL_INVALID_INDEX;
+    i32 type = -1;
+    const char *name_cstr = hgl_sv_make_cstr_copy(u->name, tmp_alloc);
     u->gl_uniform_location = glGetUniformLocation(shader_program, name_cstr);
     if (u->gl_uniform_location == -1) {
         log_error("Could not locate uniform variable: `%s`.", name_cstr);
+    }
+    glGetUniformIndices(shader_program, 1, &name_cstr, &index);
+    if (index == GL_INVALID_INDEX) {
+        log_error("Could not query index of uniform variable: `%s`.", name_cstr);
+        u->gl_uniform_location = -1;
+        return;
+    }
+    glGetActiveUniformsiv(shader_program, 1, &index, GL_UNIFORM_TYPE, &type);
+    if (sel_to_gl_type[u->type] != type) {
+        log_error("The specified type `%s` of uniform `%s` does not match its actual type.", 
+                  TYPE_TO_STR[u->type], name_cstr);
+        u->gl_uniform_location = -1;
+        return;
     }
 }
 

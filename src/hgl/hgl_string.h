@@ -360,9 +360,21 @@ bool hgl_sv_ends_with(HglStringView *sv, const char *substr);
 int hgl_sv_compare(HglStringView a, HglStringView b);
 
 /**
+ * Returns 0 if the string views `sv` and `cstr` are equal, -1 if `sv` is "less
+ * than" `cstr`, and 1 if `sv` is "greater than" `cstr`. See `man 3 strncmp` for the
+ * definition of "less than" and "greater than".
+ */
+int hgl_sv_compare_cstr(HglStringView sv, const char *cstr);
+
+/**
  * Returns true if `a` and `b` are equal.
  */
 bool hgl_sv_equals(HglStringView a, HglStringView b);
+
+/**
+ * Returns true if `sv` and `cstr` are equal.
+ */
+bool hgl_sv_equals_cstr(HglStringView sv, const char *cstr);
 
 /*=======================================================================================*/
 /*--- String Builder function prototypes ------------------------------------------------*/
@@ -900,9 +912,20 @@ int hgl_sv_compare(HglStringView a, HglStringView b)
     return strncmp(a.start, b.start, a.length);
 }
 
+int hgl_sv_compare_cstr(HglStringView sv, const char *cstr)
+{
+    HglStringView other = hgl_sv_from_cstr(cstr);
+    return hgl_sv_compare(sv, other);
+}
+
 bool hgl_sv_equals(HglStringView a, HglStringView b)
 {
     return 0 == hgl_sv_compare(a, b);
+}
+
+bool hgl_sv_equals_cstr(HglStringView sv, const char *cstr)
+{
+    return 0 == hgl_sv_compare_cstr(sv, cstr);
 }
 
 HglStringBuilder hgl_sb_make_(HglStringBuilderConfig config)
@@ -1251,7 +1274,9 @@ typedef HglStringBuilder StringBuilder;
 #define sv_starts_with           hgl_sv_starts_with
 #define sv_ends_with             hgl_sv_ends_with
 #define sv_compare               hgl_sv_compare
+#define sv_compare_cstr          hgl_sv_compare_cstr
 #define sv_equals                hgl_sv_equals
+#define sv_equals_cstr           hgl_sv_equals_cstr
 
 #define sb_make                  hgl_sb_make
 #define sb_make_copy             hgl_sb_make_copy

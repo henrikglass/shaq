@@ -77,8 +77,6 @@ static SelValue fn_maxi_(void *args);
 static SelValue fn_randi_(void *args);
 static SelValue fn_iota_(void *args);
 static SelValue fn_frame_count_(void *args);
-static SelValue fn_viewport_resolution_x_(void *args);
-static SelValue fn_viewport_resolution_y_(void *args);
 
 static SelValue fn_signed_(void *args);
 static SelValue fn_xor_(void *args);
@@ -154,7 +152,6 @@ static SelValue fn_vec4_normalize_(void *args);
 static SelValue fn_vec4_dot_(void *args);
 static SelValue fn_vec4_mul_scalar_(void *args);
 static SelValue fn_vec4_lerp_(void *args);
-static SelValue fn_vec4_xyz_(void *args);
 static SelValue fn_rgba_(void *args);
 
 static SelValue fn_ivec2_(void *args);
@@ -237,8 +234,6 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("randi"),         .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_randi_,         .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int randi(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
     { .id = SV_LIT("iota"),          .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_iota_,          .argtypes = {TYPE_NIL},                      .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
     { .id = SV_LIT("frame_count"),   .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_frame_count_,   .argtypes = {TYPE_NIL},                      .synopsis = "int frame_count()", .desc = "Returns the frame count.", },
-    { .id = SV_LIT("viewport_resolution_x"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_viewport_resolution_x_, .argtypes = {TYPE_NIL},                      .synopsis = "int viewport_resolution_x()", .desc = "Returns the X dimension of the current window resolution", },
-    { .id = SV_LIT("viewport_resolution_y"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_viewport_resolution_y_, .argtypes = {TYPE_NIL},                      .synopsis = "int viewport_resolution_y()", .desc = "Returns the Y dimension of the current window resolution", },
 
     { .id = SV_LIT("signed"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_signed_, .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "int signed(uint x)", .desc = "Typecast uint to int.", },
     { .id = SV_LIT("xor"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_xor_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint xor(uint a, uint b)", .desc = "bitwise XOR of `a` and `b`.", },
@@ -314,7 +309,6 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("vec4_dot"),        .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_dot(vec4 a, vec4 b)",                 .desc = "Returns the dot product of `a` and `b`", },
     { .id = SV_LIT("vec4_mul_scalar"), .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_mul_scalar_, .argtypes = {TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},                          .synopsis = "vec4 vec4_mul_scalar(vec4 v, float s)",         .desc = "Calculates the scalar-vector multiplication `s`*`v`", },
     { .id = SV_LIT("vec4_lerp"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,       .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 vec4_lerp(vec4 a, vec4 b, float t)",       .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
-    { .id = SV_LIT("vec4_xyz"),        .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_xyz_,        .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec3 vec3_xyz(vec4 v)",                         .desc = "Returns the x,y, and z components of `v` as a vec3", },
     { .id = SV_LIT("rgba"),            .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,            .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
 
     { .id = SV_LIT("ivec2"),               .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_ivec2_,               .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},   .synopsis = "ivec2 ivec2(int x, int y)",       .desc = "Creates a 2D integer vector with components `x` and `y`", },
@@ -526,6 +520,40 @@ static void svm_run()
                 }
                 SelValue res = (func->impl)(&svm.stack[svm.sp]);
                 svm_stack_push_selvalue(res, func->type);
+            } break;
+
+            case OP_SWIZZLE: {
+                u32 *desc = svm_stack_pop(sizeof(u32));
+                void *lhs = svm_stack_pop(op->argsize);
+                union {
+                    SelValue res;
+                    f32 res_f32[4];
+                    i32 res_i32[4];
+                } u;
+                switch (op->type) {
+                    case TYPE_FLOAT: 
+                    case TYPE_VEC2: 
+                    case TYPE_VEC3:
+                    case TYPE_VEC4: {
+                        f32 *lhs_f32 = (f32 *)lhs;
+                        for (u32 i = 0; i < TYPE_TO_SIZE[op->type]; i++) {
+                            u32 idx = (*desc >> (8*i)) & 0xFF;
+                            u.res_f32[i] = lhs_f32[idx];
+                        }
+                    } break;
+                    case TYPE_INT: 
+                    case TYPE_IVEC2: 
+                    case TYPE_IVEC3:
+                    case TYPE_IVEC4: {
+                        i32 *lhs_i32 = (i32 *)lhs;
+                        for (u32 i = 0; i < TYPE_TO_SIZE[op->type]; i++) {
+                            u32 idx = (*desc >> (8*i)) & 0xFF;
+                            u.res_i32[i] = lhs_i32[idx];
+                        }
+                    } break;
+                    default: assert(false);
+                }
+                svm_stack_push_selvalue(u.res, op->type);
             } break;
         }
     }
@@ -850,19 +878,6 @@ static SelValue fn_frame_count_(void *args)
     (void) args;
     return (SelValue) {.val_i32 = shaq_frame_count()};
 }
-
-static SelValue fn_viewport_resolution_x_(void *args)
-{
-    (void) args;
-    return (SelValue) {.val_i32 = renderer_shader_viewport_size().x};
-}
-
-static SelValue fn_viewport_resolution_y_(void *args)
-{
-    (void) args;
-    return (SelValue) {.val_i32 = renderer_shader_viewport_size().y};
-}
-
 
 /* ----------------------- UINT functions --------------------- */
 
@@ -1313,12 +1328,6 @@ static SelValue fn_vec4_lerp_(void *args)
     return (SelValue) {.val_vec4 = hglm_vec4_lerp(args_v4[0], args_v4[1], *(f32*)&args_v4[2])};
 } 
   
-static SelValue fn_vec4_xyz_(void *args)
-{
-    Vec4 *args_v4 = (Vec4 *) args;
-    return (SelValue) {.val_vec3 = args_v4[0].xyz};
-} 
- 
 static SelValue fn_rgba_(void *args)
 {
     u32 argu32 = *(u32 *)args;

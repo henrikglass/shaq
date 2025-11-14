@@ -226,7 +226,7 @@ void shader_reload(Shader *s)
     glUseProgram(s->gl_shader_program_id); // necessary?
     for (u32 i = 0; i < s->uniforms.count; i++) {
         Uniform *u = &s->uniforms.arr[i];
-        uniform_determine_location_in_shader_program(u, s->gl_shader_program_id);
+        uniform_map_shader_uniform(u, s->gl_shader_program_id);
     }
 }
 

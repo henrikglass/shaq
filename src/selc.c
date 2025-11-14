@@ -67,6 +67,7 @@ typedef enum
     TOK_FSLASH,
     TOK_PERCENT,
     TOK_COMMA,
+    TOK_DOT,
     TOK_BOOL_LITERAL,
     TOK_INT_LITERAL,
     TOK_UINT_LITERAL,
@@ -98,11 +99,12 @@ typedef enum
     EXPR_DIV,
     EXPR_REM,
     EXPR_NEG,
+    EXPR_SWIZZLE,
     EXPR_PAREN,
     EXPR_FUNC,
     EXPR_ARGLIST,
     EXPR_LIT,
-    EXPR_CONST,
+    EXPR_ID,
     N_EXPR_KINDS,
 } ExprKind;
 
@@ -158,6 +160,7 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token);
 static ExprTree *parse_expr(const char *str);
 static i32 parse_add_expr(ExprTree **e, Lexer *l);
 static i32 parse_mul_expr(ExprTree **e, Lexer *l);
+static i32 parse_dot_expr(ExprTree **e, Lexer *l);
 static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l);
 static i32 parse_arglist_expr(ExprTree **e, Lexer *l);
 
@@ -179,6 +182,7 @@ static void token_print(Token *t);
 static b8 is_identifier_char(i32 c);
 static b8 is_decimal_char(i32 c);
 static b8 is_hexadecimal_char(i32 c);
+static u32 construct_swizzle_descriptor(StringView text);
 static inline void print_expr(ExprTree *e);
 static inline void print_expr_tree(ExprTree *e);
 static inline void print_expr_tree_helper(ExprTree *e, i32 indent);
@@ -211,8 +215,8 @@ const Const BUILTIN_CONSTANTS[] =
     {.id = SV_LIT("TAU"),                .type = TYPE_FLOAT, .value.val_f32  = 2.0*3.1415926535},
     {.id = SV_LIT("PHI"),                .type = TYPE_FLOAT, .value.val_f32  =     1.6180339887},
     {.id = SV_LIT("e"),                  .type = TYPE_FLOAT, .value.val_f32  =     2.7182818284},
-    {.id = SV_LIT("TRUE"),               .type = TYPE_BOOL,  .value.val_bool = 1 },
-    {.id = SV_LIT("FALSE"),              .type = TYPE_BOOL,  .value.val_bool = 0 },
+    //{.id = SV_LIT("TRUE"),               .type = TYPE_BOOL,  .value.val_bool = 1 },
+    //{.id = SV_LIT("FALSE"),              .type = TYPE_BOOL,  .value.val_bool = 0 },
     {.id = SV_LIT("GL_NEAREST"),         .type = TYPE_INT,  .value.val_i32  = GL_NEAREST },
     {.id = SV_LIT("GL_LINEAR"),          .type = TYPE_INT,  .value.val_i32  = GL_LINEAR },
     {.id = SV_LIT("GL_REPEAT"),          .type = TYPE_INT,  .value.val_i32  = GL_REPEAT },
@@ -246,6 +250,10 @@ ExeExpr *sel_compile(const char *src)
     if (e == NULL) {
         goto out;
     }
+
+#if 0
+    print_expr_tree(e); // DEBUG
+#endif
 
     /* type + namecheck step */
     TypeAndQualifier t = type_and_namecheck(e);
@@ -363,6 +371,7 @@ static Token lexer_peek(Lexer *l)
         case '/':  return (Token) {.kind = TOK_FSLASH,  .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
         case '%':  return (Token) {.kind = TOK_PERCENT, .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
         case ',':  return (Token) {.kind = TOK_COMMA,   .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
+        case '.':  return (Token) {.kind = TOK_DOT,     .text = sv_substr(l->buf, 0, 1), .length = 1}; break;
 
         case '"': {
             size_t i = 1;
@@ -390,6 +399,7 @@ static Token lexer_peek(Lexer *l)
             StringView s = sv_substr(l->buf, 0, i);
 
             /* boolean literal? */
+            // TODO 2025-11-14: Uh. What about the constants TRUE and FALSE?
             if (sv_equals(s, SV_LIT("true")) ||
                 sv_equals(s, SV_LIT("false"))) {
                 return (Token) {
@@ -514,17 +524,35 @@ static i32 parse_mul_expr(ExprTree **e, Lexer *l)
 {
     ExprTree *tmp;
 
-    TRY(parse_unary_or_atom_expr(e, l));
+    TRY(parse_dot_expr(e, l));
     while (true) {
         Token t = lexer_peek(l);
         if (t.kind != TOK_STAR && t.kind != TOK_FSLASH && t.kind != TOK_PERCENT) {
             break;
         }
         lexer_eat(l);
-        TRY(parse_unary_or_atom_expr(&tmp, l));
+        TRY(parse_dot_expr(&tmp, l));
         *e = (t.kind == TOK_STAR)   ? new_binary_expr(EXPR_MUL, t, *e, tmp) : 
              (t.kind == TOK_FSLASH) ? new_binary_expr(EXPR_DIV, t, *e, tmp) : 
                                       new_binary_expr(EXPR_REM, t, *e, tmp);
+    }
+
+    return 0;
+}
+
+static i32 parse_dot_expr(ExprTree **e, Lexer *l)
+{
+    ExprTree *tmp;
+
+    TRY(parse_unary_or_atom_expr(e, l));
+    while (true) {
+        Token t = lexer_peek(l);
+        if (t.kind != TOK_DOT) {
+            break;
+        }
+        lexer_eat(l);
+        TRY(parse_unary_or_atom_expr(&tmp, l));
+        *e = new_binary_expr(EXPR_SWIZZLE, t, *e, tmp);
     }
 
     return 0;
@@ -550,7 +578,7 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
         } break;
 
         case TOK_MINUS: {
-            TRY(parse_unary_or_atom_expr(&tmp, l));
+            TRY(parse_dot_expr(&tmp, l));
             *e = new_unary_expr(EXPR_NEG, t, tmp);
         } break;
 
@@ -561,7 +589,7 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
                 *e = new_unary_expr(EXPR_FUNC, t, tmp);
                 PARSER_ASSERT(lexer_next(l).kind == TOK_RPAREN, "Expected closing ')'.");
             } else {
-                *e = new_atom_expr(EXPR_CONST, t);            
+                *e = new_atom_expr(EXPR_ID, t);            
             }
         } break;
 
@@ -578,7 +606,8 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l)
         case TOK_STAR:
         case TOK_FSLASH:
         case TOK_PERCENT:
-        case TOK_COMMA: {
+        case TOK_COMMA: 
+        case TOK_DOT: {
             PARSER_ERROR("Unexpected token: `%s`.", TOKEN_TO_STR[t.kind]);
         } break;
 
@@ -724,6 +753,87 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
                                       "Operand to unary `-` operator must be of type INT or FLOAT.");
         } break;
         
+        case EXPR_SWIZZLE: {
+            static const Type backing_type[N_TYPES] = {
+                [TYPE_FLOAT] = TYPE_FLOAT,
+                [TYPE_VEC2]  = TYPE_FLOAT,
+                [TYPE_VEC3]  = TYPE_FLOAT,
+                [TYPE_VEC4]  = TYPE_FLOAT,
+                [TYPE_INT]   = TYPE_INT,
+                [TYPE_IVEC2] = TYPE_INT,
+                [TYPE_IVEC3] = TYPE_INT,
+                [TYPE_IVEC4] = TYPE_INT,
+            };
+            static const i32 n_elements_in_type[N_TYPES] = {
+                [TYPE_FLOAT] = 1,
+                [TYPE_VEC2]  = 2,
+                [TYPE_VEC3]  = 3,
+                [TYPE_VEC4]  = 4,
+                [TYPE_INT]   = 1,
+                [TYPE_IVEC2] = 2,
+                [TYPE_IVEC3] = 3,
+                [TYPE_IVEC4] = 4,
+            };
+
+            t0 = type_and_namecheck(e->lhs); 
+            Type elem_type = backing_type[t0.type];
+            if (elem_type == TYPE_NIL) {
+                TYPE_AND_NAMECHECK_ERROR("Expression of type `%s` cannot be accessed with the swizzle-operator",
+                                         TYPE_TO_STR[t0.type]);
+            }
+
+            i32 n_elem_in_lhs = n_elements_in_type[t0.type];
+            i32 n_elem_in_rhs = e->rhs->token.text.length;
+            assert(n_elem_in_rhs > 0); // impossible 
+            if (n_elem_in_rhs > 4) {
+                TYPE_AND_NAMECHECK_ERROR("Right-hand side of swizzle operator contains too many elements");
+            }
+
+            for (i32 i = 0; i < n_elem_in_rhs; i++) {
+                static const char *elemids[4] = {
+                    "xrsu",
+                    "xyrgstuv",
+                    "xyzrgb",
+                    "xyzwrgba",
+                };
+                char c = e->rhs->token.text.start[i];
+                for (u32 j = 0;; j++) {
+                    char el = elemids[n_elem_in_lhs - 1][j];
+                    if (el == '\0') {
+                        TYPE_AND_NAMECHECK_ERROR("Invalid element in right-hand side of swizzle operation "
+                                                 "on type `%s`", TYPE_TO_STR[t0.type]);
+                    }
+                    if (el == c) {
+                        break;
+                    }
+                }
+            }
+           
+            /* 
+             * Inherit qualifier from lhs. Infer type from number of elements in the rhs
+             * expression + element type of lhs.
+             */
+            switch ((i32)elem_type) {
+                case TYPE_FLOAT: {
+                    switch (n_elem_in_rhs) {
+                        case 1: t0.type = TYPE_FLOAT; break;
+                        case 2: t0.type = TYPE_VEC2; break;
+                        case 3: t0.type = TYPE_VEC3; break;
+                        case 4: t0.type = TYPE_VEC4; break;
+                    } 
+                } break;
+
+                case TYPE_INT: {
+                    switch (n_elem_in_rhs) {
+                        case 1: t0.type = TYPE_INT; break;
+                        case 2: t0.type = TYPE_IVEC2; break;
+                        case 3: t0.type = TYPE_IVEC3; break;
+                        case 4: t0.type = TYPE_IVEC4; break;
+                    } 
+                } break;
+            }
+        } break;
+
         case EXPR_PAREN: {
             t0 = type_and_namecheck(e->child);
         } break;
@@ -759,14 +869,15 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
             t0.qualifier = QUALIFIER_CONST;
         } break;
         
-        case EXPR_CONST: {
+        case EXPR_ID: {
+            /* Freestanding identifier - must be a constant */
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     t0 = (TypeAndQualifier) {BUILTIN_CONSTANTS[i].type, QUALIFIER_CONST};
                     goto out;
                 } 
             }
-            TYPE_AND_NAMECHECK_ERROR("No such constant: `" SV_FMT "`.", SV_ARG(e->token.text));
+            TYPE_AND_NAMECHECK_ERROR("Unknown identifier: `" SV_FMT "`.", SV_ARG(e->token.text));
         } break;
 
         case N_EXPR_KINDS: {
@@ -869,6 +980,21 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
             //printf("NEG: %d\n", expr_to_op[e->kind]);
         } break;
 
+        case EXPR_SWIZZLE: {
+            codegen_expr(exe, e->lhs);
+            exe_append_op(exe, (Op){
+                .kind    = OP_PUSH,
+                .type    = e->type,
+                .argsize = TYPE_TO_SIZE[TYPE_UINT],
+            });
+            exe_append_u32(exe, construct_swizzle_descriptor(e->rhs->token.text));
+            exe_append_op(exe, (Op){
+                .kind    = OP_SWIZZLE, 
+                .type    = e->type,
+                .argsize = TYPE_TO_SIZE[e->lhs->type],
+            });
+        } break;
+
         case EXPR_PAREN: {
             codegen_expr(exe, e->child);
         } break;
@@ -920,7 +1046,8 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
             }
         } break;
 
-        case EXPR_CONST: {
+        case EXPR_ID: {
+            /* Freestanding identifier - must be a constant */
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     exe_append_op(exe, (Op){
@@ -1009,6 +1136,25 @@ static b8 is_hexadecimal_char(i32 c)
            (c >= 'A' && c <= 'F');
 }
 
+static u32 construct_swizzle_descriptor(StringView text)
+{
+    static const u8 elem_pos[256] = {
+        ['x'] = 0, ['y'] = 1, ['z'] = 2, ['w'] = 3,
+        ['r'] = 0, ['g'] = 1, ['b'] = 2, ['a'] = 3,
+        ['s'] = 0, ['t'] = 1,
+        ['u'] = 0, ['v'] = 1,
+    };
+    u32 desc = 0u;
+    u32 i = 0;
+    for (; i < text.length; i++) {
+        char c = text.start[i];
+        u32 idx = elem_pos[(i32)c];
+        desc |= (idx << (8*i));
+    }
+
+    return desc;
+}
+
 static void print_expr(ExprTree *e)
 {
     fflush(stdout);
@@ -1017,7 +1163,7 @@ static void print_expr(ExprTree *e)
         return;
     }
 
-    if (e->kind == EXPR_LIT || e->kind == EXPR_CONST) {
+    if (e->kind == EXPR_LIT || e->kind == EXPR_ID) {
         token_print(&e->token);
         return;
     }
@@ -1052,17 +1198,18 @@ static void print_expr(ExprTree *e)
     printf("(");
     print_expr(e->lhs);
     switch (e->kind) {
-        case EXPR_ADD: printf("+"); break;
-        case EXPR_SUB: printf("-"); break;
-        case EXPR_MUL: printf("*"); break;
-        case EXPR_DIV: printf("/"); break;
-        case EXPR_REM: printf("%%"); break;
+        case EXPR_ADD:     printf("+"); break;
+        case EXPR_SUB:     printf("-"); break;
+        case EXPR_MUL:     printf("*"); break;
+        case EXPR_DIV:     printf("/"); break;
+        case EXPR_REM:     printf("%%"); break;
+        case EXPR_SWIZZLE: printf("."); break;
         case EXPR_NEG:
         case EXPR_PAREN:
         case EXPR_FUNC:
         case EXPR_ARGLIST:
         case EXPR_LIT:
-        case EXPR_CONST:
+        case EXPR_ID:
         case N_EXPR_KINDS:
         default: assert(false); 
     }
@@ -1085,6 +1232,7 @@ static void print_expr_tree_helper(ExprTree *e, i32 indent)
         case EXPR_MUL:     printf("%*s*\n", pad, "");  print_expr_tree_helper(e->lhs, indent + 1); print_expr_tree_helper(e->rhs, indent + 1); break;
         case EXPR_DIV:     printf("%*s/\n", pad, "");  print_expr_tree_helper(e->lhs, indent + 1); print_expr_tree_helper(e->rhs, indent + 1); break;
         case EXPR_REM:     printf("%*s%%\n", pad, ""); print_expr_tree_helper(e->lhs, indent + 1); print_expr_tree_helper(e->rhs, indent + 1); break;
+        case EXPR_SWIZZLE: printf("%*s.\n", pad, "");  print_expr_tree_helper(e->lhs, indent + 1); print_expr_tree_helper(e->rhs, indent + 1); break;
         case EXPR_NEG:     printf("%*sN\n", pad, "");  print_expr_tree_helper(e->child, indent + 1);break;
         case EXPR_PAREN:   
                            printf("%*s(\n", pad, ""); 
@@ -1100,7 +1248,7 @@ static void print_expr_tree_helper(ExprTree *e, i32 indent)
                            printf("%*s,\n", pad, ""); 
                            print_expr_tree_helper(e->rhs, indent); 
                            break;
-        case EXPR_CONST:
+        case EXPR_ID:
         case EXPR_LIT:     printf("%*s", pad, ""); 
                            token_print(&e->token); 
                            printf("\n"); 

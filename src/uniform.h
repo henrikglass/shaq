@@ -26,7 +26,7 @@ typedef struct {
 /*--- Public function prototypes --------------------------------------------------------*/
 
 i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv);
-void uniform_determine_location_in_shader_program(Uniform *u, u32 shader_program);
+void uniform_map_shader_uniform(Uniform *u, u32 shader_program);
 
 #endif /* UNIFORM_H */
 

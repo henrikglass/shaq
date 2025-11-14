@@ -105,6 +105,7 @@ typedef enum
     OP_REM,
     OP_NEG,
     OP_FUNC,
+    OP_SWIZZLE,
 } OpKind;
 
 typedef struct

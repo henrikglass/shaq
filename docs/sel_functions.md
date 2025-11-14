@@ -4,8 +4,6 @@ PI                                                                              
 TAU                                                                              TYPE: float
 PHI                                                                              TYPE: float
 e                                                                                TYPE: float
-TRUE                                                                             TYPE: bool
-FALSE                                                                            TYPE: bool
 GL_NEAREST                                                                       TYPE: int
 GL_LINEAR                                                                        TYPE: int
 GL_REPEAT                                                                        TYPE: int
@@ -54,8 +52,6 @@ int maxi(int a, int b)                                                          
 int randi(int min, int max)                                                      Returns a random number in [`min`, `max`].
 int iota()                                                                       Returns the number of times it's been called. See the `iota` in golang.
 int frame_count()                                                                Returns the frame count.
-int viewport_resolution_x()                                                      Returns the X dimension of the current window resolution
-int viewport_resolution_y()                                                      Returns the Y dimension of the current window resolution
 int signed(uint x)                                                               Typecast uint to int.
 int drag_int(str label, float v, int min, int max, int default)                  Creates an integer slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`
 int input_int(str label, int default)                                            Creates an input widget for integers with the label `label` and default value `default`
@@ -149,7 +145,6 @@ vec3 vec3_mul_scalar(vec3 v, float s)                                           
 vec3 vec3_lerp(vec3 a, vec3 b, float t)                                          Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 vec3 vec3_slerp(vec3 a, vec3 b, float t)                                         Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.
 vec3 vec3_cross(vec3 a, vec3 b)                                                  Returns the cross product of `a` and `b`
-vec3 vec3_xyz(vec4 v)                                                            Returns the x,y, and z components of `v` as a vec3
 vec3 input_vec3(str label, vec3 default)                                         Creates an input widget for 3D vectors with the label `label` and default value `default`
 vec3 copy_vec3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ```

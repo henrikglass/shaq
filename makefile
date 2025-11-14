@@ -33,25 +33,44 @@ CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}
 C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
 C_LINK = gcc $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
 
-.PHONY: shaq imgui font debug release build docs
+.PHONY: shaq_objects imgui_objects font debug release build docs test
 
 all: debug
 
+#
+# You probable want to invoke make with one of these targets
+#
 debug: prep
 	@$(MAKE) --no-print-directory BUILD_TYPE=debug build
 
 release: prep
 	@$(MAKE) --no-print-directory BUILD_TYPE=release build
 
-build: shaq font imgui
+test: prep
+	@$(MAKE) --no-print-directory BUILD_TYPE=release seldbg
+
+
+#
+# These are just helper targets which are invoked indirectly by
+# the targets above
+#
+build: shaq_objects imgui_objects font
 	$(call C_LINK, build/*.o build/imgui/*.o, $(TARGET))
 	@$(MAKE) docs
 
-shaq:
+seldbg: shaq_objects imgui_objects font
+	rm build/main.o
+	$(call C_COMPILE, test/*.c, build/)
+	$(call C_LINK, build/*.o build/imgui/*.o, seldbg)
+
+#
+# Basically ignore these
+#
+shaq_objects:
 	$(call CPP_COMPILE, src/*.cpp, build/)
 	$(call C_COMPILE, src/*.c src/glad/*.c, build/)
 
-imgui:
+imgui_objects:
 ifeq ("$(wildcard build/imgui/*.o)","")
 	$(call CPP_COMPILE, src/imgui/*.cpp, build/imgui/)
 	$(call CPP_COMPILE, src/ImGuiFileDialog/*.cpp, build/imgui/)
@@ -78,4 +97,5 @@ clean:
 cleaner:
 	-@rm -r build/ 2> /dev/null ||:
 	-@rm $(TARGET) 2> /dev/null ||:
+	-@rm seldbg
 
