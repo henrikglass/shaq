@@ -438,7 +438,7 @@ void imgui_end()
 
 void imgui_end_frame()
 {
-#if 1
+#if 0
     ImGui::ShowDemoWindow();
 #endif
     ImGui::EndFrame();
