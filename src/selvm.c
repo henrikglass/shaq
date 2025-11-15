@@ -31,12 +31,24 @@ static inline f32 addf(f32 *lhs, f32 *rhs);
 static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs);
+static inline IVec2 addiv2(IVec2 *lhs, IVec2 *rhs);
+static inline IVec3 addiv3(IVec3 *lhs, IVec3 *rhs);
+static inline IVec4 addiv4(IVec4 *lhs, IVec4 *rhs);
+static inline Mat2 addm2(Mat2 *lhs, Mat2 *rhs);
+static inline Mat3 addm3(Mat3 *lhs, Mat3 *rhs);
+static inline Mat4 addm4(Mat4 *lhs, Mat4 *rhs);
 static inline i32 subi(i32 *lhs, i32 *rhs);
 static inline u32 subu(u32 *lhs, u32 *rhs);
 static inline f32 subf(f32 *lhs, f32 *rhs);
 static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs);
+static inline IVec2 subiv2(IVec2 *lhs, IVec2 *rhs);
+static inline IVec3 subiv3(IVec3 *lhs, IVec3 *rhs);
+static inline IVec4 subiv4(IVec4 *lhs, IVec4 *rhs);
+static inline Mat2 subm2(Mat2 *lhs, Mat2 *rhs);
+static inline Mat3 subm3(Mat3 *lhs, Mat3 *rhs);
+static inline Mat4 subm4(Mat4 *lhs, Mat4 *rhs);
 static inline i32 muli(i32 *lhs, i32 *rhs);
 static inline u32 mulu(u32 *lhs, u32 *rhs);
 static inline f32 mulf(f32 *lhs, f32 *rhs);
@@ -444,6 +456,12 @@ static void svm_run()
                     case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC4:  {Vec4 tmp = addv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC2: {IVec2 tmp = addiv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC3: {IVec3 tmp = addiv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC4: {IVec4 tmp = addiv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT2:  {Mat2 tmp = addm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT3:  {Mat3 tmp = addm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT4:  {Mat4 tmp = addm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -458,6 +476,12 @@ static void svm_run()
                     case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC4:  {Vec4 tmp = subv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC2: {IVec2 tmp = subiv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC3: {IVec3 tmp = subiv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC4: {IVec4 tmp = subiv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT2:  {Mat2 tmp = subm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT3:  {Mat3 tmp = subm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT4:  {Mat4 tmp = subm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -612,6 +636,12 @@ static inline f32 addf(f32 *lhs, f32 *rhs) { return (*lhs) + (*rhs); }
 static inline Vec2 addv2(Vec2 *lhs, Vec2 *rhs) {return vec2_add(*lhs, *rhs);}
 static inline Vec3 addv3(Vec3 *lhs, Vec3 *rhs) {return vec3_add(*lhs, *rhs);}
 static inline Vec4 addv4(Vec4 *lhs, Vec4 *rhs) {return vec4_add(*lhs, *rhs);}
+static inline IVec2 addiv2(IVec2 *lhs, IVec2 *rhs) {return ivec2_add(*lhs, *rhs);}
+static inline IVec3 addiv3(IVec3 *lhs, IVec3 *rhs) {return ivec3_add(*lhs, *rhs);}
+static inline IVec4 addiv4(IVec4 *lhs, IVec4 *rhs) {return ivec4_add(*lhs, *rhs);}
+static inline Mat2 addm2(Mat2 *lhs, Mat2 *rhs) {return mat2_add(*lhs, *rhs);}
+static inline Mat3 addm3(Mat3 *lhs, Mat3 *rhs) {return mat3_add(*lhs, *rhs);}
+static inline Mat4 addm4(Mat4 *lhs, Mat4 *rhs) {return mat4_add(*lhs, *rhs);}
 
 static inline i32 subi(i32 *lhs, i32 *rhs) { return (*lhs) - (*rhs); }
 static inline u32 subu(u32 *lhs, u32 *rhs) { return (*lhs) - (*rhs); }
@@ -619,6 +649,12 @@ static inline f32 subf(f32 *lhs, f32 *rhs) { return (*lhs) - (*rhs); }
 static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) {return vec2_sub(*lhs, *rhs);}
 static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) {return vec3_sub(*lhs, *rhs);}
 static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) {return vec4_sub(*lhs, *rhs);}
+static inline IVec2 subiv2(IVec2 *lhs, IVec2 *rhs) {return ivec2_sub(*lhs, *rhs);}
+static inline IVec3 subiv3(IVec3 *lhs, IVec3 *rhs) {return ivec3_sub(*lhs, *rhs);}
+static inline IVec4 subiv4(IVec4 *lhs, IVec4 *rhs) {return ivec4_sub(*lhs, *rhs);}
+static inline Mat2 subm2(Mat2 *lhs, Mat2 *rhs) {return mat2_sub(*lhs, *rhs);}
+static inline Mat3 subm3(Mat3 *lhs, Mat3 *rhs) {return mat3_sub(*lhs, *rhs);}
+static inline Mat4 subm4(Mat4 *lhs, Mat4 *rhs) {return mat4_sub(*lhs, *rhs);}
 
 static inline i32 muli(i32 *lhs, i32 *rhs) { return (*lhs) * (*rhs); }
 static inline u32 mulu(u32 *lhs, u32 *rhs) { return (*lhs) * (*rhs); }

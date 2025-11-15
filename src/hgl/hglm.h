@@ -263,9 +263,13 @@ static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, float s);
 static HGL_INLINE HglmIVec2 hglm_ivec2_lerp(HglmIVec2 a, HglmIVec2 b, float amount);
 
 static HGL_INLINE HglmIVec3 hglm_ivec3_make(int x, int y, int z);
+static HGL_INLINE HglmIVec3 hglm_ivec3_add(HglmIVec3 a, HglmIVec3 b);
+static HGL_INLINE HglmIVec3 hglm_ivec3_sub(HglmIVec3 a, HglmIVec3 b);
 // TODO ...
 
 static HGL_INLINE HglmIVec4 hglm_ivec4_make(int x, int y, int z, int w);
+static HGL_INLINE HglmIVec4 hglm_ivec4_add(HglmIVec4 a, HglmIVec4 b);
+static HGL_INLINE HglmIVec4 hglm_ivec4_sub(HglmIVec4 a, HglmIVec4 b);
 // TODO ...
 
 static HGL_INLINE HglmVec2 hglm_vec2_make(float x, float y);
@@ -317,11 +321,15 @@ static HGL_INLINE HglmVec4 hglm_vec4_bezier3(HglmVec4 v0, HglmVec4 v1, HglmVec4 
 
 static HGL_INLINE HglmMat2 hglm_mat2_make(HglmVec2 c0, HglmVec2 c1);
 static HGL_INLINE HglmMat2 hglm_mat2_make_identity(void);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_add(HglmMat2 a, HglmMat2 b);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_sub(HglmMat2 a, HglmMat2 b);
 // TODO ...
 
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make(HglmVec3 c0, HglmVec3 c1, HglmVec3 c2);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_identity(void);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_from_mat4(HglmMat4 mat4);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_add(HglmMat3 a, HglmMat3 b);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_sub(HglmMat3 a, HglmMat3 b);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_transpose(HglmMat3 m);
 __attribute__ ((const, unused)) static HGL_INLINE HglmVec3 hglm_mat3_mul_vec3(HglmMat3 m, HglmVec3 v);
 
@@ -426,6 +434,16 @@ static HGL_INLINE HglmIVec3 hglm_ivec3_make(int x, int y, int z)
     return (HglmIVec3) {.x = x, .y = y, .z = z};
 }
 
+static HGL_INLINE HglmIVec3 hglm_ivec3_add(HglmIVec3 a, HglmIVec3 b)
+{
+    return (HglmIVec3) {.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z};
+}
+
+static HGL_INLINE HglmIVec3 hglm_ivec3_sub(HglmIVec3 a, HglmIVec3 b)
+{
+    return (HglmIVec3) {.x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z};
+}
+
 
 /* ========== HglmIVec4 =======================================================*/
 
@@ -434,6 +452,16 @@ static HGL_INLINE HglmIVec3 hglm_ivec3_make(int x, int y, int z)
 static HGL_INLINE HglmIVec4 hglm_ivec4_make(int x, int y, int z, int w)
 {
     return (HglmIVec4) {.x = x, .y = y, .z = z, .w = w};
+}
+
+static HGL_INLINE HglmIVec4 hglm_ivec4_add(HglmIVec4 a, HglmIVec4 b)
+{
+    return (HglmIVec4) {.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w};
+}
+
+static HGL_INLINE HglmIVec4 hglm_ivec4_sub(HglmIVec4 a, HglmIVec4 b)
+{
+    return (HglmIVec4) {.x = a.x - b.x, .y = a.y - b.y, .z = a.z - b.z, .w = a.w - b.w};
 }
 
 
@@ -833,6 +861,21 @@ static HGL_INLINE HglmMat2 hglm_mat2_make_identity()
     return HGLM_MAT2_IDENTITY;
 }
 
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_add(HglmMat2 a, HglmMat2 b)
+{
+    return (HglmMat2) {
+        .c0 = hglm_vec2_add(a.c0, b.c0),
+        .c1 = hglm_vec2_add(a.c1, b.c1),
+    };
+}
+
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_sub(HglmMat2 a, HglmMat2 b)
+{
+    return (HglmMat2) {
+        .c0 = hglm_vec2_sub(a.c0, b.c0),
+        .c1 = hglm_vec2_sub(a.c1, b.c1),
+    };
+}
 
 /* ========== HglmMat3 =======================================================*/
 
@@ -860,6 +903,24 @@ __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_identi
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_from_mat4(HglmMat4 mat4)
 {
     return (HglmMat3){.c0 = mat4.c0.xyz, .c1 = mat4.c1.xyz, .c2 = mat4.c2.xyz};
+}
+
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_add(HglmMat3 a, HglmMat3 b)
+{
+    return (HglmMat3) {
+        .c0 = hglm_vec3_add(a.c0, b.c0),
+        .c1 = hglm_vec3_add(a.c1, b.c1),
+        .c2 = hglm_vec3_add(a.c2, b.c2),
+    };
+}
+
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_sub(HglmMat3 a, HglmMat3 b)
+{
+    return (HglmMat3) {
+        .c0 = hglm_vec3_sub(a.c0, b.c0),
+        .c1 = hglm_vec3_sub(a.c1, b.c1),
+        .c2 = hglm_vec3_sub(a.c2, b.c2),
+    };
 }
 
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_transpose(HglmMat3 m)
@@ -1688,9 +1749,13 @@ typedef HglmMat    Mat;
 
 #define ivec3_print              hglm_ivec3_print
 #define ivec3_make               hglm_ivec3_make
+#define ivec3_add                hglm_ivec3_add
+#define ivec3_sub                hglm_ivec3_sub
 
 #define ivec4_print              hglm_ivec4_print
 #define ivec4_make               hglm_ivec4_make
+#define ivec4_add                hglm_ivec4_add
+#define ivec4_sub                hglm_ivec4_sub
 
 #define vec2_print               hglm_vec2_print
 #define vec2_make                hglm_vec2_make
@@ -1746,11 +1811,15 @@ typedef HglmMat    Mat;
 #define mat2_print               hglm_mat2_print
 #define mat2_make                hglm_mat2_make
 #define mat2_make_identity       hglm_mat2_make_identity
+#define mat2_add                 hglm_mat2_add
+#define mat2_sub                 hglm_mat2_sub
 
 #define mat3_print               hglm_mat3_print
 #define mat3_make                hglm_mat3_make
 #define mat3_make_identity       hglm_mat3_make_identity
 #define mat3_make_from_mat4      hglm_mat3_make_from_mat4
+#define mat3_add                 hglm_mat3_add
+#define mat3_sub                 hglm_mat3_sub
 #define mat3_transpose           hglm_mat3_transpose
 #define mat3_mul_vec3            hglm_mat3_mul_vec3
 

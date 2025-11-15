@@ -703,8 +703,8 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
             TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
             TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
             TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
+            //TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
+            //TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
             if ((t0.qualifier == QUALIFIER_CONST) && 
                 (t1.qualifier == QUALIFIER_CONST)) {
                 t0.qualifier = QUALIFIER_CONST;
