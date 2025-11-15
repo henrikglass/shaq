@@ -713,7 +713,21 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
             }
         } break;
 
-        case EXPR_MUL:
+        case EXPR_MUL: {
+            t0 = type_and_namecheck(e->lhs); 
+            t1 = type_and_namecheck(e->rhs); 
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
+                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
+            if ((t0.qualifier == QUALIFIER_CONST) && 
+                (t1.qualifier == QUALIFIER_CONST)) {
+                t0.qualifier = QUALIFIER_CONST;
+            } else {
+                t0.qualifier = QUALIFIER_NONE;
+            }
+        } break;
         case EXPR_DIV: {
             t0 = type_and_namecheck(e->lhs); 
             t1 = type_and_namecheck(e->rhs); 
@@ -722,8 +736,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
             TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
             TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
             TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "Matricies may not (yet) be directly multiplied. Use built-in functions instead.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2, "Integer vectors may not (yet) be directly multiplied. Use built-in functions instead.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "There is no such thing a a matrix-matrix division.");
             if ((t0.qualifier == QUALIFIER_CONST) && 
                 (t1.qualifier == QUALIFIER_CONST)) {
                 t0.qualifier = QUALIFIER_CONST;
@@ -749,8 +762,10 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         case EXPR_NEG: {
             // TODO better rule / support more types
             t0 = type_and_namecheck(e->child);
-            TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT || t0.type == TYPE_FLOAT , 
-                                      "Operand to unary `-` operator must be of type INT or FLOAT.");
+            TYPE_AND_NAMECHECK_ASSERT(t0.type == TYPE_INT || t0.type == TYPE_FLOAT || t0.type == TYPE_VEC2 ||
+                                      t0.type == TYPE_VEC3 || t0.type == TYPE_VEC4 || t0.type == TYPE_IVEC2 ||
+                                      t0.type == TYPE_IVEC3 || t0.type == TYPE_IVEC4 , "Operand to unary `-` "
+                                      "operator must be of type INT, FLOAT, or any of the vector types.");
         } break;
         
         case EXPR_SWIZZLE: {

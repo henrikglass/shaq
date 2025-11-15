@@ -55,16 +55,31 @@ static inline f32 mulf(f32 *lhs, f32 *rhs);
 static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs);
+static inline IVec2 muliv2(IVec2 *lhs, IVec2 *rhs);
+static inline IVec3 muliv3(IVec3 *lhs, IVec3 *rhs);
+static inline IVec4 muliv4(IVec4 *lhs, IVec4 *rhs);
+static inline Mat2 mulm2(Mat2 *lhs, Mat2 *rhs);
+static inline Mat3 mulm3(Mat3 *lhs, Mat3 *rhs);
+static inline Mat4 mulm4(Mat4 *lhs, Mat4 *rhs);
 static inline i32 divi(i32 *lhs, i32 *rhs);
 static inline u32 divu(u32 *lhs, u32 *rhs);
 static inline f32 divf(f32 *lhs, f32 *rhs);
 static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs);
 static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs);
 static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs);
+static inline IVec2 diviv2(IVec2 *lhs, IVec2 *rhs);
+static inline IVec3 diviv3(IVec3 *lhs, IVec3 *rhs);
+static inline IVec4 diviv4(IVec4 *lhs, IVec4 *rhs);
 static inline i32 remi(i32 *lhs, i32 *rhs);
 static inline u32 remu(u32 *lhs, u32 *rhs);
 static inline i32 negi(i32 *val);
 static inline f32 negf(f32 *val);
+static inline Vec2 negv2(Vec2 *val);
+static inline Vec3 negv3(Vec3 *val);
+static inline Vec4 negv4(Vec4 *val);
+static inline IVec2 negiv2(IVec2 *val);
+static inline IVec3 negiv3(IVec3 *val);
+static inline IVec4 negiv4(IVec4 *val);
 
 static SelValue fn_load_image_(void *args);
 static SelValue fn_load_image_ex_(void *args);
@@ -496,6 +511,12 @@ static void svm_run()
                     case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC4:  {Vec4 tmp = mulv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC2: {IVec2 tmp = muliv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC3: {IVec3 tmp = muliv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC4: {IVec4 tmp = muliv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT2:  {Mat2 tmp = mulm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT3:  {Mat3 tmp = mulm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_MAT4:  {Mat4 tmp = mulm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -510,6 +531,9 @@ static void svm_run()
                     case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC4:  {Vec4 tmp = divv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC2: {IVec2 tmp = diviv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC3: {IVec3 tmp = diviv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC4: {IVec4 tmp = diviv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -529,6 +553,12 @@ static void svm_run()
                 switch (op->type) {
                     case TYPE_INT: {i32 tmp = negi(val); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = negf(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC2:  {Vec2 tmp = negv2(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC3:  {Vec3 tmp = negv3(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_VEC4:  {Vec4 tmp = negv4(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC2: {IVec2 tmp = negiv2(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC3: {IVec3 tmp = negiv3(val); svm_stack_push(&tmp, sizeof(tmp));} break;
+                    case TYPE_IVEC4: {IVec4 tmp = negiv4(val); svm_stack_push(&tmp, sizeof(tmp));} break;
                     default: assert(false);
                 }
             } break;
@@ -646,34 +676,49 @@ static inline Mat4 addm4(Mat4 *lhs, Mat4 *rhs) {return mat4_add(*lhs, *rhs);}
 static inline i32 subi(i32 *lhs, i32 *rhs) { return (*lhs) - (*rhs); }
 static inline u32 subu(u32 *lhs, u32 *rhs) { return (*lhs) - (*rhs); }
 static inline f32 subf(f32 *lhs, f32 *rhs) { return (*lhs) - (*rhs); }
-static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) {return vec2_sub(*lhs, *rhs);}
-static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) {return vec3_sub(*lhs, *rhs);}
-static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) {return vec4_sub(*lhs, *rhs);}
-static inline IVec2 subiv2(IVec2 *lhs, IVec2 *rhs) {return ivec2_sub(*lhs, *rhs);}
-static inline IVec3 subiv3(IVec3 *lhs, IVec3 *rhs) {return ivec3_sub(*lhs, *rhs);}
-static inline IVec4 subiv4(IVec4 *lhs, IVec4 *rhs) {return ivec4_sub(*lhs, *rhs);}
-static inline Mat2 subm2(Mat2 *lhs, Mat2 *rhs) {return mat2_sub(*lhs, *rhs);}
-static inline Mat3 subm3(Mat3 *lhs, Mat3 *rhs) {return mat3_sub(*lhs, *rhs);}
-static inline Mat4 subm4(Mat4 *lhs, Mat4 *rhs) {return mat4_sub(*lhs, *rhs);}
+static inline Vec2 subv2(Vec2 *lhs, Vec2 *rhs) { return vec2_sub(*lhs, *rhs);}
+static inline Vec3 subv3(Vec3 *lhs, Vec3 *rhs) { return vec3_sub(*lhs, *rhs);}
+static inline Vec4 subv4(Vec4 *lhs, Vec4 *rhs) { return vec4_sub(*lhs, *rhs);}
+static inline IVec2 subiv2(IVec2 *lhs, IVec2 *rhs) { return ivec2_sub(*lhs, *rhs);}
+static inline IVec3 subiv3(IVec3 *lhs, IVec3 *rhs) { return ivec3_sub(*lhs, *rhs);}
+static inline IVec4 subiv4(IVec4 *lhs, IVec4 *rhs) { return ivec4_sub(*lhs, *rhs);}
+static inline Mat2 subm2(Mat2 *lhs, Mat2 *rhs) { return mat2_sub(*lhs, *rhs);}
+static inline Mat3 subm3(Mat3 *lhs, Mat3 *rhs) { return mat3_sub(*lhs, *rhs);}
+static inline Mat4 subm4(Mat4 *lhs, Mat4 *rhs) { return mat4_sub(*lhs, *rhs);}
 
 static inline i32 muli(i32 *lhs, i32 *rhs) { return (*lhs) * (*rhs); }
 static inline u32 mulu(u32 *lhs, u32 *rhs) { return (*lhs) * (*rhs); }
 static inline f32 mulf(f32 *lhs, f32 *rhs) { return (*lhs) * (*rhs); }
-static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, *rhs);}
-static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, *rhs);}
-static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, *rhs);}
+static inline Vec2 mulv2(Vec2 *lhs, Vec2 *rhs) { return vec2_hadamard(*lhs, *rhs);}
+static inline Vec3 mulv3(Vec3 *lhs, Vec3 *rhs) { return vec3_hadamard(*lhs, *rhs);}
+static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) { return vec4_hadamard(*lhs, *rhs);}
+static inline IVec2 muliv2(IVec2 *lhs, IVec2 *rhs) { return ivec2_hadamard_mul(*lhs, *rhs);}
+static inline IVec3 muliv3(IVec3 *lhs, IVec3 *rhs) { return ivec3_hadamard_mul(*lhs, *rhs);}
+static inline IVec4 muliv4(IVec4 *lhs, IVec4 *rhs) { return ivec4_hadamard_mul(*lhs, *rhs);}
+static inline Mat2 mulm2(Mat2 *lhs, Mat2 *rhs) { return mat2_mul_mat2(*lhs, *rhs);}
+static inline Mat3 mulm3(Mat3 *lhs, Mat3 *rhs) { return mat3_mul_mat3(*lhs, *rhs);}
+static inline Mat4 mulm4(Mat4 *lhs, Mat4 *rhs) { return mat4_mul_mat4(*lhs, *rhs);}
 
 static inline i32 divi(i32 *lhs, i32 *rhs) { return (*lhs) / (*rhs); }
 static inline u32 divu(u32 *lhs, u32 *rhs) { return (*lhs) / (*rhs); }
 static inline f32 divf(f32 *lhs, f32 *rhs) { return (*lhs) / (*rhs); }
-static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs) {return vec2_hadamard(*lhs, vec2_recip(*rhs));}
-static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs) {return vec3_hadamard(*lhs, vec3_recip(*rhs));}
-static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) {return vec4_hadamard(*lhs, vec4_recip(*rhs));}
+static inline Vec2 divv2(Vec2 *lhs, Vec2 *rhs) { return vec2_hadamard(*lhs, vec2_recip(*rhs));}
+static inline Vec3 divv3(Vec3 *lhs, Vec3 *rhs) { return vec3_hadamard(*lhs, vec3_recip(*rhs));}
+static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) { return vec4_hadamard(*lhs, vec4_recip(*rhs));}
+static inline IVec2 diviv2(IVec2 *lhs, IVec2 *rhs) { return ivec2_hadamard_div(*lhs, *rhs);}
+static inline IVec3 diviv3(IVec3 *lhs, IVec3 *rhs) { return ivec3_hadamard_div(*lhs, *rhs);}
+static inline IVec4 diviv4(IVec4 *lhs, IVec4 *rhs) { return ivec4_hadamard_div(*lhs, *rhs);}
 
 static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
 static inline u32 remu(u32 *lhs, u32 *rhs) { return (*lhs) % (*rhs); }
 static inline i32 negi(i32 *val) { return -(*val); }
 static inline f32 negf(f32 *val) { return -(*val); }
+static inline Vec2 negv2(Vec2 *val) { return vec2_sub(vec2_make(0,0), *val); }
+static inline Vec3 negv3(Vec3 *val) { return vec3_sub(vec3_make(0,0,0), *val); }
+static inline Vec4 negv4(Vec4 *val) { return vec4_sub(vec4_make(0,0,0,0), *val); }
+static inline IVec2 negiv2(IVec2 *val) { return ivec2_sub(ivec2_make(0,0), *val); }
+static inline IVec3 negiv3(IVec3 *val) { return ivec3_sub(ivec3_make(0,0,0), *val); }
+static inline IVec4 negiv4(IVec4 *val) { return ivec4_sub(ivec4_make(0,0,0,0), *val); }
 
 /* --------------------- TEXTURE functions ------------------ */
 
