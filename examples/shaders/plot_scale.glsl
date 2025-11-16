@@ -36,7 +36,7 @@ void main()
     float x = scale_pos;
     float w = 0.01;
     float s = 10.0;
-    float ts = scale;
+    float ts = clamp(scale, 0.0, 1000000.0);
     while (ts > 0.009) {
         ts *= 0.1;
         s *= 0.1;

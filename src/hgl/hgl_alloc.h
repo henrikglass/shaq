@@ -631,6 +631,7 @@ void *hgl_realloc(HglAllocator *allocator, void *ptr, size_t alloc_size)
                 return NULL;
             }
             memmove(new, ptr, alloc_size);
+            return new;
         } break;
 
         case HGL_STACK_ALLOCATOR: {

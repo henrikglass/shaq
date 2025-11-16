@@ -438,7 +438,7 @@ SelValue gui_get_widget_value(StringView label,
     };
     memcpy(w.secondary_args, secondary_args, secondary_args_size);
     if (kind == INPUT_TEXT) {
-        w.text_input_buffer = p2p_fs_alloc(SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE); 
+        w.text_input_buffer = hgl_zalloc(g_p2p_fs_allocator, SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE); 
     }
     switch (kind) {
         case INPUT_INT:        w.value.val_i32  = args_i32[0];  break;

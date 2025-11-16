@@ -1116,13 +1116,14 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size, Allocator *alloc
         exe->capacity = 64;
         exe->code = hgl_alloc(alloc, exe->capacity * sizeof(*exe->code));
     } 
+    assert(exe->code != NULL && "allocator alloc failed");
     if (exe->capacity < exe->size + size) {
         while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
         exe->code = hgl_realloc(alloc, exe->code, exe->capacity * sizeof(*exe->code));
     }
-    assert(exe->code != NULL && "eexe_allocator alloc failed");
+    assert(exe->code != NULL && "allocator realloc failed");
     memcpy(&exe->code[exe->size], val, size);
     exe->size += size;
 }

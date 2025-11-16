@@ -378,7 +378,7 @@ static HGL_INLINE float hglm_pid(float error, float last_error, float *i,
                                  float Kp, float Ki, float Kd, float dt);
 static HGL_INLINE float hglm_lerp(float a, float b, float t);
 static HGL_INLINE float hglm_ilerp(float a, float b, float value);
-static HGL_INLINE float hglm_clamp(float min, float max, float value);
+static HGL_INLINE float hglm_clamp(float value, float min, float max);
 static HGL_INLINE float hglm_remap(float in_min, float in_max, float out_min, float out_max, float value);
 static HGL_INLINE float hglm_smoothstep(float t);
 static HGL_INLINE float hglm_sinstep(float t);
@@ -1643,7 +1643,7 @@ static HGL_INLINE float hglm_ilerp(float a, float b, float value)
     return (value - a) / (b - a); // t
 }
 
-static HGL_INLINE float hglm_clamp(float min, float max, float value)
+static HGL_INLINE float hglm_clamp(float value, float min, float max)
 {
     //return fminf(fmaxf(min, value), max);
     if (value < min) return min;
