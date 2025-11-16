@@ -94,8 +94,9 @@ static SelValue fn_left_mouse_button_was_clicked_(void *args);
 static SelValue fn_right_mouse_button_was_clicked_(void *args);
 static SelValue fn_key_is_down_(void *args);
 static SelValue fn_key_was_pressed_(void *args);
-static SelValue fn_shaq_reloaded_this_frame_(void *args);
-static SelValue fn_shaq_reloaded_last_frame_(void *args);
+static SelValue fn_reloaded_this_frame_(void *args);
+static SelValue fn_reloaded_last_frame_(void *args);
+static SelValue fn_is_darkmode_(void *args);
 
 static SelValue fn_int_(void *args);
 static SelValue fn_unsigned_(void *args);
@@ -180,6 +181,7 @@ static SelValue fn_vec4_dot_(void *args);
 static SelValue fn_vec4_mul_scalar_(void *args);
 static SelValue fn_vec4_lerp_(void *args);
 static SelValue fn_rgba_(void *args);
+static SelValue fn_background_color_(void *args);
 
 static SelValue fn_ivec2_(void *args);
 static SelValue fn_viewport_resolution_(void *args);
@@ -212,6 +214,7 @@ static SelValue fn_mat4_mul_scalar_(void *args);
 static SelValue fn_input_float_(void *args);
 static SelValue fn_checkbox_(void *args);
 static SelValue fn_drag_int_(void *args);
+static SelValue fn_drag_float_(void *args);
 static SelValue fn_slider_float_(void *args);
 static SelValue fn_slider_float_log_(void *args);
 static SelValue fn_input_int_(void *args);
@@ -251,8 +254,9 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("right_mouse_button_was_clicked"), .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_right_mouse_button_was_clicked_, .argtypes = {TYPE_NIL}, .synopsis = "bool right_mouse_button_was_clicked()", .desc = "Returns true if the right mouse button was pressed in the last frame.", },
     { .id = SV_LIT("key_is_down"),                    .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_key_is_down_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool key_is_down(str key)", .desc = "Returns true if `key` is down. `key` can be any letter in the English alphabet.", },
     { .id = SV_LIT("key_was_pressed"),                .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_key_was_pressed_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool key_was_pressed(str key)", .desc = "Returns true if `key` was pressed . `key` can be any letter in the English alphabet.", },
-    { .id = SV_LIT("shaq_reloaded_this_frame"),       .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_shaq_reloaded_this_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool shaq_reloaded_this_frame()", .desc = "Returns true if Shaq performed an internal reload operation this frame.", },
-    { .id = SV_LIT("shaq_reloaded_last_frame"),       .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_shaq_reloaded_last_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool shaq_reloaded_last_frame()", .desc = "Returns true if Shaq performed an internal reload operation last frame.", },
+    { .id = SV_LIT("reloaded_this_frame"),            .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_reloaded_this_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool reloaded_this_frame()", .desc = "Returns true if Shaq performed an internal reload operation this frame.", },
+    { .id = SV_LIT("reloaded_last_frame"),            .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_reloaded_last_frame_, .argtypes = {TYPE_NIL}, .synopsis = "bool reloaded_last_frame()", .desc = "Returns true if Shaq performed an internal reload operation last frame.", },
+    { .id = SV_LIT("is_darkmode"),                    .type = TYPE_BOOL, .qualifier = QUALIFIER_NONE, .impl = fn_is_darkmode_, .argtypes = {TYPE_NIL}, .synopsis = "bool is_darkmode()", .desc = "Returns true if darkmode is enabled in Shaq.", },
 
     { .id = SV_LIT("int"),           .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,           .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = SV_LIT("unsigned"),      .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_unsigned_,      .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "uint unsigned(int x)", .desc = "Typecast int to uint.", },
@@ -329,14 +333,15 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("vec3_slerp"),          .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 vec3_slerp(vec3 a, vec3 b, float t)",                  . desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.", },
     { .id = SV_LIT("vec3_cross"),          .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 vec3_cross(vec3 a, vec3 b)",                           . desc = "Returns the cross product of `a` and `b`", },
 
-    { .id = SV_LIT("vec4"),            .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_,            .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = "Creates a 4D vector with components `x`, `y`, `z`, and `w`", },
-    { .id = SV_LIT("vec4_distance"),   .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_distance_,   .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_distance(vec4 a, vec4 b)",            .desc = "Returns the absolute distance between `a` and `b`", },
-    { .id = SV_LIT("vec4_length"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_length_,     .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "float vec4_length(vec4 v)",                      .desc = "Returns the absolute length of `v`", },
-    { .id = SV_LIT("vec4_normalize"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,  .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 vec4_normalize(vec4 v)",                   .desc = "Returns the normalized vector of `v`", },
-    { .id = SV_LIT("vec4_dot"),        .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_dot(vec4 a, vec4 b)",                 .desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("vec4_mul_scalar"), .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_mul_scalar_, .argtypes = {TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},                          .synopsis = "vec4 vec4_mul_scalar(vec4 v, float s)",         .desc = "Calculates the scalar-vector multiplication `s`*`v`", },
-    { .id = SV_LIT("vec4_lerp"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,       .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 vec4_lerp(vec4 a, vec4 b, float t)",       .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
-    { .id = SV_LIT("rgba"),            .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,            .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
+    { .id = SV_LIT("vec4"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_,             .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = "Creates a 4D vector with components `x`, `y`, `z`, and `w`", },
+    { .id = SV_LIT("vec4_distance"),    .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_distance_,    .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_distance(vec4 a, vec4 b)",           .desc = "Returns the absolute distance between `a` and `b`", },
+    { .id = SV_LIT("vec4_length"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_length_,      .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "float vec4_length(vec4 v)",                     .desc = "Returns the absolute length of `v`", },
+    { .id = SV_LIT("vec4_normalize"),   .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,   .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 vec4_normalize(vec4 v)",                   .desc = "Returns the normalized vector of `v`", },
+    { .id = SV_LIT("vec4_dot"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,         .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_dot(vec4 a, vec4 b)",                .desc = "Returns the dot product of `a` and `b`", },
+    { .id = SV_LIT("vec4_mul_scalar"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_mul_scalar_,  .argtypes = {TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},                          .synopsis = "vec4 vec4_mul_scalar(vec4 v, float s)",         .desc = "Calculates the scalar-vector multiplication `s`*`v`", },
+    { .id = SV_LIT("vec4_lerp"),        .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 vec4_lerp(vec4 a, vec4 b, float t)",       .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("rgba"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,             .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
+    { .id = SV_LIT("background_color"), .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_background_color_, .argtypes = {TYPE_NIL},                                                 .synopsis = "vec4 background_color()",                       .desc = "Returns the current background color, with components normalized to 0.0 - 1.0", },
 
     { .id = SV_LIT("ivec2"),               .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_ivec2_,               .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},   .synopsis = "ivec2 ivec2(int x, int y)",       .desc = "Creates a 2D integer vector with components `x` and `y`", },
     { .id = SV_LIT("viewport_resolution"), .type = TYPE_IVEC2, .qualifier = QUALIFIER_PURE, .impl = fn_viewport_resolution_, .argtypes = {TYPE_NIL},                       .synopsis = "ivec2 viewport_resolution()",     .desc = "Returns the current viewport/window resolution", },
@@ -369,6 +374,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("input_float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_input_float_,      .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float input_float(str label, float default)", .desc = "Creates an input widget for floats with the label `label` and default value `default`", },
     { .id = SV_LIT("checkbox"),         .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_checkbox_,         .argtypes = {TYPE_STR, TYPE_BOOL, TYPE_NIL}, .synopsis = "bool checkbox(str label, bool default)", .desc = "Creates a checkbox widget with the label `label` and default value `default`", },
     { .id = SV_LIT("drag_int"),         .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_drag_int_,         .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "int drag_int(str label, float v, int min, int max, int default)", .desc = "Creates an integer slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`", },
+    { .id = SV_LIT("drag_float"),       .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_drag_float_,       .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float drag_float(str label, float v, float min, float max, float default)", .desc = "Creates an float slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`", },
     { .id = SV_LIT("slider_float"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_,     .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float(str label, float min, float max, float default)", .desc = "Creates a float slider widget with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`", },
     { .id = SV_LIT("slider_float_log"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_slider_float_log_, .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float slider_float_log(str label, float min, float max, float default)", .desc = "Creates a float slider widget, with logarithmic scaling, with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`", },
     { .id = SV_LIT("input_int"),        .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_input_int_,        .argtypes = {TYPE_STR, TYPE_INT, TYPE_NIL}, .synopsis = "int input_int(str label, int default)", .desc = "Creates an input widget for integers with the label `label` and default value `default`", },
@@ -920,16 +926,22 @@ static SelValue fn_key_was_pressed_(void *args)
     return (SelValue) {.val_bool = user_input_key_was_pressed(c)};
 }
 
-static SelValue fn_shaq_reloaded_this_frame_(void *args)
+static SelValue fn_reloaded_this_frame_(void *args)
 {
     (void) args;
     return (SelValue) {.val_bool = shaq_reloaded_this_frame()};
 }
 
-static SelValue fn_shaq_reloaded_last_frame_(void *args)
+static SelValue fn_reloaded_last_frame_(void *args)
 {
     (void) args;
     return (SelValue) {.val_bool = shaq_reloaded_last_frame()};
+}
+
+static SelValue fn_is_darkmode_(void *args)
+{
+    (void) args;
+    return (SelValue) {.val_bool = gui_darkmode_is_enabled()};
 }
 
 
@@ -1439,6 +1451,21 @@ static SelValue fn_rgba_(void *args)
     return (SelValue) {.val_vec4 = hglm_vec4_make(r, g, b, a)};
 }
 
+static SelValue fn_background_color_(void *args)
+{
+    #define RGBA(r, g, b, a) vec4_make((float)(r) / 255.0f, \
+                                       (float)(g) / 255.0f, \
+                                       (float)(g) / 255.0f, \
+                                       (float)(a) / 255.0f)
+    (void) args;
+    if (gui_darkmode_is_enabled()) {
+        return (SelValue) {.val_vec4 = SHAQ_COLOR_DARKMODE_WINDOW_BG};
+    } else {
+        return (SelValue) {.val_vec4 = SHAQ_COLOR_LIGHTMODE_WINDOW_BG};
+    }
+    #undef RGBA
+}
+
 
 /* ---------------------- IVEC2 functions -------------------- */
 
@@ -1630,6 +1657,14 @@ static SelValue fn_drag_int_(void *args)
     StringView label = *(StringView *)args;
     void *secondary_args = (void *)(args8 + sizeof(StringView));
     return gui_get_widget_value(label, DRAG_INT, secondary_args, 3*sizeof(i32) + 1*sizeof(f32));
+}
+
+static SelValue fn_drag_float_(void *args)
+{
+    u8 *args8 = (u8 *) args;
+    StringView label = *(StringView *)args;
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_widget_value(label, DRAG_FLOAT, secondary_args, 4*sizeof(f32));
 }
 
 static SelValue fn_slider_float_(void *args)

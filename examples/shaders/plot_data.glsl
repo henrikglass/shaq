@@ -22,17 +22,15 @@ float sdf_line_segment(vec2 a, vec2 b, vec2 p)
 
 void main()
 {
-    //if (reloaded) {
-    //    frag_color = vec4(0.117, 0.117, 0.117, 1.0);
-    //    return;
-    //}
+    if (reloaded) {
+        frag_color = vec4(0,0,0,0);
+        return;
+    }
 
     vec2 uv = gl_FragCoord.xy/iresolution;
     vec2 p = (2.0*gl_FragCoord.xy-iresolution.xy) / iresolution;
     vec2 pixel = 1.0 / iresolution;
-    frag_color = vec4(0.117, 0.117, 0.117, 1.0);
     frag_color = texelFetch(previous_frame, ivec2(gl_FragCoord.xy) + ivec2(speed, 0), 0);
-    frag_color = mix(frag_color, vec4(0.35, 0.35, 0.35, 1.0), 1 - smoothstep(0.0, 2*pixel.y, abs(p.y)));
 
     float f0 = scale*plot_value_prev;
     float f1 = scale*plot_value;

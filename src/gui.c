@@ -439,12 +439,13 @@ SelValue gui_get_widget_value(StringView label,
         case INPUT_VEC4:       default_value.val_vec4 = args_vec4[0]; break;
         case CHECKBOX:         default_value.val_bool = args_i32[0];  break;
         case DRAG_INT:         default_value.val_i32  = args_i32[3];  break;
+        case DRAG_FLOAT:       default_value.val_f32  = args_f32[3];  break;
         case SLIDER_FLOAT:     default_value.val_f32  = args_f32[2];  break;
         case SLIDER_FLOAT_LOG: default_value.val_f32  = args_f32[2];  break;
         case COLOR_PICKER:     default_value.val_vec4 = args_vec4[0]; break;
     } 
     Widget w = (Widget) {
-        .label              = label,
+        .label              = sv_make_copy(label, p2p_fs_alloc),
         .kind               = kind,
         .value              = default_value,
         .touched_this_frame = true,
@@ -530,6 +531,13 @@ static inline void draw_and_update_widget(Widget *w)
             i32 min = args_i32[1];
             i32 max = args_i32[2];
             imgui_drag_int(label_cstr, &w->value.val_i32, v, min, max); 
+        } break;
+        case DRAG_FLOAT: {
+            f32 *args_f32 = (f32*)w->secondary_args;
+            f32 v = args_f32[0];
+            f32 min = args_f32[1];
+            f32 max = args_f32[2];
+            imgui_drag_float(label_cstr, &w->value.val_f32, v, min, max); 
         } break;
 
         case SLIDER_FLOAT:

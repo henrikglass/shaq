@@ -38,8 +38,9 @@ bool left_mouse_button_was_clicked()                                            
 bool right_mouse_button_was_clicked()                                            Returns true if the right mouse button was pressed in the last frame.
 bool key_is_down(str key)                                                        Returns true if `key` is down. `key` can be any letter in the English alphabet.
 bool key_was_pressed(str key)                                                    Returns true if `key` was pressed . `key` can be any letter in the English alphabet.
-bool shaq_reloaded_this_frame()                                                  Returns true if Shaq performed an internal reload operation this frame.
-bool shaq_reloaded_last_frame()                                                  Returns true if Shaq performed an internal reload operation last frame.
+bool reloaded_this_frame()                                                       Returns true if Shaq performed an internal reload operation this frame.
+bool reloaded_last_frame()                                                       Returns true if Shaq performed an internal reload operation last frame.
+bool is_darkmode()                                                               Returns true if darkmode is enabled in Shaq.
 bool checkbox(str label, bool default)                                           Creates a checkbox widget with the label `label` and default value `default`
 bool copy_bool(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ```
@@ -116,6 +117,7 @@ float vec4_distance(vec4 a, vec4 b)                                             
 float vec4_length(vec4 v)                                                        Returns the absolute length of `v`
 float vec4_dot(vec4 a, vec4 b)                                                   Returns the dot product of `a` and `b`
 float input_float(str label, float default)                                      Creates an input widget for floats with the label `label` and default value `default`
+float drag_float(str label, float v, float min, float max, float default)        Creates an float slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`
 float slider_float(str label, float min, float max, float default)               Creates a float slider widget with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`
 float slider_float_log(str label, float min, float max, float default)           Creates a float slider widget, with logarithmic scaling, with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`
 float copy_float(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
@@ -156,6 +158,7 @@ vec4 vec4_normalize(vec4 v)                                                     
 vec4 vec4_mul_scalar(vec4 v, float s)                                            Calculates the scalar-vector multiplication `s`*`v`
 vec4 vec4_lerp(vec4 a, vec4 b, float t)                                          Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 vec4 rgba(int hexcode)                                                           Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode
+vec4 background_color()                                                          Returns the current background color, with components normalized to 0.0 - 1.0
 vec4 mat4_mul_vec4(mat4 m, vec4 v)                                               Calculates the matrix-vector multiplication `m`*`v`
 vec4 input_vec4(str label, vec4 default)                                         Creates an input widget for 4D vectors with the label `label` and default value `default`
 vec4 color_picker(str label, vec4 default)                                       Creates a color picker widget with the label `label` and default value `default`

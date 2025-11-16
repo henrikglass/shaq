@@ -12,10 +12,10 @@
 
 /*--- Private macros --------------------------------------------------------------------*/
 
-#define RGBA(r, g, b, a) (float)r / 255.0f, \
-                         (float)g / 255.0f, \
-                         (float)g / 255.0f, \
-                         (float)a / 255.0f
+#define RGBA(r, g, b, a) (float)(r) / 255.0f, \
+                         (float)(g) / 255.0f, \
+                         (float)(g) / 255.0f, \
+                         (float)(a) / 255.0f
 
 /*--- Private type definitions ----------------------------------------------------------*/
 

@@ -20,6 +20,7 @@ typedef enum {
     INPUT_VEC4,
     CHECKBOX,
     DRAG_INT,
+    DRAG_FLOAT,
     SLIDER_FLOAT,
     SLIDER_FLOAT_LOG,
     COLOR_PICKER,

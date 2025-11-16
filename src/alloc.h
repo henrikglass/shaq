@@ -6,11 +6,12 @@
 
 #define Allocator HglAllocator
 
-extern Allocator *g_temp_allocator;   // for temporary allocations
-extern Allocator *g_frame_arena;      // for allocations that can be freed at the end of the frame
-extern Allocator *g_r2r_arena;        // for allocations that can be freed at the next reload
-extern Allocator *g_r2r_fs_allocator; // for allocations that can be freed at the next reload
-extern Allocator *g_image_allocator;  // for image allocations (freed opon opening a new project file)
+extern Allocator *g_temp_allocator;    // for temporary allocations
+extern Allocator *g_frame_arena;       // for allocations that can be freed at the end of the frame
+extern Allocator *g_r2r_arena;         // for allocations that can be freed at the next minor reload
+extern Allocator *g_r2r_fs_allocator;  // for allocations that can be freed at the next minor reload
+extern Allocator *g_p2p_fs_allocator;  // for allocations that can be freed at the next major reload (freed opon opening a new project file)
+
 
 void alloc_init(void);
 void alloc_final(void);
@@ -23,9 +24,9 @@ void  r2r_arena_free(void *ptr);
 void *r2r_fs_alloc(size_t size);
 void *r2r_fs_realloc(void *ptr, size_t size);
 void  r2r_fs_free(void *ptr);
-void *image_alloc(size_t size);
-void *image_realloc(void *ptr, size_t size);
-void  image_free(void *ptr);
+void *p2p_fs_alloc(size_t size);
+void *p2p_fs_realloc(void *ptr, size_t size);
+void  p2p_fs_free(void *ptr);
 
 /* These are NO-OP */
 void *dummy_alloc(size_t size);

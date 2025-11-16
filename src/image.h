@@ -24,7 +24,7 @@ typedef struct
 /*--- Public function prototypes --------------------------------------------------------*/
 
 Image *image_load_from_file(StringView filepath);
-void image_free_all_cached_images(void);
+void image_clear_cached_images(void);
 
 #endif /* IMAGE_H */
 

@@ -67,6 +67,7 @@ void imgui_newline(void);
 b8 imgui_button(const char *label);
 void imgui_checkbox(const char *label, b8 *b);
 void imgui_drag_int(const char *label, int *v, f32 speed, int min, int max);
+void imgui_drag_float(const char *label, f32 *v, f32 speed, f32 min, f32 max);
 void imgui_input_int(const char *label, int *v);
 void imgui_input_float(const char *label, float *v);
 void imgui_input_float2(const char *label, float *v);

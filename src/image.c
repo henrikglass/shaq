@@ -8,9 +8,9 @@
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wduplicated-branches"
-#define STBI_MALLOC  image_alloc
-#define STBI_REALLOC image_realloc
-#define STBI_FREE    image_free
+#define STBI_MALLOC  p2p_fs_alloc
+#define STBI_REALLOC p2p_fs_realloc
+#define STBI_FREE    p2p_fs_free
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #pragma GCC diagnostic pop
@@ -110,9 +110,8 @@ Image *image_load_from_file(StringView filepath)
     return &image_cache.arr[lru_idx].img;
 }
 
-void image_free_all_cached_images()
+void image_clear_cached_images()
 {
-    hgl_free_all(g_image_allocator);
     memset(&image_cache, 0, sizeof(image_cache));
 }
 
@@ -121,7 +120,7 @@ void image_free_all_cached_images()
 Image load_image(StringView filepath)
 {
     Image img;
-    img.filepath = sv_make_copy(filepath, image_alloc);
+    img.filepath = sv_make_copy(filepath, p2p_fs_alloc);
     stbi_set_flip_vertically_on_load(1);
     const char *filepath_cstr = sv_make_cstr_copy(filepath, tmp_alloc);
     img.data = stbi_load(filepath_cstr, &img.width, &img.height, &img.n_channels, 0);

@@ -360,6 +360,8 @@ static i32 reload_session()
     hgl_profile_begin("reload session");
 #endif
 
+    b8 major_reload = shaq.project_ini_changed;
+    shaq.project_ini_changed = false;
     shaq.should_reload = false;
 
     /* Manually free OpenGL resources */
@@ -372,15 +374,14 @@ static i32 reload_session()
         texture_free(t);
     }
 
-    /* Upon loading a new project clear some additional stuff */
-    if (shaq.project_ini_changed) {
-        image_free_all_cached_images();
+    /* Upon loading a new project clear some additional stuff (major reload) */
+    if (major_reload) {
+        image_clear_cached_images();
         gui_clear_widgets();
         shaq_reset_time();
         shaq.visible_shader_idx = -1;
         shaq.project_info.name = NULL;
         shaq.project_info.desc = NULL;
-        shaq.project_ini_changed = false;
     }
 
     /* reset state */
@@ -396,6 +397,9 @@ static i32 reload_session()
     /* collect garbage */
     hgl_free_all(g_r2r_arena);
     hgl_free_all(g_r2r_fs_allocator);
+    if (major_reload) {
+        hgl_free_all(g_p2p_fs_allocator);
+    }
 
     /* Return early if no filepath is set */
     if (!shaq.project_ini_loaded) {

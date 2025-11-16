@@ -338,8 +338,12 @@ void imgui_checkbox(const char *label, b8 *b)
 
 void imgui_drag_int(const char *label, int *v, f32 speed, int min, int max)
 {
-    //ImGui::DragInt(label, v, speed, min, max, "%d", ImGuiSliderFlags_Logarithmic);
     ImGui::DragInt(label, v, speed, min, max, "%d");
+}
+
+void imgui_drag_float(const char *label, f32 *v, f32 speed, f32 min, f32 max)
+{
+    ImGui::DragFloat(label, v, speed, min, max, "%f");
 }
 
 void imgui_input_int(const char *label, int *v)

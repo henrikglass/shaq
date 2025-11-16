@@ -14,13 +14,13 @@ static HglAllocator temp_allocator_internal_   = {0};
 static HglAllocator frame_arena_internal_      = {0};
 static HglAllocator r2r_arena_internal_        = {0};
 static HglAllocator r2r_fs_allocator_internal_ = {0};
-static HglAllocator image_allocator_internal_  = {0};
+static HglAllocator p2p_fs_allocator_internal_ = {0};
 
 HglAllocator *g_temp_allocator   = NULL;
 HglAllocator *g_frame_arena      = NULL;
 HglAllocator *g_r2r_arena        = NULL;
 HglAllocator *g_r2r_fs_allocator = NULL;
-HglAllocator *g_image_allocator  = NULL;
+HglAllocator *g_p2p_fs_allocator = NULL;
 
 void alloc_init()
 {
@@ -35,7 +35,7 @@ void alloc_init()
                                                     .size = 32*1024*1024,  //  32 MiB
                                                     .free_stack_capacity = 1024,
                                                     .backend = HGL_MMAP_HUGEPAGE);
-    image_allocator_internal_      = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
+    p2p_fs_allocator_internal_     = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
                                                     .size = 512*1024*1024, // 512 MiB
                                                     .free_stack_capacity = 1024,
                                                     .backend = HGL_MMAP_HUGEPAGE);
@@ -43,19 +43,19 @@ void alloc_init()
     r2r_fs_allocator_internal_     = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
                                                     .size = 32*1024*1024,  //  32 MiB
                                                     .free_stack_capacity = 1024);
-    image_allocator_internal_      = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
+    p2p_fs_allocator_internal_     = hgl_alloc_make(.kind = HGL_FREE_STACK_ALLOCATOR,
                                                     .size = 512*1024*1024, // 512 MiB
                                                     .free_stack_capacity = 1024);
 #endif
 
     assert(r2r_fs_allocator_internal_.memory != NULL);
-    assert(image_allocator_internal_.memory != NULL);
+    assert(p2p_fs_allocator_internal_.memory != NULL);
 
     g_temp_allocator       = &temp_allocator_internal_;
     g_frame_arena          = &frame_arena_internal_;
     g_r2r_arena        = &r2r_arena_internal_;
     g_r2r_fs_allocator = &r2r_fs_allocator_internal_;
-    g_image_allocator      = &image_allocator_internal_;
+    g_p2p_fs_allocator      = &p2p_fs_allocator_internal_;
 }
 
 void alloc_final()
@@ -63,12 +63,12 @@ void alloc_final()
     hgl_free_all(g_frame_arena);
     hgl_free_all(g_r2r_arena);
     hgl_free_all(g_r2r_fs_allocator);
-    hgl_free_all(g_image_allocator);
+    hgl_free_all(g_p2p_fs_allocator);
     hgl_alloc_destroy(g_temp_allocator);
     hgl_alloc_destroy(g_frame_arena);
     hgl_alloc_destroy(g_r2r_arena);
     hgl_alloc_destroy(g_r2r_fs_allocator);
-    hgl_alloc_destroy(g_image_allocator);
+    hgl_alloc_destroy(g_p2p_fs_allocator);
 }
 
 void *tmp_alloc(size_t size)                        { return hgl_alloc(g_temp_allocator, size); }
@@ -82,6 +82,6 @@ void  r2r_fs_free(void *ptr)                        { hgl_free(g_r2r_fs_allocato
 void *dummy_alloc(size_t size)                      { (void) size; return NULL; }
 void *dummy_realloc(void *ptr, size_t size)         { (void) size; (void) ptr; return NULL; }
 void  dummy_free(void *ptr)                         { (void) ptr; }
-void *image_alloc(size_t size)                      { return hgl_alloc(g_image_allocator, size); }
-void *image_realloc(void *ptr, size_t size)         { return hgl_realloc(g_image_allocator, ptr, size); }
-void  image_free(void *ptr)                         { hgl_free(g_image_allocator, ptr); }
+void *p2p_fs_alloc(size_t size)                      { return hgl_alloc(g_p2p_fs_allocator, size); }
+void *p2p_fs_realloc(void *ptr, size_t size)         { return hgl_realloc(g_p2p_fs_allocator, ptr, size); }
+void  p2p_fs_free(void *ptr)                         { hgl_free(g_p2p_fs_allocator, ptr); }
