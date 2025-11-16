@@ -112,9 +112,13 @@ typedef struct
 {
     u8 kind;
     u8 type;
-    // Todo LHS/RHS types? Union?
-    u8 argsize;
-    u8 pad[1];
+    union {
+        struct {
+            u8 lhs_type;
+            u8 rhs_type;
+        };
+        u8 argsize;
+    };
 } Op;
 static_assert(sizeof(Op) == 4, "");
 

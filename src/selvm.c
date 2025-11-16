@@ -464,87 +464,107 @@ static void svm_run()
             case OP_ADD: {
                 void *rhs = svm_stack_pop(tsize);
                 void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_UINT: {u32 tmp = addu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = addv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC2: {IVec2 tmp = addiv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC3: {IVec3 tmp = addiv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC4: {IVec4 tmp = addiv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT2:  {Mat2 tmp = addm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT3:  {Mat3 tmp = addm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT4:  {Mat4 tmp = addm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
+                if (op->lhs_type == op->rhs_type) {
+                    switch (op->type) {
+                        case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_UINT: {u32 tmp = addu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC2:  {Vec2 tmp = addv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC3:  {Vec3 tmp = addv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC4:  {Vec4 tmp = addv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC2: {IVec2 tmp = addiv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC3: {IVec3 tmp = addiv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC4: {IVec4 tmp = addiv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT2:  {Mat2 tmp = addm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT3:  {Mat3 tmp = addm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT4:  {Mat4 tmp = addm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        default: assert(false);
+                    }
+                } else {
+                    assert(false && "NOT IMLPEMENTED");
                 }
             } break;
 
             case OP_SUB: {
                 void *rhs = svm_stack_pop(tsize);
                 void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_UINT: {u32 tmp = subu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = subv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC2: {IVec2 tmp = subiv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC3: {IVec3 tmp = subiv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC4: {IVec4 tmp = subiv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT2:  {Mat2 tmp = subm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT3:  {Mat3 tmp = subm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT4:  {Mat4 tmp = subm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
+                if (op->lhs_type == op->rhs_type) {
+                    switch (op->type) {
+                        case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_UINT: {u32 tmp = subu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC2:  {Vec2 tmp = subv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC3:  {Vec3 tmp = subv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC4:  {Vec4 tmp = subv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC2: {IVec2 tmp = subiv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC3: {IVec3 tmp = subiv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC4: {IVec4 tmp = subiv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT2:  {Mat2 tmp = subm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT3:  {Mat3 tmp = subm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT4:  {Mat4 tmp = subm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        default: assert(false);
+                    }
+                } else {
+                    assert(false && "NOT IMLPEMENTED");
                 }
             } break;
 
             case OP_MUL: {
                 void *rhs = svm_stack_pop(tsize);
                 void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_UINT: {u32 tmp = mulu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = mulv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC2: {IVec2 tmp = muliv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC3: {IVec3 tmp = muliv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC4: {IVec4 tmp = muliv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT2:  {Mat2 tmp = mulm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT3:  {Mat3 tmp = mulm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_MAT4:  {Mat4 tmp = mulm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
+                if (op->lhs_type == op->rhs_type) {
+                    switch (op->type) {
+                        case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_UINT: {u32 tmp = mulu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC2:  {Vec2 tmp = mulv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC3:  {Vec3 tmp = mulv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC4:  {Vec4 tmp = mulv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC2: {IVec2 tmp = muliv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC3: {IVec3 tmp = muliv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC4: {IVec4 tmp = muliv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT2:  {Mat2 tmp = mulm2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT3:  {Mat3 tmp = mulm3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_MAT4:  {Mat4 tmp = mulm4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        default: assert(false);
+                    }
+                } else {
+                    assert(false && "NOT IMLPEMENTED");
                 }
             } break;
 
             case OP_DIV: {
                 void *rhs = svm_stack_pop(tsize);
                 void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_UINT: {u32 tmp = divu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_VEC4:  {Vec4 tmp = divv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC2: {IVec2 tmp = diviv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC3: {IVec3 tmp = diviv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_IVEC4: {IVec4 tmp = diviv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
+                if (op->lhs_type == op->rhs_type) {
+                    switch (op->type) {
+                        case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_UINT: {u32 tmp = divu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC2:  {Vec2 tmp = divv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC3:  {Vec3 tmp = divv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_VEC4:  {Vec4 tmp = divv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC2: {IVec2 tmp = diviv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC3: {IVec3 tmp = diviv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_IVEC4: {IVec4 tmp = diviv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        default: assert(false);
+                    }
+                } else {
+                    assert(false && "NOT IMLPEMENTED");
                 }
             } break;
 
             case OP_REM: {
                 void *rhs = svm_stack_pop(tsize);
                 void *lhs = svm_stack_pop(tsize);
-                switch (op->type) {
-                    case TYPE_INT: {i32 tmp = remi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    case TYPE_UINT: {u32 tmp = remu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
-                    default: assert(false);
+                if (op->lhs_type == op->rhs_type) {
+                    switch (op->type) {
+                        case TYPE_INT: {i32 tmp = remi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        case TYPE_UINT: {u32 tmp = remu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
+                        default: assert(false);
+                    }
+                } else {
+                    assert(false && "NOT IMLPEMENTED");
                 }
             } break;
 
@@ -577,8 +597,8 @@ static void svm_run()
             } break;
 
             case OP_SWIZZLE: {
-                u32 *desc = svm_stack_pop(sizeof(u32));
-                void *lhs = svm_stack_pop(op->argsize);
+                u32 *desc = svm_stack_pop(TYPE_TO_SIZE[op->rhs_type]);
+                void *lhs = svm_stack_pop(TYPE_TO_SIZE[op->lhs_type]);
                 union {
                     SelValue res;
                     f32 res_f32[4];

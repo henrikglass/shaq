@@ -982,6 +982,8 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
             exe_append_op(exe, (Op){
                 .kind = expr_to_op[e->kind], 
                 .type = e->type,
+                .lhs_type = e->lhs->type,
+                .rhs_type = e->lhs->type,
             });
             //printf("ARITH: %d\n", expr_to_op[e->kind]);
         } break;
@@ -1004,9 +1006,10 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
             });
             exe_append_u32(exe, construct_swizzle_descriptor(e->rhs->token.text));
             exe_append_op(exe, (Op){
-                .kind    = OP_SWIZZLE, 
-                .type    = e->type,
-                .argsize = TYPE_TO_SIZE[e->lhs->type],
+                .kind     = OP_SWIZZLE, 
+                .type     = e->type,
+                .lhs_type = e->lhs->type,
+                .rhs_type = TYPE_UINT,
             });
         } break;
 
