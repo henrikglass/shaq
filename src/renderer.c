@@ -151,7 +151,6 @@ void renderer_do_shader_pass(Shader *s)
     }
 
     /* Draw */
-    //glClear(GL_COLOR_BUFFER_BIT);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 

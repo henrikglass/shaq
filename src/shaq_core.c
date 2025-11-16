@@ -140,9 +140,6 @@ void shaq_new_frame()
     /* poll inputs */
     user_input_poll();
 
-    /* begin imgui frame */
-    gui_begin_frame();
-
     /* Draw individual shaders onto individual offscreen framebuffer textures */
     for (u32 i = 0; i < shaq.render_order.count; i++) {
         u32 index = shaq.render_order.arr[i];
@@ -150,6 +147,9 @@ void shaq_new_frame()
         shader_update_uniforms(s);
         renderer_do_shader_pass(s);
     }
+
+    /* begin imgui frame */
+    gui_begin_frame();
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
