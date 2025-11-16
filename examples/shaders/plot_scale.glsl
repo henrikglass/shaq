@@ -19,7 +19,7 @@ float sdf_line_segment(vec2 a, vec2 b, vec2 p)
 float sdf_scale_marker(float y, float s)
 {
     float r = y - s*round(y/s);
-    return abs(r);
+    return r;
 }
 
 void main()
@@ -45,17 +45,23 @@ void main()
     for (int i = 0; i < 3; i++) {
         float d = sdf_scale_marker(y, s*scale);
         //float d = 0;
-        if (d < pixel.y && uv.x > (x - w) && uv.x < (x + w)) {
-            frag_color = vec4(0.35, 0.35, 0.35, 1.0);
+        //if (d < pixel.y && uv.x > (x - w) && uv.x < (x + w)) {
+        //    frag_color = vec4(0.35, 0.35, 0.35, 1.0);
+        //}
+
+        if (uv.x > (x - w) && uv.x < (x + w)) {
+            //frag_color = vec4(0.35, 0.35, 0.35, 1.0);
+            frag_color = mix(frag_color, vec4(0.35, 0.35, 0.35, 1.0), 1 - smoothstep(0.0, 2*pixel.y, abs(d)));
         }
         w *= 2;
         s *= 10;
     }
 
     /* zero-line */
-    if (abs(y) <= pixel.y) {
-        frag_color = vec4(0.5, 0.5, 0.5, 1.0);
-    }
+    //if (abs(y) <= pixel.y) {
+    //    frag_color = vec4(0.5, 0.5, 0.5, 1.0);
+    //}
+    frag_color = mix(frag_color, vec4(0.5, 0.5, 0.5, 1.0), 1 - smoothstep(0.0, 2*pixel.y, abs(y)));
 
     vec4 texel = texelFetch(plot_data, ivec2(gl_FragCoord.xy), 0);
     frag_color.rgb = mix(frag_color.rgb, texel.rgb, texel.a);

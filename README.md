@@ -162,6 +162,7 @@ spell compositor, ok?
 # Planned features and fixes
 
 * Fix continuous reload on GLFW window resize.
+* SEL - text\_input() + eval(str sel\_expr)
 * Rework GUI a bit (e.g. play/pause symbol)
 * Cubemaps (SEL: SamplerCube)
 * SEL - load\_video()?
