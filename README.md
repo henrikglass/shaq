@@ -163,6 +163,7 @@ spell compositor, ok?
 
 * Fix continuous reload on GLFW window resize.
 * Rework GUI a bit (e.g. play/pause symbol)
+* Cubemaps (SEL: SamplerCube)
 * SEL - load\_video()?
 * Embed a tiny text editor
 * Support uniform arrays
