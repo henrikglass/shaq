@@ -322,7 +322,7 @@ void gui_draw_error_log_overlay()
         if (msg == NULL) {
             break;
         }
-        imgui_text_color("Error: ", 0xE04050FF);
+        imgui_text_color("Error: ", 0xE04050FF); // TODO add to config
         imgui_text_unformatted(msg, msg_len); 
     }
     imgui_end();
@@ -453,7 +453,7 @@ SelValue gui_get_widget_value(StringView label,
     memcpy(w.secondary_args, secondary_args, secondary_args_size);
     array_push(&gui.widgets, w);
 
-    return (SelValue) {0};
+    return w.value;
 }
 
 b8 gui_should_reload()

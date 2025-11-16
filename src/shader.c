@@ -307,7 +307,6 @@ void shader_update_uniforms(Shader *s)
         }
 
         SelValue r = sel_eval(u->exe, (SVMContext){s}, false);
-
         switch (u->type) {
             case TYPE_BOOL:  glUniform1i(u->gl_uniform_location,  r.val_bool); break;
             case TYPE_INT:   glUniform1i(u->gl_uniform_location,  r.val_i32); break;

@@ -148,11 +148,12 @@ void shaq_new_frame()
         renderer_do_shader_pass(s);
     }
 
-    /* begin imgui frame */
-    gui_begin_frame();
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
+
+    /* begin imgui frame */
+    gui_begin_frame();
     if (gui_shader_window_is_maximized()) {
         //renderer_clear_current_framebuffer();
 
@@ -361,6 +362,7 @@ static i32 reload_session()
 #endif
 
     b8 major_reload = shaq.project_ini_changed;
+    //b8 major_reload = true;
     shaq.project_ini_changed = false;
     shaq.should_reload = false;
 
@@ -382,6 +384,7 @@ static i32 reload_session()
         shaq.visible_shader_idx = -1;
         shaq.project_info.name = NULL;
         shaq.project_info.desc = NULL;
+        fflush(stdout);
     }
 
     /* reset state */

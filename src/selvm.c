@@ -1727,6 +1727,9 @@ static SelValue fn_color_picker_(void *args)
 
 static SelValue fn_copy_helper_(void *args, Type t)
 {
+    SelValue error_value;
+    memset(&error_value, 0, sizeof(SelValue));
+
     u8 *args8 = (u8 *) args;
     StringView shader_name = *(StringView *)args;
     StringView var_name = *(StringView *)(args8 + sizeof(StringView));
@@ -1739,7 +1742,7 @@ static SelValue fn_copy_helper_(void *args, Type t)
                       "No such shader:\"" SV_FMT "\" ", SV_ARG(shader_name), 
                       SV_ARG(var_name), SV_ARG(shader_name));
         }
-        goto out_err;
+        return error_value;
     }
     Uniform *u = shader_find_uniform_by_name(s, var_name);
     if (u == NULL) {
@@ -1748,7 +1751,7 @@ static SelValue fn_copy_helper_(void *args, Type t)
                       "No such uniform variable in shader :\"" SV_FMT "\" ", SV_ARG(shader_name), 
                       SV_ARG(var_name), SV_ARG(var_name));
         }
-        goto out_err;
+        return error_value;
     }
     if (u->type != t) {
         if (shaq_reloaded_this_frame()) {
@@ -1756,12 +1759,12 @@ static SelValue fn_copy_helper_(void *args, Type t)
                       "Variable \"" SV_FMT "\" has incorrect type ", SV_ARG(shader_name), 
                       SV_ARG(var_name), SV_ARG(var_name));
         }
-        goto out_err;
+        return error_value;
+    }
+    if (!u->exe->has_been_computed_once) {
+        return error_value;
     }
     return u->exe->cached_computed_value;
-
-out_err:
-    return (SelValue) {.val_i32 = 0};
 }
 
 static SelValue fn_copy_bool_(void *args)  { return fn_copy_helper_(args, TYPE_BOOL); }

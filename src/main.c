@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
     shaq_begin(*opt_input, *opt_quiet);
     while (!shaq_should_close()) {
-        //hgl_sleep_ms(200.0);
+        //hgl_sleep_ms(100.0);
         shaq_new_frame();
     }
     shaq_end();
