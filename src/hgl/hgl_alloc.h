@@ -79,6 +79,7 @@
 /*--- Arena alloc-specific macros -------------------------------------------------------*/
 
 //#define HGL_ALLOC_DEBUG_PRINTS
+//#define HGL_ALLOC_SUPPRESS_WARNINGS
 
 #define HGL_ALLOC_BUMP_ARENA_INITIALIZER(s, ...)  \
     {                                             \
@@ -231,6 +232,7 @@ size_t hgl_alloc_usage(HglAllocator *allocator);
 #include <linux/mman.h>
 #include <stddef.h>
 #include <stdalign.h>
+#include <stdarg.h>
 
 #ifndef MSB64
 #define MSB64(x) (63 - __builtin_clzll(x))
@@ -255,9 +257,14 @@ typedef struct
     uintptr_t alloc_offset;
 } HglAllocStackFooter;
 
-#include <stdarg.h>
+
 #define HGL_ALLOC_ERROR(...) hgl_alloc_print_("[hgl_alloc.h] Error: " __VA_ARGS__); abort();
-#define HGL_ALLOC_WARNING(...) hgl_alloc_print_("[hgl_alloc.h] Warning: "__VA_ARGS__);
+#ifdef HGL_ALLOC_SUPPRESS_WARNINGS
+#  define HGL_ALLOC_WARNING(...) do {} while (0)
+#else
+#  define HGL_ALLOC_WARNING(...) hgl_alloc_print_("[hgl_alloc.h] Warning: "__VA_ARGS__);
+#endif
+
 static inline void hgl_alloc_print_(const char *fmt, ...);
 static inline void hgl_alloc_print_(const char *fmt, ...)
 {
@@ -610,7 +617,20 @@ void *hgl_realloc(HglAllocator *allocator, void *ptr, size_t alloc_size)
 {
     switch (allocator->config.kind) {
         case HGL_ARENA_ALLOCATOR: {
-            HGL_ALLOC_ERROR("hgl_realloc(): invalid operation on HGL_ARENA_ALLOCATOR.\n");
+            /* 
+             * This will, in the normal case, copy more bytes than exists in the original
+             * allocation. It will work, but it's better to use an allocator of kind 
+             * HGL_STACK_ALLOCATOR in this case.
+             *
+             * TODO: Test this function.
+             */
+            HGL_ALLOC_WARNING("hgl_realloc(): Using realloc on HGL_ARENA_ALLOCATOR. "
+                              "Consider using HGL_STACK_ALLOCATOR instead.\n");
+            void *new = hgl_alloc(allocator, alloc_size);
+            if (new == NULL) {
+                return NULL;
+            }
+            memmove(new, ptr, alloc_size);
         } break;
 
         case HGL_STACK_ALLOCATOR: {

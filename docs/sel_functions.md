@@ -43,6 +43,7 @@ bool reloaded_last_frame()                                                      
 bool is_darkmode()                                                               Returns true if darkmode is enabled in Shaq.
 bool checkbox(str label, bool default)                                           Creates a checkbox widget with the label `label` and default value `default`
 bool copy_bool(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+bool eval_bool(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a bool
 ```
 
 ## Returning int:
@@ -57,6 +58,7 @@ int signed(uint x)                                                              
 int drag_int(str label, float v, int min, int max, int default)                  Creates an integer slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`
 int input_int(str label, int default)                                            Creates an input widget for integers with the label `label` and default value `default`
 int copy_int(str shader, str var)                                                Copies the value last assigned to the uniform variable `var` in the shader `shader`
+int eval_int(str expr)                                                           Evaluates the expression `expr` and reinterprets it as a int
 ```
 
 ## Returning uint:
@@ -71,6 +73,7 @@ uint rshift(uint x, uint n)                                                     
 uint rol(uint x, uint n)                                                         left rotate of `x` by `n`.
 uint ror(uint x, uint n)                                                         right rotate of `x` by `n`.
 uint copy_uint(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+uint eval_uint(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a uint
 ```
 
 ## Returning float:
@@ -121,6 +124,7 @@ float drag_float(str label, float v, float min, float max, float default)       
 float slider_float(str label, float min, float max, float default)               Creates a float slider widget with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`
 float slider_float_log(str label, float min, float max, float default)           Creates a float slider widget, with logarithmic scaling, with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`
 float copy_float(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
+float eval_float(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a float
 ```
 
 ## Returning vec2:
@@ -136,6 +140,7 @@ vec2 mouse_position_last()                                                      
 vec2 mouse_drag_position()                                                       Returns the mouse position from when the left mouse button was last held, in pixel coordinates.
 vec2 input_vec2(str label, vec2 default)                                         Creates an input widget for 2D vectors with the label `label` and default value `default`
 vec2 copy_vec2(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+vec2 eval_vec2(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a vec2
 ```
 
 ## Returning vec3:
@@ -149,6 +154,7 @@ vec3 vec3_slerp(vec3 a, vec3 b, float t)                                        
 vec3 vec3_cross(vec3 a, vec3 b)                                                  Returns the cross product of `a` and `b`
 vec3 input_vec3(str label, vec3 default)                                         Creates an input widget for 3D vectors with the label `label` and default value `default`
 vec3 copy_vec3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+vec3 eval_vec3(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a vec3
 ```
 
 ## Returning vec4:
@@ -163,6 +169,7 @@ vec4 mat4_mul_vec4(mat4 m, vec4 v)                                              
 vec4 input_vec4(str label, vec4 default)                                         Creates an input widget for 4D vectors with the label `label` and default value `default`
 vec4 color_picker(str label, vec4 default)                                       Creates a color picker widget with the label `label` and default value `default`
 vec4 copy_vec4(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+vec4 eval_vec4(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a vec4
 ```
 
 ## Returning ivec2:
@@ -172,18 +179,21 @@ ivec2 viewport_resolution()                                                     
 ivec2 resolution_of(str shader)                                                  Returns the resolution of `shader`
 ivec2 resolution()                                                               Returns the resolution of the shader to which the current attribute/uniform belongs
 ivec2 copy_ivec2(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
+ivec2 eval_ivec2(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a ivec2
 ```
 
 ## Returning ivec3:
 ```
 ivec3 ivec3(int x, int y, int z)                                                 Creates a 3D integer vector with components `x`, `y`, and `z`
 ivec3 copy_ivec3(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
+ivec3 eval_ivec3(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a ivec3
 ```
 
 ## Returning ivec4:
 ```
 ivec4 ivec4(int x, int y, int z, int w)                                          Creates a 4D integer vector with components `x`, `y`, `z`, and `w`
 ivec4 copy_ivec4(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
+ivec4 eval_ivec4(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a ivec4
 ```
 
 ## Returning mat2:
@@ -191,6 +201,7 @@ ivec4 copy_ivec4(str shader, str var)                                           
 mat2 mat2(vec2 c0, vec2 c1)                                                      Creates a 2x2 matrix with column vectors `c0` and `c1`
 mat2 mat2_id()                                                                   Creates a 2x2 identity matrix
 mat2 copy_mat2(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+mat2 eval_mat2(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat2
 ```
 
 ## Returning mat3:
@@ -198,6 +209,7 @@ mat2 copy_mat2(str shader, str var)                                             
 mat3 mat3(vec3 c0, vec3 c1, vec3 c2)                                             Creates a 3x3 matrix with column vectors `c0`, `c1`, and `c2`
 mat3 mat3_id()                                                                   Creates a 3x3 identity matrix
 mat3 copy_mat3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+mat3 eval_mat3(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat3
 ```
 
 ## Returning mat4:
@@ -214,10 +226,12 @@ mat4 mat4_translate(mat4 m, vec3 v)                                             
 mat4 mat4_mul_mat4(mat4 lhs, mat4 rhs)                                           Calculates the matrix-matrix multiplication `lhs`*`rhs`
 mat4 mat4_mul_scalar(mat4 m, float s)                                            Calculates the matrix-scalar multiplication `m`*`s`
 mat4 copy_mat4(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
+mat4 eval_mat4(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat4
 ```
 
 ## Returning str:
 ```
+str text_input(str label)                                                        Creates a text input widget with the label `label`
 ```
 
 ## Returning texture:

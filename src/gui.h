@@ -24,6 +24,7 @@ typedef enum {
     SLIDER_FLOAT,
     SLIDER_FLOAT_LOG,
     COLOR_PICKER,
+    INPUT_TEXT,
 } WidgetKind;
 
 /*--- Public variables ------------------------------------------------------------------*/

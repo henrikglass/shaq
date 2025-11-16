@@ -17,6 +17,8 @@
 
 void log_info(const char *fmt, ...);
 void log_error(const char *fmt, ...);
+void log_disable(void);
+void log_enable(void);
 void log_clear_all_logs(void);
 void log_reset_iterators(void);
 void log_print_info_log(void);

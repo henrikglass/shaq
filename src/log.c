@@ -28,6 +28,8 @@ static struct {
     Array(char, 128*1024) error_buffer;
     Array(u32,  128)      error_entries;
     u32 error_iterator;
+
+    b8 disabled;
 } logs;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -51,6 +53,9 @@ void log_reset_iterators()
 
 void log_info(const char *fmt, ...)
 {
+    if (logs.disabled) {
+        return;
+    }
     va_list args;
     va_start(args, fmt);
     array_push(&logs.info_entries, logs.info_buffer.count);
@@ -61,12 +66,25 @@ void log_info(const char *fmt, ...)
 
 void log_error(const char *fmt, ...)
 {
+    if (logs.disabled) {
+        return;
+    }
     va_list args;
     va_start(args, fmt);
     array_push(&logs.error_entries, logs.error_buffer.count);
     logs.error_buffer.count += vsprintf(&logs.error_buffer.arr[logs.error_buffer.count], fmt, args);
     logs.error_buffer.arr[logs.error_buffer.count++] = '\0';
     va_end(args);
+}
+
+void log_disable()
+{
+    logs.disabled = true;
+}
+
+void log_enable()
+{
+    logs.disabled = false;
 }
 
 void log_print_info_log()

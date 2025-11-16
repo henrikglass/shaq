@@ -222,6 +222,7 @@ static SelValue fn_input_vec2_(void *args);
 static SelValue fn_input_vec3_(void *args);
 static SelValue fn_input_vec4_(void *args);
 static SelValue fn_color_picker_(void *args);
+static SelValue fn_text_input_(void *args);
 
 static SelValue fn_copy_bool_(void *args);
 static SelValue fn_copy_int_(void *args);
@@ -236,6 +237,20 @@ static SelValue fn_copy_ivec4_(void *args);
 static SelValue fn_copy_mat2_(void *args);
 static SelValue fn_copy_mat3_(void *args);
 static SelValue fn_copy_mat4_(void *args);
+
+static SelValue fn_eval_bool_(void *args);
+static SelValue fn_eval_int_(void *args);
+static SelValue fn_eval_uint_(void *args);
+static SelValue fn_eval_float_(void *args);
+static SelValue fn_eval_vec2_(void *args);
+static SelValue fn_eval_vec3_(void *args);
+static SelValue fn_eval_vec4_(void *args);
+static SelValue fn_eval_ivec2_(void *args);
+static SelValue fn_eval_ivec3_(void *args);
+static SelValue fn_eval_ivec4_(void *args);
+static SelValue fn_eval_mat2_(void *args);
+static SelValue fn_eval_mat3_(void *args);
+static SelValue fn_eval_mat4_(void *args);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -382,6 +397,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("input_vec3"),       .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "Creates an input widget for 3D vectors with the label `label` and default value `default`", },
     { .id = SV_LIT("input_vec4"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "Creates an input widget for 4D vectors with the label `label` and default value `default`", },
     { .id = SV_LIT("color_picker"),     .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_color_picker_,     .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 color_picker(str label, vec4 default)", .desc = "Creates a color picker widget with the label `label` and default value `default`", },
+    { .id = SV_LIT("text_input"),       .type = TYPE_STR,   .qualifier = QUALIFIER_NONE, .impl = fn_text_input_,       .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "str text_input(str label)", .desc = "Creates a text input widget with the label `label`", },
 
     { .id = SV_LIT("copy_bool"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_bool_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "bool copy_bool(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
     { .id = SV_LIT("copy_int"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_copy_int_,   .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "int copy_int(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
@@ -396,6 +412,20 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("copy_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat2_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat2 copy_mat2(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
     { .id = SV_LIT("copy_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat3_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat3 copy_mat3(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
     { .id = SV_LIT("copy_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat4_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat4 copy_mat4(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
+
+    { .id = SV_LIT("eval_bool"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_bool_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool eval_bool(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a bool", },
+    { .id = SV_LIT("eval_int"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_eval_int_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "int eval_int(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a int", },
+    { .id = SV_LIT("eval_uint"),  .type = TYPE_UINT,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_uint_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "uint eval_uint(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a uint", },
+    { .id = SV_LIT("eval_float"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_eval_float_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "float eval_float(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a float", },
+    { .id = SV_LIT("eval_vec2"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec2_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec2 eval_vec2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec2", },
+    { .id = SV_LIT("eval_vec3"),  .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec3 eval_vec3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec3", },
+    { .id = SV_LIT("eval_vec4"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec4 eval_vec4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec4", },
+    { .id = SV_LIT("eval_ivec2"), .type = TYPE_IVEC2, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec2_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec2 eval_ivec2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a ivec2", },
+    { .id = SV_LIT("eval_ivec3"), .type = TYPE_IVEC3, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec3 eval_ivec3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a ivec3", },
+    { .id = SV_LIT("eval_ivec4"), .type = TYPE_IVEC4, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec4 eval_ivec4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a ivec4", },
+    { .id = SV_LIT("eval_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat2_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat2 eval_mat2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat2", },
+    { .id = SV_LIT("eval_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat3", },
+    { .id = SV_LIT("eval_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat4", },
 };
 const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -1498,7 +1528,7 @@ static SelValue fn_resolution_of_(void *args)
 static SelValue fn_resolution_(void *args)
 {
     (void) args;
-    Shader *s = svm.ctx.shader;
+    Shader *s = svm.ctx.shader; // TODO NULL-check
     if (s == NULL) {
         log_error("SEL: In call to resolution() - No shader bound in the current context");
         return (SelValue) {.val_ivec2 = ivec2_make(0, 0)};
@@ -1723,6 +1753,12 @@ static SelValue fn_color_picker_(void *args)
     return gui_get_widget_value(label, COLOR_PICKER, secondary_args, sizeof(Vec4));
 }
 
+static SelValue fn_text_input_(void *args)
+{
+    StringView label = *(StringView *)args;
+    return gui_get_widget_value(label, INPUT_TEXT, NULL, 0);
+}
+
 /* ---------------------- Copy functions -------------------- */
 
 static SelValue fn_copy_helper_(void *args, Type t)
@@ -1781,4 +1817,42 @@ static SelValue fn_copy_mat2_(void *args)  { return fn_copy_helper_(args, TYPE_M
 static SelValue fn_copy_mat3_(void *args)  { return fn_copy_helper_(args, TYPE_MAT3); }
 static SelValue fn_copy_mat4_(void *args)  { return fn_copy_helper_(args, TYPE_MAT4); }
 
+
+/* ---------------------- Eval functions -------------------- */
+
+static SelValue fn_eval_helper_(void *args)
+{
+    log_disable();
+    StringView expr = *(StringView *)args;
+    char *expr_cstr = sv_make_cstr_copy(expr, frame_arena_alloc);
+    ExeExpr *exe = sel_compile(expr_cstr, g_frame_arena);
+    if (exe == NULL) {
+        return (SelValue) {0}; // TODO something else
+    }
+    log_enable();
+
+    // TODO Rewrite the SELVM code to accept an SVM as an argument 
+    // instead of doing this dumb crap
+    struct SVM tmp;
+    memcpy(&tmp, &svm, sizeof(struct SVM));
+    svm_reset();
+    SelValue val = sel_eval(exe, (SVMContext){0}, true);
+    memcpy(&svm, &tmp, sizeof(struct SVM));
+
+    return val;
+}
+
+static SelValue fn_eval_bool_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_int_(void *args)   { return fn_eval_helper_(args); }
+static SelValue fn_eval_uint_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_float_(void *args) { return fn_eval_helper_(args); }
+static SelValue fn_eval_vec2_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_vec3_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_vec4_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_ivec2_(void *args) { return fn_eval_helper_(args); }
+static SelValue fn_eval_ivec3_(void *args) { return fn_eval_helper_(args); }
+static SelValue fn_eval_ivec4_(void *args) { return fn_eval_helper_(args); }
+static SelValue fn_eval_mat2_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_mat3_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_mat4_(void *args)  { return fn_eval_helper_(args); }
 

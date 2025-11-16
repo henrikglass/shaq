@@ -75,6 +75,7 @@ void imgui_input_float3(const char *label, float *v);
 void imgui_input_float4(const char *label, float *v);
 void imgui_slider_float(const char *label, float *v, float min, float max, b8 log);
 void imgui_color_picker(const char *label, float *v);
+void imgui_input_text(const char *label, char *buf, size_t buf_size);
 b8 imgui_selectable(const char *label, b8 is_selected);
 void imgui_set_item_default_focus(void);
 void imgui_push_style_shader_window(void);

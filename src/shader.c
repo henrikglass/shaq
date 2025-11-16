@@ -399,7 +399,7 @@ static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv)
     }
 
     k = sv_ltrim(k);
-    ExeExpr *exe = sel_compile(kv->val);
+    ExeExpr *exe = sel_compile(kv->val, g_r2r_arena);
     if (exe == NULL) {
         log_error("Could not compile shader attribute expression: `%s`.", kv->val);
         return;

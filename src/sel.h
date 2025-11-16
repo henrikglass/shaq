@@ -195,7 +195,7 @@ static_assert(sizeof(TYPE_TO_SIZE)/sizeof(TYPE_TO_SIZE[0]) == N_TYPES);
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
-ExeExpr *sel_compile(const char *src); // selc.c
+ExeExpr *sel_compile(const char *src, Allocator *alloc); // selc.c
 void sel_list_builtins(void); // selc.c
 void sel_print_value(Type t, SelValue v); // selc.c
 

@@ -1,15 +1,16 @@
 #ifndef SHAQ_CONFIG_H
 #define SHAQ_CONFIG_H
 
-#define SHAQ_MAX_N_SHADERS            64
-#define SHAQ_MAX_N_UNIFORMS           64
-#define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS  64
-#define SHAQ_MAX_N_LOADED_TEXTURES    32
-#define SHAQ_ENABLE_VSYNC              1
-#define SHAQ_FILEPATH_MAX_LEN        512
-#define SHAQ_RELOAD_DURING_RESIZE      0
-#define SHAQ_HUGEPAGES                 0
-#define SHAQ_PROFILE                   0
+#define SHAQ_MAX_N_SHADERS                    64
+#define SHAQ_MAX_N_UNIFORMS                   64
+#define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS          64
+#define SHAQ_MAX_N_LOADED_TEXTURES            32
+#define SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE  1024
+#define SHAQ_ENABLE_VSYNC                      1
+#define SHAQ_FILEPATH_MAX_LEN                512
+#define SHAQ_RELOAD_DURING_RESIZE              0
+#define SHAQ_HUGEPAGES                         0
+#define SHAQ_PROFILE                           0
 
 #define SHAQ_COLOR_DARKMODE_WINDOW_BG   RGBA(0x1E, 0x1E, 0x1E, 0xFF)
 #define SHAQ_COLOR_DARKMODE_TITLE_BG    RGBA(0x25, 0x25, 0x25, 0xFF)

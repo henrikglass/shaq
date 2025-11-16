@@ -169,13 +169,13 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e);
 static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args);
 
 /* codegen */
-static ExeExpr *codegen(const ExprTree *e);
-static void codegen_expr(ExeExpr *exe, const ExprTree *e);
-static void exe_append_op(ExeExpr *exe, Op op);
-static void exe_append_i32(ExeExpr *exe, i32 v);
-static void exe_append_u32(ExeExpr *exe, u32 v);
-static void exe_append_f32(ExeExpr *exe, f32 v);
-static void exe_append(ExeExpr *exe, const void *val, u32 size);
+static ExeExpr *codegen(const ExprTree *e, Allocator *alloc);
+static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc);
+static void exe_append_op(ExeExpr *exe, Op op, Allocator *alloc);
+static void exe_append_i32(ExeExpr *exe, i32 v, Allocator *alloc);
+static void exe_append_u32(ExeExpr *exe, u32 v, Allocator *alloc);
+static void exe_append_f32(ExeExpr *exe, f32 v, Allocator *alloc);
+static void exe_append(ExeExpr *exe, const void *val, u32 size, Allocator *alloc);
 
 /* misc. debug */
 static void token_print(Token *t);
@@ -241,12 +241,12 @@ static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUI
 
 /*--- Public functions ------------------------------------------------------------------*/
 
-ExeExpr *sel_compile(const char *src)
+ExeExpr *sel_compile(const char *src, Allocator *alloc)
 {
     ExeExpr *exe = NULL;
 
     /* lexer + parser step */
-    ExprTree *e = parse_expr(src);
+    ExprTree *e = parse_expr(src); // TODO pass allocator
     if (e == NULL) {
         goto out;
     }
@@ -263,7 +263,7 @@ ExeExpr *sel_compile(const char *src)
     }
 
     /* codegen step. *Should* never fail if the previous steps succeed */
-    exe = codegen(e);
+    exe = codegen(e, alloc);
 
     /* Attach source code reference */
     exe->source_code = src;
@@ -944,18 +944,18 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 
 /*--- CODEGEN ---------------------------------------------------------------------------*/
 
-static ExeExpr *codegen(const ExprTree *e)
+static ExeExpr *codegen(const ExprTree *e, Allocator *alloc)
 {
-    ExeExpr *exe = hgl_alloc(g_r2r_arena, sizeof(ExeExpr));
+    ExeExpr *exe = hgl_alloc(alloc, sizeof(ExeExpr));
     memset(exe, 0, sizeof(ExeExpr));
     exe->type = e->type;
     exe->qualifier = e->qualifier;
     exe->has_been_computed_once = false;
-    codegen_expr(exe, e);
+    codegen_expr(exe, e, alloc);
     return exe;
 }
 
-static void codegen_expr(ExeExpr *exe, const ExprTree *e)
+static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
 {
     static OpKind expr_to_op[] = {
         [EXPR_ADD]  = OP_ADD,
@@ -977,48 +977,48 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
         case EXPR_MUL:
         case EXPR_DIV:
         case EXPR_REM: {
-            codegen_expr(exe, e->lhs);
-            codegen_expr(exe, e->rhs);
+            codegen_expr(exe, e->lhs, alloc);
+            codegen_expr(exe, e->rhs, alloc);
             exe_append_op(exe, (Op){
                 .kind = expr_to_op[e->kind], 
                 .type = e->type,
                 .lhs_type = e->lhs->type,
                 .rhs_type = e->lhs->type,
-            });
+            }, alloc);
             //printf("ARITH: %d\n", expr_to_op[e->kind]);
         } break;
 
         case EXPR_NEG: {
-            codegen_expr(exe, e->child);
+            codegen_expr(exe, e->child, alloc);
             exe_append_op(exe, (Op){
                 .kind = OP_NEG, 
                 .type = e->type,
-            });
+            }, alloc);
             //printf("NEG: %d\n", expr_to_op[e->kind]);
         } break;
 
         case EXPR_SWIZZLE: {
-            codegen_expr(exe, e->lhs);
+            codegen_expr(exe, e->lhs, alloc);
             exe_append_op(exe, (Op){
                 .kind    = OP_PUSH,
                 .type    = e->type,
                 .argsize = TYPE_TO_SIZE[TYPE_UINT],
-            });
-            exe_append_u32(exe, construct_swizzle_descriptor(e->rhs->token.text));
+            }, alloc);
+            exe_append_u32(exe, construct_swizzle_descriptor(e->rhs->token.text), alloc);
             exe_append_op(exe, (Op){
                 .kind     = OP_SWIZZLE, 
                 .type     = e->type,
                 .lhs_type = e->lhs->type,
                 .rhs_type = TYPE_UINT,
-            });
+            }, alloc);
         } break;
 
         case EXPR_PAREN: {
-            codegen_expr(exe, e->child);
+            codegen_expr(exe, e->child, alloc);
         } break;
 
         case EXPR_FUNC: {
-            codegen_expr(exe, e->child);
+            codegen_expr(exe, e->child, alloc);
             u32 i = 0;
             for (i = 0; i < (u32)N_BUILTIN_FUNCTIONS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
@@ -1029,14 +1029,14 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .kind = expr_to_op[e->kind], 
                 .type = e->type,
                 .argsize = sizeof(u32),
-            });
-            exe_append_u32(exe, i);
+            }, alloc);
+            exe_append_u32(exe, i, alloc);
             //printf("FUNC: " SV_FMT "\n", SV_ARG(e->token.text));
         } break;
 
         case EXPR_ARGLIST: {
-            codegen_expr(exe, e->lhs);
-            codegen_expr(exe, e->rhs);
+            codegen_expr(exe, e->lhs, alloc);
+            codegen_expr(exe, e->rhs, alloc);
         } break;
 
         case EXPR_LIT: {
@@ -1044,21 +1044,21 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                 .kind    = OP_PUSH,
                 .type    = e->type,
                 .argsize = TYPE_TO_SIZE[e->type],
-            });
+            }, alloc);
             if (e->type == TYPE_BOOL) {
                 i32 val = sv_equals(e->token.text, SV_LIT("true")) ? 1 : 0;
-                exe_append_i32(exe, val);
+                exe_append_i32(exe, val, alloc);
             } else if (e->type == TYPE_INT) {
                 i32 val = (i32) sv_to_i64(e->token.text);
-                exe_append_i32(exe, val);
+                exe_append_i32(exe, val, alloc);
             } else if (e->type == TYPE_UINT) {
                 u32 val = (u32) sv_to_u64(e->token.text);
-                exe_append_u32(exe, val);
+                exe_append_u32(exe, val, alloc);
             } else if (e->type == TYPE_FLOAT) {
                 f32 val = (f32) sv_to_f64(e->token.text);
-                exe_append_f32(exe, val);
+                exe_append_f32(exe, val, alloc);
             } else if (e->type == TYPE_STR) {
-                exe_append(exe, &e->token.text, TYPE_TO_SIZE[e->type]);
+                exe_append(exe, &e->token.text, TYPE_TO_SIZE[e->type], alloc);
             } else {
                 assert(false && "Logic error in previous compiler steps... #1");
             }
@@ -1072,9 +1072,9 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
                         .kind    = OP_PUSH,
                         .type    = e->type,
                         .argsize = TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type],
-                    });
+                    }, alloc);
                     exe_append(exe, &BUILTIN_CONSTANTS[i].value, 
-                               TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type]);
+                               TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type], alloc);
                     break; 
                 } 
             }
@@ -1089,38 +1089,38 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e)
     return; 
 }
 
-static void exe_append_op(ExeExpr *exe, Op op)
+static void exe_append_op(ExeExpr *exe, Op op, Allocator *alloc)
 {
-    exe_append(exe, &op, sizeof(op));
+    exe_append(exe, &op, sizeof(op), alloc);
 }
 
-static void exe_append_i32(ExeExpr *exe, i32 v)
+static void exe_append_i32(ExeExpr *exe, i32 v, Allocator *alloc)
 {
-    exe_append(exe, &v, sizeof(v));
+    exe_append(exe, &v, sizeof(v), alloc);
 }
 
-static void exe_append_u32(ExeExpr *exe, u32 v)
+static void exe_append_u32(ExeExpr *exe, u32 v, Allocator *alloc)
 {
-    exe_append(exe, &v, sizeof(v));
+    exe_append(exe, &v, sizeof(v), alloc);
 }
 
-static void exe_append_f32(ExeExpr *exe, f32 v)
+static void exe_append_f32(ExeExpr *exe, f32 v, Allocator *alloc)
 {
-    exe_append(exe, &v, sizeof(v));
+    exe_append(exe, &v, sizeof(v), alloc);
 }
 
-static void exe_append(ExeExpr *exe, const void *val, u32 size)
+static void exe_append(ExeExpr *exe, const void *val, u32 size, Allocator *alloc)
 {
     if (exe->code == NULL) {
         exe->size = 0;
         exe->capacity = 64;
-        exe->code = hgl_alloc(g_r2r_arena, exe->capacity * sizeof(*exe->code));
+        exe->code = hgl_alloc(alloc, exe->capacity * sizeof(*exe->code));
     } 
     if (exe->capacity < exe->size + size) {
         while (exe->capacity < exe->size + size) {
             exe->capacity *= 2;
         }
-        exe->code = hgl_realloc(g_r2r_arena, exe->code, exe->capacity * sizeof(*exe->code));
+        exe->code = hgl_realloc(alloc, exe->code, exe->capacity * sizeof(*exe->code));
     }
     assert(exe->code != NULL && "eexe_allocator alloc failed");
     memcpy(&exe->code[exe->size], val, size);

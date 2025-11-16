@@ -385,6 +385,11 @@ void imgui_color_picker(const char *label, float *v)
     ImGui::ColorEdit4(label, v, ImGuiColorEditFlags_AlphaBar);
 }
 
+void imgui_input_text(const char *label, char *buf, size_t buf_size)
+{
+    ImGui::InputText(label, buf, buf_size); 
+}
+
 b8 imgui_selectable(const char *label, b8 is_selected)
 {
     return ImGui::Selectable(label, is_selected);

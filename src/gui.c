@@ -19,6 +19,7 @@ typedef struct
     StringView label;
     SelValue value;
     WidgetKind kind;
+    char *text_input_buffer;
     u8 secondary_args[64];
     b8 touched_this_frame;
 } Widget;
@@ -430,27 +431,32 @@ SelValue gui_get_widget_value(StringView label,
     Vec2 *args_vec2 = (Vec2 *)secondary_args;
     Vec3 *args_vec3 = (Vec3 *)secondary_args;
     Vec4 *args_vec4 = (Vec4 *)secondary_args;
-    SelValue default_value;
-    switch (kind) {
-        case INPUT_INT:        default_value.val_i32  = args_i32[0];  break;
-        case INPUT_FLOAT:      default_value.val_f32  = args_f32[0];  break;
-        case INPUT_VEC2:       default_value.val_vec2 = args_vec2[0]; break;
-        case INPUT_VEC3:       default_value.val_vec3 = args_vec3[0]; break;
-        case INPUT_VEC4:       default_value.val_vec4 = args_vec4[0]; break;
-        case CHECKBOX:         default_value.val_bool = args_i32[0];  break;
-        case DRAG_INT:         default_value.val_i32  = args_i32[3];  break;
-        case DRAG_FLOAT:       default_value.val_f32  = args_f32[3];  break;
-        case SLIDER_FLOAT:     default_value.val_f32  = args_f32[2];  break;
-        case SLIDER_FLOAT_LOG: default_value.val_f32  = args_f32[2];  break;
-        case COLOR_PICKER:     default_value.val_vec4 = args_vec4[0]; break;
-    } 
     Widget w = (Widget) {
         .label              = sv_make_copy(label, p2p_fs_alloc),
         .kind               = kind,
-        .value              = default_value,
         .touched_this_frame = true,
     };
     memcpy(w.secondary_args, secondary_args, secondary_args_size);
+    if (kind == INPUT_TEXT) {
+        w.text_input_buffer = p2p_fs_alloc(SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE); 
+    }
+    switch (kind) {
+        case INPUT_INT:        w.value.val_i32  = args_i32[0];  break;
+        case INPUT_FLOAT:      w.value.val_f32  = args_f32[0];  break;
+        case INPUT_VEC2:       w.value.val_vec2 = args_vec2[0]; break;
+        case INPUT_VEC3:       w.value.val_vec3 = args_vec3[0]; break;
+        case INPUT_VEC4:       w.value.val_vec4 = args_vec4[0]; break;
+        case CHECKBOX:         w.value.val_bool = args_i32[0];  break;
+        case DRAG_INT:         w.value.val_i32  = args_i32[3];  break;
+        case DRAG_FLOAT:       w.value.val_f32  = args_f32[3];  break;
+        case SLIDER_FLOAT:     w.value.val_f32  = args_f32[2];  break;
+        case SLIDER_FLOAT_LOG: w.value.val_f32  = args_f32[2];  break;
+        case COLOR_PICKER:     w.value.val_vec4 = args_vec4[0]; break;
+        case INPUT_TEXT: {
+            w.value.val_str  = sv_from(w.text_input_buffer, 
+                                       SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE);
+        } break;
+    } 
     array_push(&gui.widgets, w);
 
     return w.value;
@@ -550,6 +556,11 @@ static inline void draw_and_update_widget(Widget *w)
 
         case COLOR_PICKER: {
             imgui_color_picker(label_cstr, (f32 *)&w->value.val_vec4);
+        } break;
+
+        case INPUT_TEXT: {
+            imgui_input_text(label_cstr, w->text_input_buffer, 
+                             SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE);
         } break;
     }
 }

@@ -32,11 +32,10 @@ void main()
     /* set background color */
     frag_color = bg_color;
 
-    /* 1's scale-indicators */
+    /* scale-indicators */
     float x = scale_pos;
     float w = 0.01;
     float s = 10.0;
-    //float ts = clamp(scale, 0, 1000000.0);
     float ts = scale;
     while (ts > 0.009) {
         ts *= 0.1;
@@ -44,13 +43,7 @@ void main()
     }
     for (int i = 0; i < 3; i++) {
         float d = sdf_scale_marker(y, s*scale);
-        //float d = 0;
-        //if (d < pixel.y && uv.x > (x - w) && uv.x < (x + w)) {
-        //    frag_color = vec4(0.35, 0.35, 0.35, 1.0);
-        //}
-
         if (uv.x > (x - w) && uv.x < (x + w)) {
-            //frag_color = vec4(0.35, 0.35, 0.35, 1.0);
             frag_color = mix(frag_color, vec4(0.35, 0.35, 0.35, 1.0), 1 - smoothstep(0.0, 2*pixel.y, abs(d)));
         }
         w *= 2;
@@ -58,9 +51,6 @@ void main()
     }
 
     /* zero-line */
-    //if (abs(y) <= pixel.y) {
-    //    frag_color = vec4(0.5, 0.5, 0.5, 1.0);
-    //}
     frag_color = mix(frag_color, vec4(0.5, 0.5, 0.5, 1.0), 1 - smoothstep(0.0, 2*pixel.y, abs(y)));
 
     vec4 texel = texelFetch(plot_data, ivec2(gl_FragCoord.xy), 0);

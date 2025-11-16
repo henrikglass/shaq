@@ -71,7 +71,7 @@ i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
         return -1;
     }
 
-    u->exe = sel_compile(kv->val);
+    u->exe = sel_compile(kv->val, g_r2r_arena);
 
     if (u->exe == NULL) {
         log_error("Could not compile expression: `%s`.", kv->val);

@@ -446,11 +446,11 @@ static i32 reload_session()
         log_print_error_log();
     }
 
-#if 0
+#if 1
     printf("frame arena      -- "); hgl_alloc_print_usage(g_frame_arena);
     printf("r2r arena        -- "); hgl_alloc_print_usage(g_r2r_arena);
     printf("r2r fs allocator -- "); hgl_alloc_print_usage(g_r2r_fs_allocator);
-    printf("image allocator  -- "); hgl_alloc_print_usage(g_image_allocator);
+    printf("p2p fs allocator -- "); hgl_alloc_print_usage(g_p2p_fs_allocator);
 #endif
 
 #if SHAQ_PROFILE
