@@ -11,20 +11,32 @@
 
 /*--- Public type definitions -----------------------------------------------------------*/
 
+typedef enum
+{
+    LOG_INFO,
+    LOG_ERROR,
+} LogEntryKind;
+
+typedef enum
+{
+    LOG_R2R,
+    LOG_FRAME,
+    LOG_DISABLE,
+} LogMode;
+
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
+void log_set_mode(LogMode mode);
+LogMode log_get_mode(void);
 void log_info(const char *fmt, ...);
 void log_error(const char *fmt, ...);
-void log_disable(void);
-void log_enable(void);
-void log_clear_all_logs(void);
-void log_reset_iterators(void);
-void log_print_info_log(void);
-void log_print_error_log(void);
-b8 log_info_log_is_empty(void);
-b8 log_error_log_is_empty(void);
+void log_clear(void);
+void log_print(void);
+b8 log_has_info(void);
+b8 log_has_error(void);
+const char *log_get_next_msg(u32 *length, LogEntryKind *kind);
 const char *log_get_next_info_msg(u32 *length);
 const char *log_get_next_error_msg(u32 *length);
 

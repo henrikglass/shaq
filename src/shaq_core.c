@@ -119,6 +119,10 @@ void shaq_new_frame()
         }
     }
 
+    /* clear log */
+    log_set_mode(LOG_FRAME);
+    log_clear();
+
     /* compute time */
     u64 now_ns = util_get_time_nanos();
     u64 dt_ns = now_ns - shaq.timestamp_ns;
@@ -163,7 +167,7 @@ void shaq_new_frame()
         }
 
         /* Draw error log overlay if there are errors */
-        if (!log_error_log_is_empty()) {
+        if (log_has_error()) {
             gui_draw_error_log_overlay();
         }
     } else {
@@ -361,6 +365,10 @@ static i32 reload_session()
     hgl_profile_begin("reload session");
 #endif
 
+    /* clear log */
+    log_set_mode(LOG_R2R);
+    log_clear();
+
     b8 major_reload = shaq.project_ini_changed;
     //b8 major_reload = true;
     shaq.project_ini_changed = false;
@@ -391,7 +399,6 @@ static i32 reload_session()
     array_clear(&shaq.shaders);
     array_clear(&shaq.render_order);
     array_clear(&shaq.textures);
-    log_clear_all_logs();
 
     /* "Reload" renderer & GUI */
     renderer_reload();
@@ -442,8 +449,7 @@ static i32 reload_session()
         shaq.visible_shader_idx = shaq.render_order.arr[shaq.shaders.count - 1];
     }
     if (!shaq.quiet) {
-        log_print_info_log();
-        log_print_error_log();
+        log_print();
     }
 
 #if 1
@@ -468,8 +474,7 @@ out_error:
 #endif
     shaq.visible_shader_idx = -1;
     if (!shaq.quiet) {
-        log_print_info_log();
-        log_print_error_log();
+        log_print();
     }
     log_error("Session reload failed (%s)", io_get_timestamp_str());
     return -1;
@@ -555,9 +560,7 @@ static i32 load_state_from_project_ini(HglIni *project_ini)
 
 static void shaq_atexit_()
 {
-    log_print_info_log();
-    log_print_error_log();
-
+    log_print();
     renderer_final();
     alloc_final();
 }

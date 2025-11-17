@@ -397,7 +397,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("input_vec3"),       .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec3_,       .argtypes = {TYPE_STR, TYPE_VEC3, TYPE_NIL}, .synopsis = "vec3 input_vec3(str label, vec3 default)", .desc = "Creates an input widget for 3D vectors with the label `label` and default value `default`", },
     { .id = SV_LIT("input_vec4"),       .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_input_vec4_,       .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 input_vec4(str label, vec4 default)", .desc = "Creates an input widget for 4D vectors with the label `label` and default value `default`", },
     { .id = SV_LIT("color_picker"),     .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_color_picker_,     .argtypes = {TYPE_STR, TYPE_VEC4, TYPE_NIL}, .synopsis = "vec4 color_picker(str label, vec4 default)", .desc = "Creates a color picker widget with the label `label` and default value `default`", },
-    { .id = SV_LIT("text_input"),       .type = TYPE_STR,   .qualifier = QUALIFIER_NONE, .impl = fn_text_input_,       .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "str text_input(str label)", .desc = "Creates a text input widget with the label `label`", },
+    { .id = SV_LIT("text_input"),       .type = TYPE_STR,   .qualifier = QUALIFIER_NONE, .impl = fn_text_input_,       .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "str text_input(str label, str default)", .desc = "Creates a text input widget with the label `label` and default value `default`", },
 
     { .id = SV_LIT("copy_bool"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_bool_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "bool copy_bool(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
     { .id = SV_LIT("copy_int"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_copy_int_,   .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "int copy_int(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
@@ -1755,8 +1755,10 @@ static SelValue fn_color_picker_(void *args)
 
 static SelValue fn_text_input_(void *args)
 {
+    u8 *args8 = (u8 *) args;
     StringView label = *(StringView *)args;
-    return gui_get_widget_value(label, INPUT_TEXT, NULL, 0);
+    void *secondary_args = (void *)(args8 + sizeof(StringView));
+    return gui_get_widget_value(label, INPUT_TEXT, secondary_args, sizeof(StringView));
 }
 
 /* ---------------------- Copy functions -------------------- */
@@ -1822,14 +1824,15 @@ static SelValue fn_copy_mat4_(void *args)  { return fn_copy_helper_(args, TYPE_M
 
 static SelValue fn_eval_helper_(void *args)
 {
-    log_disable();
+    //LogMode logmode = log_get_mode();
+    //log_set_mode(LOG_DISABLE);
     StringView expr = *(StringView *)args;
     char *expr_cstr = sv_make_cstr_copy(expr, frame_arena_alloc);
     ExeExpr *exe = sel_compile(expr_cstr, g_frame_arena);
     if (exe == NULL) {
         return (SelValue) {0}; // TODO something else
     }
-    log_enable();
+    //log_set_mode(logmode);
 
     // TODO Rewrite the SELVM code to accept an SVM as an argument 
     // instead of doing this dumb crap

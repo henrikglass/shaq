@@ -101,7 +101,7 @@ float ceil(float x)                                                             
 float fract(float x)                                                             Returns the fractional part of `x`
 float min(float a, float b)                                                      Returns the minimum of `a` and `b`
 float max(float a, float b)                                                      Returns the maximum of `a` and `b`
-float clamp(float min, float max, float x)                                       Returns x clamped to the range [`min`,`max`]
+float clamp(float x, float min, float max)                                       Returns x clamped to the range [`min`,`max`]
 float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 float ilerp(float a, float b, float x)                                           Calculates the inverse of lerp(a,b,t). I.e. solves the equation x = a*(1-t)+b*t for t.
 float remap(float in_min, float in_max, float out_min, float out_max, float x)   See Freya Holmér's talks :-)
@@ -231,7 +231,7 @@ mat4 eval_mat4(str expr)                                                        
 
 ## Returning str:
 ```
-str text_input(str label)                                                        Creates a text input widget with the label `label`
+str text_input(str label, str default)                                           Creates a text input widget with the label `label` and default value `default`
 ```
 
 ## Returning texture:

@@ -285,24 +285,19 @@ void gui_draw_log_window()
         imgui_end();
         return;
     }
-    log_reset_iterators();
     imgui_begin_child("Log", gui.dark_mode ? 0x282828FF : 0xD1D1D1FF);
     while (true) {
         u32 msg_len;
-        const char *msg = log_get_next_info_msg(&msg_len);
+        LogEntryKind msg_kind;
+        const char *msg = log_get_next_msg(&msg_len, &msg_kind);
         if (msg == NULL) {
             break;
         }
-        imgui_text_color("Info: ", gui.dark_mode ? 0xE1E1E1FF : 0x1E1E1EFF);
-        imgui_text_unformatted(msg, msg_len); 
-    }
-    while (true) {
-        u32 msg_len;
-        const char *msg = log_get_next_error_msg(&msg_len);
-        if (msg == NULL) {
-            break;
+        if (msg_kind == LOG_INFO) {
+            imgui_text_color("Info: ", gui.dark_mode ? 0xE1E1E1FF : 0x1E1E1EFF);
+        } else if (msg_kind == LOG_ERROR) {
+            imgui_text_color("Error: ", 0xE04050FF);
         }
-        imgui_text_color("Error: ", 0xE04050FF);
         imgui_text_unformatted(msg, msg_len); 
     }
     imgui_end_child();
@@ -316,7 +311,6 @@ void gui_draw_error_log_overlay()
         imgui_end();
         return;
     }
-    log_reset_iterators();
     while (true) {
         u32 msg_len;
         const char *msg = log_get_next_error_msg(&msg_len);
@@ -431,6 +425,7 @@ SelValue gui_get_widget_value(StringView label,
     Vec2 *args_vec2 = (Vec2 *)secondary_args;
     Vec3 *args_vec3 = (Vec3 *)secondary_args;
     Vec4 *args_vec4 = (Vec4 *)secondary_args;
+    StringView *args_sv = (StringView *)secondary_args;
     Widget w = (Widget) {
         .label              = sv_make_copy(label, p2p_fs_alloc),
         .kind               = kind,
@@ -439,6 +434,11 @@ SelValue gui_get_widget_value(StringView label,
     memcpy(w.secondary_args, secondary_args, secondary_args_size);
     if (kind == INPUT_TEXT) {
         w.text_input_buffer = hgl_zalloc(g_p2p_fs_allocator, SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE); 
+        size_t n = args_sv->length;
+        if (n > SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE) {
+            n = SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE;
+        }
+        memcpy(w.text_input_buffer, args_sv->start, n);
     }
     switch (kind) {
         case INPUT_INT:        w.value.val_i32  = args_i32[0];  break;
