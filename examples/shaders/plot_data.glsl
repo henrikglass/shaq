@@ -35,8 +35,8 @@ void main()
 
     float f0 = scale*plot_value_prev;
     float f1 = scale*plot_value;
-    vec2 v0 = vec2(1.0 - speed*2*(1.0/iresolution.y), f0);
-    vec2 v1 = vec2(1.0, f1);
+    vec2 v0 = vec2(0.95 - speed*2*(1.0/iresolution.y), f0);
+    vec2 v1 = vec2(0.95, f1);
     float d = sdf_line_segment(v0, v1, p);
     frag_color = mix(frag_color, plot_color, 1-smoothstep(pixel.y*thickness*1.0, 2.0*pixel.y*thickness, d));
 }
