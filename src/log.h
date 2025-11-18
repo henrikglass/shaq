@@ -34,6 +34,7 @@ void log_info(const char *fmt, ...);
 void log_error(const char *fmt, ...);
 void log_clear(void);
 void log_print(void);
+//void log_print_frame(void); // TODO neater API pls
 b8 log_has_info(void);
 b8 log_has_error(void);
 const char *log_get_next_msg(u32 *length, LogEntryKind *kind);

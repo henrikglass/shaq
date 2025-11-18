@@ -148,6 +148,29 @@ void log_print()
     fflush(stderr);
 }
 
+//void log_print_frame()
+//{
+//    for (u32 i = 0; i < logs.frame_log.entries.count; i++) {
+//        LogEntry *e = &logs.frame_log.entries.arr[i];
+//        if (e == NULL) {
+//            break;
+//        }
+//        switch (e->kind) {
+//            case LOG_INFO: {
+//                fprintf(stdout, "[" ANSI_GREEN "INFO" ANSI_NC "] ");
+//                fprintf(stdout, "%.*s\n", e->length, e->cstr);
+//            } break;
+//
+//            case LOG_ERROR: {
+//                fprintf(stderr, "[" ANSI_RED "ERROR" ANSI_NC "] ");
+//                fprintf(stderr, "%.*s\n", e->length, e->cstr);
+//            } break;
+//        }
+//    }
+//    fflush(stdout);
+//    fflush(stderr);
+//}
+
 b8 log_has_info()
 {
     return logs.r2r_log.has_info ||

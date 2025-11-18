@@ -118,10 +118,7 @@ void shaq_new_frame()
             shaq.reloaded_this_frame = true;
         }
     }
-
-    /* clear log */
     log_set_mode(LOG_FRAME);
-    log_clear();
 
     /* compute time */
     u64 now_ns = util_get_time_nanos();
@@ -212,6 +209,7 @@ void shaq_new_frame()
     }
 
     /* end of frame */
+    log_clear();
     gui_end_frame();
     renderer_end_final_pass();
 

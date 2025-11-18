@@ -23,6 +23,8 @@ static size_t identifier_lexeme(StringView sv);
 
 i32 uniform_parse_from_ini_kv_pair(Uniform *u, HglIniKVPair *kv)
 {
+    u->exe = NULL;
+    u->gl_uniform_location = -1;
     StringView k = sv_trim(sv_from_cstr(kv->key));
 
     if (!sv_starts_with_lchop(&k, "uniform")) {

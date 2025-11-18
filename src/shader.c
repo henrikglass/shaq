@@ -7,6 +7,7 @@
 #include "renderer.h"
 #include "gui.h"
 #include "log.h"
+#include "gl_util.h"
 
 #include <errno.h>
 #include <string.h>
@@ -124,6 +125,7 @@ void shader_determine_dependencies(Shader *s)
     array_clear(&s->shader_depends);
     for (u32 i = 0; i < s->uniforms.count; i++) {
         Uniform *u = &s->uniforms.arr[i];
+        assert(u->exe != NULL);
         if (u->type != TYPE_TEXTURE) {
             continue;
         }
@@ -299,14 +301,15 @@ void shader_update_uniforms(Shader *s)
 
     for (u32 i = 0; i < s->uniforms.count; i++) {
         Uniform *u = &s->uniforms.arr[i];
-        if (u->exe == NULL) {
-            continue;
-        }
+
         if (u->gl_uniform_location == -1) {
             continue;
         }
 
-        SelValue r = sel_eval(u->exe, (SVMContext){s}, false);
+        SelValue r = {0};
+        if (u->exe != NULL) {
+            r = sel_eval(u->exe, (SVMContext){s}, false);
+        }
         switch (u->type) {
             case TYPE_BOOL:  glUniform1i(u->gl_uniform_location,  r.val_bool); break;
             case TYPE_INT:   glUniform1i(u->gl_uniform_location,  r.val_i32); break;
@@ -323,6 +326,9 @@ void shader_update_uniforms(Shader *s)
             case TYPE_MAT4:  glUniformMatrix4fv(u->gl_uniform_location, 1, false, (f32 *)&r.val_mat4); break;
             case TYPE_TEXTURE: {
                 TextureDescriptor desc = r.val_tex;
+                if (desc.error != 0) {
+                    break;
+                }
                 Texture *t = NULL;
                 glActiveTexture(GL_TEXTURE0 + texture_unit);
                 glUniform1i(u->gl_uniform_location, texture_unit);
@@ -364,6 +370,12 @@ void shader_update_uniforms(Shader *s)
             case TYPE_AND_NAMECHECKER_ERROR_:
             case N_TYPES:
                 log_error("Strange logic error that shouldn't happen<%s:%d>", __FILE__, __LINE__);
+        }
+
+        /* Check for errors */
+        if (-1 == gl_check_errors()) {
+            log_error("[shader_update_uniforms] Internal OpenGL error when updating uniform"
+                      " `" SV_FMT "` in shader `" SV_FMT "`.", SV_ARG(u->name), SV_ARG(s->name));
         }
     }
 }

@@ -152,6 +152,11 @@ void renderer_do_shader_pass(Shader *s)
 
     /* Draw */
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    /* Check for errors */
+    if (-1 == gl_check_errors()) {
+        log_error("[renderer_do_shader_pass] Internal OpenGL error for shader `" SV_FMT "`.", SV_ARG(s->name));
+    }
 }
 
 void renderer_draw_fullscreen_shader(Shader *s)
@@ -186,7 +191,7 @@ void renderer_end_final_pass()
 {
     glfwSwapBuffers(renderer.window);
     if (-1 == gl_check_errors()) {
-        log_error("[Renderer] Internal OpenGL error.");
+        log_error("[renderer_end_final_pass] Internal OpenGL error.");
     }
 }
 
