@@ -19,7 +19,7 @@ extern "C" {
 
 #define RGBA(r, g, b, a) ImVec4((float)r / 255.0f, \
                                 (float)g / 255.0f, \
-                                (float)g / 255.0f, \
+                                (float)b / 255.0f, \
                                 (float)a / 255.0f)
 
 /*--- Private type definitions ----------------------------------------------------------*/
@@ -55,7 +55,7 @@ void imgui_init(GLFWwindow *window, GLFWmonitor *monitor)
     style.GrabRounding = 10.0f;
 
     /* colors */
-    imgui_set_darkmode(false);
+    imgui_set_darkmode(true);
 
     /* DPI/Scaling */
     float scale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor);

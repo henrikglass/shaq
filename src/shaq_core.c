@@ -421,7 +421,7 @@ static i32 reload_session()
     shaq.project_ini_modifytime = io_get_file_modify_time(shaq.project_ini_filepath, false);
     shaq.project_ini = hgl_ini_open(shaq.project_ini_filepath);
     if (shaq.project_ini == NULL) {
-        log_error("Failed to open or parse *.ini file.");
+        log_error("Failed to open or parse *.ini file: `%s`", shaq.project_ini_filepath);
         goto out_error;
     }
 

@@ -163,7 +163,7 @@ spell compositor, ok?
 
 * Fix continuous reload on GLFW window resize.
 * SEL - text\_input() + eval(str sel\_expr)
-* SEL - dynamic type system (e.g. evaluate type from argument types)
+* SEL - dynamic type system (e.g. evaluate type from argument types). OP\_CONVERT?
 * Rework GUI a bit (e.g. play/pause symbol)
 * Cubemaps (SEL: SamplerCube)
 * SEL - load\_video()?
