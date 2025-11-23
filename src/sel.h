@@ -171,7 +171,7 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_MAT3]       = "mat3",
     [TYPE_MAT4]       = "mat4",
     [TYPE_STR]        = "str",
-    [TYPE_TEXTURE]    = "texture",
+    [TYPE_TEXTURE]    = "sampler2D",
     [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
 };
 

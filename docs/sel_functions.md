@@ -238,7 +238,7 @@ mat4 eval_mat4(str expr)                                                        
 str text_input(str label, str default)                                           Creates a text input widget with the label `label` and default value `default`
 ```
 
-## Returning texture:
+## Returning sampler2D:
 ```
 texture load_image(str filepath)                                                 Returns a reference to a texture loaded from `filepath`
 texture load_image_ex(str filepath, i32 filter, i32 wrap)                        Returns a reference to a texture loaded from `filepath` with the given filter and wrap mode
