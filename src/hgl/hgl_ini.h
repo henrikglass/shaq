@@ -67,9 +67,12 @@
  *
  */
 
-
 #ifndef HGL_INI_H
 #define HGL_INI_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdio.h>
 #include <stdint.h>
@@ -164,7 +167,7 @@ void hgl_ini_reset_kv_pair_iterator(HglIniSection *section);
 bool hgl_ini_has_section(HglIni *ini, const char *section_name);
 
 /**
- * Returns the section with the name `section_name`, or NULL if 
+ * Returns the section with the name `section_name`, or NULL if
  * it doesn't exist.
  */
 HglIniSection *hgl_ini_get_section(HglIni *ini, const char *section_name);
@@ -225,6 +228,10 @@ void hgl_ini_put(HglIni *ini, const char *section_name, const char *key_name, co
  * without any comments.
  */
 void hgl_ini_fprint(FILE *stream, HglIni *ini);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HGL_INI_H */
 
@@ -445,7 +452,7 @@ HglIni *hgl_ini_open(const char *filepath)
                 if (eol != (end + 1) && !is_all_whitespace(end + 1, eol)) {
                     fprintf(stderr, "[hgl_ini_open] Error: Expected `\\n` after \']\' on line %d.\n", cursor.line_nr);
                     goto out_error;
-                } 
+                }
                 HglIniSection section = {0};
                 section.name = HGL_INI_ALLOC(end - start + 1);
                 memcpy(section.name, start, end - start);
@@ -494,6 +501,11 @@ HglIni *hgl_ini_open(const char *filepath)
                 rtrim(&key_end);
                 rtrim(&val_end);
 
+                if (ini->sections.capacity == 0) {
+                    fprintf(stderr, "[hgl_ini_open] Error: Key-value pair does not belong to a section\n");
+                    goto out_error;
+                }
+
                 HglIniKVPair kv_pair = (HglIniKVPair) {
                     .key = HGL_INI_ALLOC(key_end - key_start + 1),
                     .val = HGL_INI_ALLOC(val_end - val_start + 1),
@@ -502,11 +514,6 @@ HglIni *hgl_ini_open(const char *filepath)
                 memcpy(kv_pair.val, val_start, val_end - val_start);
                 kv_pair.key[key_end - key_start] = '\0';
                 kv_pair.val[val_end - val_start] = '\0';
-
-                if (ini->sections.capacity == 0) {
-                    fprintf(stderr, "[hgl_ini_open] Error: Key-value pair does not belong to a section\n");
-                    goto out_error;
-                }
 
                 HglIniSection *current_section = &ini->sections.arr[ini->sections.count - 1];
                 hgl_ini_da_add(&current_section->kv_pairs, kv_pair);
@@ -525,7 +532,9 @@ out_error:
     if (data != MAP_FAILED) {
         munmap(data, file_size);
     }
-    hgl_ini_close(ini);
+    if (ini != NULL) {
+        hgl_ini_close(ini);
+    }
     return NULL;
 }
 
@@ -780,5 +789,3 @@ void hgl_ini_fprint(FILE *stream, HglIni *ini)
 }
 
 #endif
-
-

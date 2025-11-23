@@ -135,13 +135,24 @@ typedef struct ExprTree
 {
     ExprKind kind;
     Token token;
-    Type type;
+    Type type; 
     TypeQualifier qualifier;
     union {
         struct ExprTree *child;
         struct ExprTree *lhs;
     };
     struct ExprTree *rhs;
+    b8 asymmetric; // true iff all of the following are true:
+                   //     - this is a binary expression 
+                   //     - lhs and rhs are of different types
+                   //     - neither lhs or rhs must be implicitly type converted
+                   //
+                   // This is used to mark binary operations such as matrix-vector-, 
+                   // matrix-scalar-, and vector-scalar multiplications. Conversely,
+                   // regular bool-float-, float-int, and uint-int, multiplications
+                   // are not marked as asymmetric, meaning one of the operands will
+                   // be implicitly type converted into the type of the other operand,
+                   // according to the type promotion rules, before being operated upon.
 } ExprTree;
 
 
@@ -167,6 +178,10 @@ static i32 parse_arglist_expr(ExprTree **e, Lexer *l);
 /* Type-/namechecker */
 static TypeAndQualifier type_and_namecheck(ExprTree *e);
 static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args);
+static TypeAndQualifier type_and_namecheck_add_expr(ExprTree *e);
+static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e);
+static inline Type type_promote_either_or_none(Type a, Type b);
+static inline Type type_promote(Type from, Type to);
 
 /* codegen */
 static ExeExpr *codegen(const ExprTree *e, Allocator *alloc);
@@ -695,54 +710,12 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         
         case EXPR_ADD:
         case EXPR_SUB: {
-            t0 = type_and_namecheck(e->lhs); 
-            t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
-                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
-            // TODO support implicit type conversions Add lhs + rhs types to Op?
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            //TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "Matricies may not (yet) be directly added. Use built-in functions instead.");
-            //TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2 && t0.type != TYPE_IVEC2, "Integer vectors may not (yet) be directly added. Use built-in functions instead.");
-            if ((t0.qualifier == QUALIFIER_CONST) && 
-                (t1.qualifier == QUALIFIER_CONST)) {
-                t0.qualifier = QUALIFIER_CONST;
-            } else {
-                t0.qualifier = QUALIFIER_NONE;
-            }
+            return type_and_namecheck_add_expr(e);
         } break;
 
-        case EXPR_MUL: {
-            t0 = type_and_namecheck(e->lhs); 
-            t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
-                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            if ((t0.qualifier == QUALIFIER_CONST) && 
-                (t1.qualifier == QUALIFIER_CONST)) {
-                t0.qualifier = QUALIFIER_CONST;
-            } else {
-                t0.qualifier = QUALIFIER_NONE;
-            }
-        } break;
+        case EXPR_MUL:
         case EXPR_DIV: {
-            t0 = type_and_namecheck(e->lhs); 
-            t1 = type_and_namecheck(e->rhs); 
-            TYPE_AND_NAMECHECK_ASSERT(t0.type == t1.type, "Operands to arithmetic operation are of different types: "
-                                      "Got `%s` and `%s`.", TYPE_TO_STR[t0.type], TYPE_TO_STR[t1.type]);
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_BOOL, "No arithmetic on bools is allowed (yet).");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_STR, "Arithmetic is not allowed on strings.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
-            TYPE_AND_NAMECHECK_ASSERT(t0.type != TYPE_MAT2 && t0.type != TYPE_MAT3 && t0.type != TYPE_MAT4, "There is no such thing a a matrix-matrix division.");
-            if ((t0.qualifier == QUALIFIER_CONST) && 
-                (t1.qualifier == QUALIFIER_CONST)) {
-                t0.qualifier = QUALIFIER_CONST;
-            } else {
-                t0.qualifier = QUALIFIER_NONE;
-            }
+            return type_and_namecheck_mul_expr(e);
         } break;
         
         case EXPR_REM: {
@@ -906,6 +879,143 @@ out:
     return t0;
 }
 
+static TypeAndQualifier type_and_namecheck_add_expr(ExprTree *e)
+{
+    ExprTree *lhs = e->lhs;
+    ExprTree *rhs = e->rhs;
+    ExprKind kind = e->kind;
+    TypeAndQualifier result;
+    TypeAndQualifier t0 = type_and_namecheck(lhs);
+    TypeAndQualifier t1 = type_and_namecheck(rhs);
+    Type t = type_promote_either_or_none(t0.type, t1.type);
+
+    if (t == TYPE_NIL) {
+        TYPE_AND_NAMECHECK_ERROR("Operands to binary `+` or `-` expression have incompatible types: %s %c %s",
+                                 TYPE_TO_STR[t0.type], (kind == EXPR_ADD) ? '+' : '-', TYPE_TO_STR[t1.type]);
+    }
+
+    /* rules that apply to both arguments */
+    TYPE_AND_NAMECHECK_ASSERT((t0.type != TYPE_BOOL) && (t1.type != TYPE_BOOL), "Operands to binary `+` or `-` expressions cannot be of type `bool`.");
+
+    /* rules that apply to either argument */
+    TYPE_AND_NAMECHECK_ASSERT(t != TYPE_BOOL, "Arithmetic is not allowed on bools.");
+    TYPE_AND_NAMECHECK_ASSERT(t != TYPE_STR, "Arithmetic is not allowed on strings.");
+    TYPE_AND_NAMECHECK_ASSERT(t != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
+ 
+    // Always mark expr as asymmetric for now
+    e->asymmetric = false;
+
+    /* Inherit qualifier from the intersection of the lhs & rhs qualifiers */
+    result.type = t;
+    if ((t0.qualifier == QUALIFIER_CONST) && 
+        (t1.qualifier == QUALIFIER_CONST)) {
+        result.qualifier = QUALIFIER_CONST;
+    } else {
+        result.qualifier = QUALIFIER_NONE;
+    }
+
+    e->type = result.type;
+    e->qualifier = result.qualifier;
+
+    return result;
+}
+
+static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
+{
+    ExprTree *lhs = e->lhs;
+    ExprTree *rhs = e->rhs;
+    ExprKind kind = e->kind;
+    TypeAndQualifier result;
+    TypeAndQualifier rhs_qtype = type_and_namecheck(lhs);
+    TypeAndQualifier lhs_qtype = type_and_namecheck(rhs);
+    Type t = type_promote_either_or_none(rhs_qtype.type, lhs_qtype.type);
+
+    /* 
+     * operand_types = lhs_type << 16 + rhs_type
+     */
+    typedef struct {
+        u32 operand_types;
+        u32 result_type;
+    } LookupTableEntry;
+    static const LookupTableEntry asym_mul_res_type[] = {
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2},
+        { .operand_types = (TYPE_VEC2  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC2},
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2},
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3},
+        { .operand_types = (TYPE_VEC3  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC3},
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3},
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4},
+        { .operand_types = (TYPE_VEC4  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC4},
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4},
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT2},
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT2,  .result_type = TYPE_MAT2},
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT3},
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT3,  .result_type = TYPE_MAT3},
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT4},
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT4,  .result_type = TYPE_MAT4},
+    };
+    static const LookupTableEntry asym_div_res_type[] = {
+        { .operand_types = (TYPE_VEC2  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC2},
+        { .operand_types = (TYPE_VEC3  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC3},
+        { .operand_types = (TYPE_VEC4  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC4},
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT2},
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT3},
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT4},
+    };
+
+    if (t == TYPE_NIL) {
+        e->asymmetric = true;
+        u32 k = (rhs_qtype.type << 16) + lhs_qtype.type;
+        if (kind == EXPR_MUL) {
+            for (u32 i = 0; i < sizeof(asym_mul_res_type)/sizeof(asym_mul_res_type[0]); i++) {
+                if (asym_mul_res_type[i].operand_types != k) continue;
+                t = asym_mul_res_type[i].result_type;
+                break;
+            }
+        } else {
+            assert(kind == EXPR_DIV);
+            for (u32 i = 0; i < sizeof(asym_div_res_type)/sizeof(asym_div_res_type[0]); i++) {
+                if (asym_div_res_type[i].operand_types != k) continue;
+                t = asym_div_res_type[i].result_type;
+                break;
+            }
+        }
+        
+        if (t == TYPE_NIL) {
+            TYPE_AND_NAMECHECK_ERROR("Operands to binary `%c` expression have incompatible types: %s and %s",
+                                     (kind == EXPR_MUL) ? '*' : '/', TYPE_TO_STR[rhs_qtype.type],  TYPE_TO_STR[lhs_qtype.type]);
+        }
+    } else {
+        e->asymmetric = false;
+
+        /* rules that apply to both arguments */
+        // --- 
+        
+        /* rules that apply to either argument */
+        TYPE_AND_NAMECHECK_ASSERT(t != TYPE_BOOL, "Arithmetic is not allowed on bools.");
+        TYPE_AND_NAMECHECK_ASSERT(t != TYPE_STR, "Arithmetic is not allowed on strings.");
+        TYPE_AND_NAMECHECK_ASSERT(t != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
+        if (kind == EXPR_DIV) {
+            TYPE_AND_NAMECHECK_ASSERT(t != TYPE_MAT2 && t != TYPE_MAT3 && t != TYPE_MAT4, 
+                                      "There is no such thing a a matrix-matrix division.");
+        }
+    }
+
+    /* Inherit qualifier from the intersection of the lhs & rhs qualifiers */
+    result.type = t;
+    if ((rhs_qtype.qualifier == QUALIFIER_CONST) && 
+        (lhs_qtype.qualifier == QUALIFIER_CONST)) {
+        result.qualifier = QUALIFIER_CONST;
+    } else {
+        result.qualifier = QUALIFIER_NONE;
+    }
+
+    e->type = result.type;
+    e->qualifier = result.qualifier;
+
+    return result;
+}
+
 static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args)
 {
     /* no more actual arguments? */
@@ -941,6 +1051,77 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 
 }
 
+static inline Type type_promote_either_or_none(Type a, Type b)
+{
+    if ((a == TYPE_NIL) || (b == TYPE_NIL)) {
+        return TYPE_NIL;
+    }
+
+    if (a == b) {
+        return a;
+    }
+
+#ifdef DEBUG
+    //assert(false && "lol");
+    // Test invariant: a may be promoted to b or vice versa, but both be promoted
+    //                 at the same time to some third type.
+    Type ss = type_promote(a, b);
+    Type tt = type_promote(b, a);
+    if (ss != TYPE_NIL) {
+        assert(tt == TYPE_NIL);
+    }
+    if (tt != TYPE_NIL) {
+        assert(ss == TYPE_NIL);
+    }
+#endif
+
+    Type t = type_promote(a, b);
+    if (t != TYPE_NIL) {
+        return t;
+    }
+    return type_promote(b, a);
+}
+
+static inline Type type_promote(Type from, Type to)
+{
+    static const Type promotion_rules[N_TYPES][N_TYPES] = 
+    {
+        [TYPE_NIL]       = {TYPE_NIL},
+        [TYPE_BOOL]      = {TYPE_INT, TYPE_UINT, TYPE_FLOAT, TYPE_NIL},
+        [TYPE_INT]       = {TYPE_FLOAT},
+        [TYPE_UINT]      = {TYPE_INT},
+        [TYPE_FLOAT]     = {TYPE_NIL},
+        [TYPE_VEC2]      = {TYPE_NIL},
+        [TYPE_VEC3]      = {TYPE_NIL},
+        [TYPE_VEC4]      = {TYPE_NIL},
+        [TYPE_IVEC2]     = {TYPE_NIL},
+        [TYPE_IVEC3]     = {TYPE_NIL},
+        [TYPE_IVEC4]     = {TYPE_NIL},
+        [TYPE_MAT2]      = {TYPE_NIL},
+        [TYPE_MAT3]      = {TYPE_NIL},
+        [TYPE_MAT4]      = {TYPE_NIL},
+        [TYPE_STR]       = {TYPE_NIL},
+        [TYPE_TEXTURE]   = {TYPE_NIL},
+        [TYPE_AND_NAMECHECKER_ERROR_] = {TYPE_NIL},
+    };
+
+    if (from == to) {
+        return from;
+    }
+
+    Type t = TYPE_NIL;
+    for (u32 i = 0; i < N_TYPES; i++) {
+        t = promotion_rules[from][i];
+        if (t == TYPE_NIL) {
+            break;
+        }
+        if (t == to) {
+            break;
+        }
+    }
+    return t;
+}
+
 
 /*--- CODEGEN ---------------------------------------------------------------------------*/
 
@@ -962,7 +1143,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
         [EXPR_SUB]  = OP_SUB,
         [EXPR_MUL]  = OP_MUL,
         [EXPR_DIV]  = OP_DIV,
-        [EXPR_REM]  = OP_REM,
+        [EXPR_REM]  = OP_REM, // TODO Remove from list
         [EXPR_NEG]  = OP_NEG,
         [EXPR_FUNC] = OP_FUNC,
     };
@@ -975,24 +1156,59 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
         case EXPR_ADD:
         case EXPR_SUB:
         case EXPR_MUL:
-        case EXPR_DIV:
+        case EXPR_DIV: {
+            if (e->asymmetric) {
+                codegen_expr(exe, e->lhs, alloc);
+                codegen_expr(exe, e->rhs, alloc);
+                exe_append_op(exe, (Op){
+                    .kind     = expr_to_op[e->kind],
+                    .res_type = e->type,
+                    .lhs_type = e->lhs->type,
+                    .rhs_type = e->rhs->type,
+                }, alloc);
+            } else {
+                codegen_expr(exe, e->lhs, alloc);
+                if (e->type != e->lhs->type) {
+                    exe_append_op(exe, (Op){
+                        .kind      = OP_TYPECONV,
+                        .res_type  = e->type,
+                        .from_type = e->lhs->type,
+                    }, alloc);
+                }
+                codegen_expr(exe, e->rhs, alloc);
+                if (e->type != e->rhs->type) {
+                    exe_append_op(exe, (Op){
+                        .kind      = OP_TYPECONV,
+                        .res_type  = e->type,
+                        .from_type = e->rhs->type,
+                    }, alloc);
+                }
+                exe_append_op(exe, (Op){
+                    .kind     = expr_to_op[e->kind],
+                    .res_type = e->type,
+                    .lhs_type = e->type,
+                    .rhs_type = e->type,
+                }, alloc);
+            }
+            //printf("ARITH: %d\n", expr_to_op[e->kind]);
+        } break;
+
         case EXPR_REM: {
             codegen_expr(exe, e->lhs, alloc);
             codegen_expr(exe, e->rhs, alloc);
             exe_append_op(exe, (Op){
-                .kind = expr_to_op[e->kind], 
-                .type = e->type,
+                .kind     = OP_REM,
+                .res_type = e->type,
                 .lhs_type = e->lhs->type,
-                .rhs_type = e->lhs->type,
+                .rhs_type = e->rhs->type,
             }, alloc);
-            //printf("ARITH: %d\n", expr_to_op[e->kind]);
         } break;
 
         case EXPR_NEG: {
             codegen_expr(exe, e->child, alloc);
             exe_append_op(exe, (Op){
-                .kind = OP_NEG, 
-                .type = e->type,
+                .kind     = OP_NEG,
+                .res_type = e->type,
             }, alloc);
             //printf("NEG: %d\n", expr_to_op[e->kind]);
         } break;
@@ -1000,14 +1216,14 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
         case EXPR_SWIZZLE: {
             codegen_expr(exe, e->lhs, alloc);
             exe_append_op(exe, (Op){
-                .kind    = OP_PUSH,
-                .type    = e->type,
-                .argsize = TYPE_TO_SIZE[TYPE_UINT],
+                .kind     = OP_PUSH,
+                .res_type = e->type,
+                .argsize  = TYPE_TO_SIZE[TYPE_UINT],
             }, alloc);
             exe_append_u32(exe, construct_swizzle_descriptor(e->rhs->token.text), alloc);
             exe_append_op(exe, (Op){
-                .kind     = OP_SWIZZLE, 
-                .type     = e->type,
+                .kind     = OP_SWIZZLE,
+                .res_type = e->type,
                 .lhs_type = e->lhs->type,
                 .rhs_type = TYPE_UINT,
             }, alloc);
@@ -1026,9 +1242,9 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
                 }
             }
             exe_append_op(exe, (Op){
-                .kind = expr_to_op[e->kind], 
-                .type = e->type,
-                .argsize = sizeof(u32),
+                .kind     = OP_FUNC,
+                .res_type = e->type,
+                .argsize  = sizeof(u32),
             }, alloc);
             exe_append_u32(exe, i, alloc);
             //printf("FUNC: " SV_FMT "\n", SV_ARG(e->token.text));
@@ -1041,9 +1257,9 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
 
         case EXPR_LIT: {
             exe_append_op(exe, (Op){
-                .kind    = OP_PUSH,
-                .type    = e->type,
-                .argsize = TYPE_TO_SIZE[e->type],
+                .kind     = OP_PUSH,
+                .res_type = e->type,
+                .argsize  = TYPE_TO_SIZE[e->type],
             }, alloc);
             if (e->type == TYPE_BOOL) {
                 i32 val = sv_equals(e->token.text, SV_LIT("true")) ? 1 : 0;
@@ -1069,9 +1285,9 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
             for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     exe_append_op(exe, (Op){
-                        .kind    = OP_PUSH,
-                        .type    = e->type,
-                        .argsize = TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type],
+                        .kind     = OP_PUSH,
+                        .res_type = e->type,
+                        .argsize  = TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type],
                     }, alloc);
                     exe_append(exe, &BUILTIN_CONSTANTS[i].value, 
                                TYPE_TO_SIZE[BUILTIN_CONSTANTS[i].type], alloc);
@@ -1113,7 +1329,7 @@ static void exe_append(ExeExpr *exe, const void *val, u32 size, Allocator *alloc
 {
     if (exe->code == NULL) {
         exe->size = 0;
-        exe->capacity = 64;
+        exe->capacity = 256;
         exe->code = hgl_alloc(alloc, exe->capacity * sizeof(*exe->code));
     } 
     assert(exe->code != NULL && "allocator alloc failed");

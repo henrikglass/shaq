@@ -64,7 +64,8 @@ void log_info(const char *fmt, ...)
     switch (logs.mode) {
         case LOG_R2R:   l = &logs.r2r_log; break;
         case LOG_FRAME: l = &logs.frame_log; break;
-        case LOG_DISABLE: return;
+        case LOG_DISABLE: 
+        default: return;
     }
     l->has_info = true;
 
@@ -90,7 +91,8 @@ void log_error(const char *fmt, ...)
     switch (logs.mode) {
         case LOG_R2R:   l = &logs.r2r_log; break;
         case LOG_FRAME: l = &logs.frame_log; break;
-        case LOG_DISABLE: return;
+        case LOG_DISABLE: 
+        default: return;
     }
     l->has_error = true;
 

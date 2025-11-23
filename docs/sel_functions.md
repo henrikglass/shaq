@@ -200,6 +200,8 @@ ivec4 eval_ivec4(str expr)                                                      
 ```
 mat2 mat2(vec2 c0, vec2 c1)                                                      Creates a 2x2 matrix with column vectors `c0` and `c1`
 mat2 mat2_id()                                                                   Creates a 2x2 identity matrix
+mat2 mat2_make_scale(vec2 v)                                                     Creates a 2x2 scaling matrix with scaling coefficients for the x and y-axes given by `v`.
+mat2 mat2_make_rotation(float angle)                                             Creates a 2x2 rotation matrix where the rotation operation is given by `angle`.
 mat2 copy_mat2(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 mat2 eval_mat2(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat2
 ```
@@ -208,6 +210,8 @@ mat2 eval_mat2(str expr)                                                        
 ```
 mat3 mat3(vec3 c0, vec3 c1, vec3 c2)                                             Creates a 3x3 matrix with column vectors `c0`, `c1`, and `c2`
 mat3 mat3_id()                                                                   Creates a 3x3 identity matrix
+mat3 mat3_make_scale(vec3 v)                                                     Creates a 3x3 scaling matrix with scaling coefficients for the x, y, and z-axes given by `v`.
+mat3 mat3_make_rotation(float angle, vec3 axis)                                  Creates a 3x3 rotation matrix where the rotation operation is given by `angle` and `axis`.
 mat3 copy_mat3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 mat3 eval_mat3(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat3
 ```

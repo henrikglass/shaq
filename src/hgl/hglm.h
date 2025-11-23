@@ -327,6 +327,8 @@ static HGL_INLINE HglmVec4 hglm_vec4_bezier3(HglmVec4 v0, HglmVec4 v1, HglmVec4 
 
 static HGL_INLINE HglmMat2 hglm_mat2_make(HglmVec2 c0, HglmVec2 c1);
 static HGL_INLINE HglmMat2 hglm_mat2_make_identity(void);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_make_scale(HglmVec2 v);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_make_rotation(float angle);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_add(HglmMat2 a, HglmMat2 b);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_sub(HglmMat2 a, HglmMat2 b);
 __attribute__ ((const, unused)) static HGL_INLINE HglmVec2 hglm_mat2_mul_vec2(HglmMat2 m, HglmVec2 v);
@@ -336,6 +338,8 @@ __attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_mul_mat2(Hg
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make(HglmVec3 c0, HglmVec3 c1, HglmVec3 c2);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_identity(void);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_from_mat4(HglmMat4 mat4);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_scale(HglmVec3 v);
+__attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_rotation(float angle, HglmVec3 axis);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_add(HglmMat3 a, HglmMat3 b);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_sub(HglmMat3 a, HglmMat3 b);
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_transpose(HglmMat3 m);
@@ -900,6 +904,24 @@ static HGL_INLINE HglmMat2 hglm_mat2_make_identity()
     return HGLM_MAT2_IDENTITY;
 }
 
+__attribute__ ((const, unused))
+static HGL_INLINE HglmMat2 hglm_mat2_make_scale(HglmVec2 v)
+{
+    HglmMat2 s = HGLM_MAT2_IDENTITY;
+    s.c0.x = v.x;
+    s.c1.y = v.y;
+    return s;
+}
+
+__attribute__ ((const, unused))
+static HGL_INLINE HglmMat2 hglm_mat2_make_rotation(float angle)
+{
+    return (HglmMat2) {
+        .c0 = {.x =  cosf(angle), .y = sinf(angle)},
+        .c1 = {.x = -sinf(angle), .y = cosf(angle)},
+    };
+}
+
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_add(HglmMat2 a, HglmMat2 b)
 {
     return (HglmMat2) {
@@ -913,6 +935,15 @@ __attribute__ ((const, unused)) static HGL_INLINE HglmMat2 hglm_mat2_sub(HglmMat
     return (HglmMat2) {
         .c0 = hglm_vec2_sub(a.c0, b.c0),
         .c1 = hglm_vec2_sub(a.c1, b.c1),
+    };
+}
+
+__attribute__ ((const, unused))
+static HGL_INLINE HglmMat2 hglm_mat2_mul_scalar(HglmMat2 m, float s)
+{
+    return (HglmMat2) {
+        .c0 = {.x = s * m.c0.x, .y = s * m.c0.y},
+        .c1 = {.x = s * m.c1.x, .y = s * m.c1.y},
     };
 }
 
@@ -966,6 +997,39 @@ __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_make_from_m
     return (HglmMat3){.c0 = mat4.c0.xyz, .c1 = mat4.c1.xyz, .c2 = mat4.c2.xyz};
 }
 
+__attribute__ ((const, unused))
+static HGL_INLINE HglmMat3 hglm_mat3_make_scale(HglmVec3 v)
+{
+    HglmMat3 s = HGLM_MAT3_IDENTITY;
+    s.c0.x = v.x;
+    s.c1.y = v.y;
+    s.c2.z = v.z;
+    return s;
+}
+
+__attribute__ ((const, unused))
+static HGL_INLINE HglmMat3 hglm_mat3_make_rotation(float angle, HglmVec3 axis)
+{
+    float O = angle;
+    float ux = axis.x;
+    float uy = axis.y;
+    float uz = axis.z;
+    float c0x = cosf(O) + ux*ux * (1 - cosf(O));
+    float c1x = ux*uy * (1 - cosf(O)) - uz * sinf(O);
+    float c2x = ux*uz * (1 - cosf(O)) + uy * sinf(O);
+    float c0y = uy*ux * (1 - cosf(O)) + uz * sinf(O);
+    float c1y = cosf(O) + uy*uy * (1 - cosf(O));
+    float c2y = uy*uz * (1 - cosf(O)) - ux * sinf(O);
+    float c0z = uz*ux * (1 - cosf(O)) - uy * sinf(O);
+    float c1z = uz*uy * (1 - cosf(O)) + ux * sinf(O);
+    float c2z = cosf(O) + uz*uz * (1 - cosf(O));
+    return (HglmMat3) {
+        .c0 = {.x = c0x, .y = c0y, .z = c0z},
+        .c1 = {.x = c1x, .y = c1y, .z = c1z},
+        .c2 = {.x = c2x, .y = c2y, .z = c2z},
+    };
+}
+
 __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_add(HglmMat3 a, HglmMat3 b)
 {
     return (HglmMat3) {
@@ -990,6 +1054,16 @@ __attribute__ ((const, unused)) static HGL_INLINE HglmMat3 hglm_mat3_transpose(H
         .c0 = {.x = m.c0.x, .y = m.c1.x, .z = m.c2.x},
         .c1 = {.x = m.c0.y, .y = m.c1.y, .z = m.c2.y},
         .c2 = {.x = m.c0.z, .y = m.c1.z, .z = m.c2.z},
+    };
+}
+
+__attribute__ ((const, unused))
+static HGL_INLINE HglmMat3 hglm_mat3_mul_scalar(HglmMat3 m, float s)
+{
+    return (HglmMat3) {
+        .c0 = {.x = s * m.c0.x, .y = s * m.c0.y, .z = s * m.c0.z},
+        .c1 = {.x = s * m.c1.x, .y = s * m.c1.y, .z = s * m.c1.z},
+        .c2 = {.x = s * m.c2.x, .y = s * m.c2.y, .z = s * m.c2.z},
     };
 }
 
@@ -1897,8 +1971,11 @@ typedef HglmMat    Mat;
 #define mat2_print               hglm_mat2_print
 #define mat2_make                hglm_mat2_make
 #define mat2_make_identity       hglm_mat2_make_identity
+#define mat2_make_scale          hglm_mat2_make_scale
+#define mat2_make_rotation       hglm_mat2_make_rotation
 #define mat2_add                 hglm_mat2_add
 #define mat2_sub                 hglm_mat2_sub
+#define mat2_mul_scalar          hglm_mat2_mul_scalar
 #define mat2_mul_vec2            hglm_mat2_mul_vec2
 #define mat2_mul_mat2            hglm_mat2_mul_mat2
 
@@ -1906,9 +1983,12 @@ typedef HglmMat    Mat;
 #define mat3_make                hglm_mat3_make
 #define mat3_make_identity       hglm_mat3_make_identity
 #define mat3_make_from_mat4      hglm_mat3_make_from_mat4
+#define mat3_make_scale          hglm_mat3_make_scale
+#define mat3_make_rotation       hglm_mat3_make_rotation
 #define mat3_add                 hglm_mat3_add
 #define mat3_sub                 hglm_mat3_sub
 #define mat3_transpose           hglm_mat3_transpose
+#define mat3_mul_scalar          hglm_mat3_mul_scalar
 #define mat3_mul_vec3            hglm_mat3_mul_vec3
 #define mat3_mul_mat3            hglm_mat3_mul_mat3
 

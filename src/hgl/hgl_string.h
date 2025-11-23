@@ -990,7 +990,7 @@ void hgl_sb_grow_by_policy(HglStringBuilder *sb,
         return;
     }
 
-    size_t new_capacity;
+    size_t new_capacity = 0;
     switch (policy) {
         case HGL_SB_GROWTH_POLICY_TO_FIT: {
             new_capacity = needed_capacity;

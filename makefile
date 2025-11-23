@@ -15,11 +15,11 @@ CPP_FLAGS  := $(C_INCLUDES) --std=c++11
 L_FLAGS    := -Llib -lm -lstdc++ -lglfw -ldl -lglfw
 
 ifeq ($(BUILD_TYPE), debug)
-	C_FLAGS   += -O0 -g
-	CPP_FLAGS += -O0 -g
+	C_FLAGS   += -O0 -g -DDEBUG
+	CPP_FLAGS += -O0 -g -DDEBUG
 else ifeq ($(BUILD_TYPE), release)
-	C_FLAGS   += -O2 -g -march=native
-	CPP_FLAGS += -O2 -g -march=native
+	C_FLAGS   += -O2 -g -march=native -DNDEBUG
+	CPP_FLAGS += -O2 -g -march=native -DNDEBUG
 endif
 
 ifneq ($(DISABLE_FREETYPE), yes)
@@ -47,7 +47,7 @@ release: prep
 	@$(MAKE) --no-print-directory BUILD_TYPE=release build
 
 test: prep
-	@$(MAKE) --no-print-directory BUILD_TYPE=release seldbg
+	@$(MAKE) --no-print-directory BUILD_TYPE=debug seldbg
 
 
 #

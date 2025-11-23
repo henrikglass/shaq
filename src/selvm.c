@@ -61,6 +61,15 @@ static inline IVec4 muliv4(IVec4 *lhs, IVec4 *rhs);
 static inline Mat2 mulm2(Mat2 *lhs, Mat2 *rhs);
 static inline Mat3 mulm3(Mat3 *lhs, Mat3 *rhs);
 static inline Mat4 mulm4(Mat4 *lhs, Mat4 *rhs);
+static inline Vec2 mulmv2(Mat2 *m, Vec2 *v);
+static inline Vec3 mulmv3(Mat3 *m, Vec3 *v);
+static inline Vec4 mulmv4(Mat4 *m, Vec4 *v);
+static inline Vec2 mulvs2(Vec2 *v, f32 *s);
+static inline Vec3 mulvs3(Vec3 *v, f32 *s);
+static inline Vec4 mulvs4(Vec4 *v, f32 *s);
+static inline Mat2 mulms2(Mat2 *m, f32 *s);
+static inline Mat3 mulms3(Mat3 *m, f32 *s);
+static inline Mat4 mulms4(Mat4 *m, f32 *s);
 static inline i32 divi(i32 *lhs, i32 *rhs);
 static inline u32 divu(u32 *lhs, u32 *rhs);
 static inline f32 divf(f32 *lhs, f32 *rhs);
@@ -70,6 +79,12 @@ static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs);
 static inline IVec2 diviv2(IVec2 *lhs, IVec2 *rhs);
 static inline IVec3 diviv3(IVec3 *lhs, IVec3 *rhs);
 static inline IVec4 diviv4(IVec4 *lhs, IVec4 *rhs);
+static inline Vec2 divvs2(Vec2 *v, f32 *s);
+static inline Vec3 divvs3(Vec3 *v, f32 *s);
+static inline Vec4 divvs4(Vec4 *v, f32 *s);
+static inline Mat2 divms2(Mat2 *m, f32 *s);
+static inline Mat3 divms3(Mat3 *m, f32 *s);
+static inline Mat4 divms4(Mat4 *m, f32 *s);
 static inline i32 remi(i32 *lhs, i32 *rhs);
 static inline u32 remu(u32 *lhs, u32 *rhs);
 static inline i32 negi(i32 *val);
@@ -194,9 +209,13 @@ static SelValue fn_ivec4_(void *args);
 
 static SelValue fn_mat2_(void *args);
 static SelValue fn_mat2_id_(void *args);
+static SelValue fn_mat2_make_scale_(void *args);
+static SelValue fn_mat2_make_rotation_(void *args);
 
 static SelValue fn_mat3_(void *args);
 static SelValue fn_mat3_id_(void *args);
+static SelValue fn_mat3_make_scale_(void *args);
+static SelValue fn_mat3_make_rotation_(void *args);
 
 static SelValue fn_mat4_(void *args);
 static SelValue fn_mat4_id_(void *args);
@@ -367,11 +386,15 @@ const Func BUILTIN_FUNCTIONS[] =
 
     { .id = SV_LIT("ivec4"),      .type = TYPE_IVEC4, .qualifier = QUALIFIER_PURE, .impl = fn_ivec4_,      .argtypes = {TYPE_INT, TYPE_INT, TYPE_INT, TYPE_INT, TYPE_NIL}, .synopsis = "ivec4 ivec4(int x, int y, int z, int w)", .desc = "Creates a 4D integer vector with components `x`, `y`, `z`, and `w`", },
 
-    { .id = SV_LIT("mat2"),       .type = TYPE_MAT2,  .qualifier = QUALIFIER_PURE, .impl = fn_mat2_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},                   .synopsis = "mat2 mat2(vec2 c0, vec2 c1)", .desc = "Creates a 2x2 matrix with column vectors `c0` and `c1`", },
-    { .id = SV_LIT("mat2_id"),    .type = TYPE_MAT2,  .qualifier = QUALIFIER_PURE, .impl = fn_mat2_id_,    .argtypes = {TYPE_NIL},                                         .synopsis = "mat2 mat2_id()", .desc = "Creates a 2x2 identity matrix", },
+    { .id = SV_LIT("mat2"),               .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_,               .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL}, .synopsis = "mat2 mat2(vec2 c0, vec2 c1)", .desc = "Creates a 2x2 matrix with column vectors `c0` and `c1`", },
+    { .id = SV_LIT("mat2_id"),            .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_id_,            .argtypes = {TYPE_NIL},                       .synopsis = "mat2 mat2_id()", .desc = "Creates a 2x2 identity matrix", },
+    { .id = SV_LIT("mat2_make_scale"),    .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_make_scale_,    .argtypes = {TYPE_VEC2, TYPE_NIL},            .synopsis = "mat2 mat2_make_scale(vec2 v)",         .desc = "Creates a 2x2 scaling matrix with scaling coefficients for the x and y-axes given by `v`.", },
+    { .id = SV_LIT("mat2_make_rotation"), .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_make_rotation_, .argtypes = {TYPE_FLOAT, TYPE_NIL},           .synopsis = "mat2 mat2_make_rotation(float angle)", .desc = "Creates a 2x2 rotation matrix where the rotation operation is given by `angle`.", },
 
-    { .id = SV_LIT("mat3"),       .type = TYPE_MAT3,  .qualifier = QUALIFIER_PURE, .impl = fn_mat3_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL},        .synopsis = "mat3 mat3(vec3 c0, vec3 c1, vec3 c2)", .desc = "Creates a 3x3 matrix with column vectors `c0`, `c1`, and `c2`", },
-    { .id = SV_LIT("mat3_id"),    .type = TYPE_MAT3,  .qualifier = QUALIFIER_PURE, .impl = fn_mat3_id_,    .argtypes = {TYPE_NIL},                                         .synopsis = "mat3 mat3_id()", .desc = "Creates a 3x3 identity matrix", },
+    { .id = SV_LIT("mat3"),               .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_,               .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL}, .synopsis = "mat3 mat3(vec3 c0, vec3 c1, vec3 c2)", .desc = "Creates a 3x3 matrix with column vectors `c0`, `c1`, and `c2`", },
+    { .id = SV_LIT("mat3_id"),            .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_id_,            .argtypes = {TYPE_NIL},                                  .synopsis = "mat3 mat3_id()", .desc = "Creates a 3x3 identity matrix", },
+    { .id = SV_LIT("mat3_make_scale"),    .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_make_scale_,    .argtypes = {TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat3 mat3_make_scale(vec3 v)",                         .desc = "Creates a 3x3 scaling matrix with scaling coefficients for the x, y, and z-axes given by `v`.", },
+    { .id = SV_LIT("mat3_make_rotation"), .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_make_rotation_, .argtypes = {TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},           .synopsis = "mat3 mat3_make_rotation(float angle, vec3 axis)",      .desc = "Creates a 3x3 rotation matrix where the rotation operation is given by `angle` and `axis`.", },
 
     { .id = SV_LIT("mat4"),                  .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_,                  .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_NIL}, .synopsis = "mat4 mat4(vec4 c0, vec4 c1, vec4 c2, vec4 c3)",        .desc = "Creates a 4x4 matrix with column vectors `c0`, `c1`, `c2`, and `c3`.", },
     { .id = SV_LIT("mat4_id"),               .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_id_,               .argtypes = {TYPE_NIL},                                             .synopsis = "mat4 mat4_id()",                                       .desc = "Creates a 4x4 identity matrix.", },
@@ -490,7 +513,9 @@ static void svm_run()
         }
 
         Op *op = svm_next_op();
-        u32 tsize = TYPE_TO_SIZE[op->type];
+        u32 result_size = TYPE_TO_SIZE[op->res_type];
+        u32 lhs_size = TYPE_TO_SIZE[op->lhs_type];
+        u32 rhs_size = TYPE_TO_SIZE[op->rhs_type];
         
         switch (op->kind) {
             case OP_PUSH: {
@@ -498,10 +523,10 @@ static void svm_run()
             } break;
 
             case OP_ADD: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
+                void *rhs = svm_stack_pop(rhs_size);
+                void *lhs = svm_stack_pop(lhs_size);
                 if (op->lhs_type == op->rhs_type) {
-                    switch (op->type) {
+                    switch (op->res_type) {
                         case TYPE_INT: {i32 tmp = addi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_UINT: {u32 tmp = addu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_FLOAT: {f32 tmp = addf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -522,10 +547,10 @@ static void svm_run()
             } break;
 
             case OP_SUB: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
+                void *rhs = svm_stack_pop(rhs_size);
+                void *lhs = svm_stack_pop(lhs_size);
                 if (op->lhs_type == op->rhs_type) {
-                    switch (op->type) {
+                    switch (op->res_type) {
                         case TYPE_INT: {i32 tmp = subi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_UINT: {u32 tmp = subu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_FLOAT: {f32 tmp = subf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -546,10 +571,10 @@ static void svm_run()
             } break;
 
             case OP_MUL: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
+                void *rhs = svm_stack_pop(rhs_size);
+                void *lhs = svm_stack_pop(lhs_size);
                 if (op->lhs_type == op->rhs_type) {
-                    switch (op->type) {
+                    switch (op->res_type) {
                         case TYPE_INT: {i32 tmp = muli(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_UINT: {u32 tmp = mulu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_FLOAT: {f32 tmp = mulf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -565,15 +590,50 @@ static void svm_run()
                         default: assert(false);
                     }
                 } else {
-                    assert(false && "NOT IMLPEMENTED");
+                    switch (op->res_type) {
+                        case TYPE_VEC2: {
+                                 if (op->lhs_type == TYPE_MAT2  && op->rhs_type == TYPE_VEC2)  {Vec2 tmp = mulmv2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_VEC2  && op->rhs_type == TYPE_FLOAT) {Vec2 tmp = mulvs2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_VEC2)  {Vec2 tmp = mulvs2(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_VEC3: {
+                                 if (op->lhs_type == TYPE_MAT3  && op->rhs_type == TYPE_VEC3)  {Vec3 tmp = mulmv3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_VEC3  && op->rhs_type == TYPE_FLOAT) {Vec3 tmp = mulvs3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_VEC3)  {Vec3 tmp = mulvs3(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_VEC4: {
+                                 if (op->lhs_type == TYPE_MAT4  && op->rhs_type == TYPE_VEC4)  {Vec4 tmp = mulmv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_VEC4  && op->rhs_type == TYPE_FLOAT) {Vec4 tmp = mulvs4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_VEC4)  {Vec4 tmp = mulvs4(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_MAT2: {
+                                 if (op->lhs_type == TYPE_MAT2  && op->rhs_type == TYPE_FLOAT) {Mat2 tmp = mulms2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_MAT2)  {Mat2 tmp = mulms2(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_MAT3: {
+                                 if (op->lhs_type == TYPE_MAT3  && op->rhs_type == TYPE_FLOAT) {Mat3 tmp = mulms3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_MAT3)  {Mat3 tmp = mulms3(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_MAT4: {
+                                 if (op->lhs_type == TYPE_MAT4  && op->rhs_type == TYPE_FLOAT) {Mat4 tmp = mulms4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_MAT4)  {Mat4 tmp = mulms4(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        default: assert(false);
+                    }
                 }
             } break;
 
             case OP_DIV: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
+                void *rhs = svm_stack_pop(rhs_size);
+                void *lhs = svm_stack_pop(lhs_size);
                 if (op->lhs_type == op->rhs_type) {
-                    switch (op->type) {
+                    switch (op->res_type) {
                         case TYPE_INT: {i32 tmp = divi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_UINT: {u32 tmp = divu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_FLOAT: {f32 tmp = divf(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -586,15 +646,41 @@ static void svm_run()
                         default: assert(false);
                     }
                 } else {
-                    assert(false && "NOT IMLPEMENTED");
+                    switch (op->res_type) {
+                        case TYPE_VEC2: {
+                            if (op->lhs_type == TYPE_VEC2  && op->rhs_type == TYPE_FLOAT) {Vec2 tmp = divvs2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));}
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_VEC3: {
+                            if (op->lhs_type == TYPE_VEC3  && op->rhs_type == TYPE_FLOAT) {Vec3 tmp = divvs3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));}
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_VEC4: {
+                            if (op->lhs_type == TYPE_VEC4  && op->rhs_type == TYPE_FLOAT) {Vec4 tmp = divvs4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));}
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_MAT2: {
+                            if (op->lhs_type == TYPE_MAT2  && op->rhs_type == TYPE_FLOAT) {Mat2 tmp = divms2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));}
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_MAT3: {
+                            if (op->lhs_type == TYPE_MAT3  && op->rhs_type == TYPE_FLOAT) {Mat3 tmp = divms3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));}
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_MAT4: {
+                            if (op->lhs_type == TYPE_MAT4  && op->rhs_type == TYPE_FLOAT) {Mat4 tmp = divms4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));}
+                            else assert(false); // BUG
+                        } break;
+                        default: assert(false);
+                    }
                 }
             } break;
 
             case OP_REM: {
-                void *rhs = svm_stack_pop(tsize);
-                void *lhs = svm_stack_pop(tsize);
+                void *rhs = svm_stack_pop(rhs_size);
+                void *lhs = svm_stack_pop(lhs_size);
                 if (op->lhs_type == op->rhs_type) {
-                    switch (op->type) {
+                    switch (op->res_type) {
                         case TYPE_INT: {i32 tmp = remi(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         case TYPE_UINT: {u32 tmp = remu(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} break;
                         default: assert(false);
@@ -605,8 +691,8 @@ static void svm_run()
             } break;
 
             case OP_NEG: {
-                void *val = svm_stack_pop(tsize);
-                switch (op->type) {
+                void *val = svm_stack_pop(result_size);
+                switch (op->res_type) {
                     case TYPE_INT: {i32 tmp = negi(val); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_FLOAT: {f32 tmp = negf(val); svm_stack_push(&tmp, sizeof(tmp));} break;
                     case TYPE_VEC2:  {Vec2 tmp = negv2(val); svm_stack_push(&tmp, sizeof(tmp));} break;
@@ -629,24 +715,24 @@ static void svm_run()
                     svm_stack_pop(TYPE_TO_SIZE[func->argtypes[i]]);
                 }
                 SelValue res = (func->impl)(&svm.stack[svm.sp]);
-                svm_stack_push_selvalue(res, func->type);
+                svm_stack_push_selvalue(res, op->res_type);
             } break;
 
             case OP_SWIZZLE: {
-                u32 *desc = svm_stack_pop(TYPE_TO_SIZE[op->rhs_type]);
-                void *lhs = svm_stack_pop(TYPE_TO_SIZE[op->lhs_type]);
+                u32 *desc = svm_stack_pop(rhs_size);
+                void *lhs = svm_stack_pop(lhs_size);
                 union {
                     SelValue res;
                     f32 res_f32[4];
                     i32 res_i32[4];
                 } u;
-                switch (op->type) {
+                switch (op->res_type) {
                     case TYPE_FLOAT: 
                     case TYPE_VEC2: 
                     case TYPE_VEC3:
                     case TYPE_VEC4: {
                         f32 *lhs_f32 = (f32 *)lhs;
-                        for (u32 i = 0; i < TYPE_TO_SIZE[op->type]; i++) {
+                        for (u32 i = 0; i < TYPE_TO_SIZE[op->res_type]; i++) {
                             u32 idx = (*desc >> (8*i)) & 0xFF;
                             u.res_f32[i] = lhs_f32[idx];
                         }
@@ -656,14 +742,51 @@ static void svm_run()
                     case TYPE_IVEC3:
                     case TYPE_IVEC4: {
                         i32 *lhs_i32 = (i32 *)lhs;
-                        for (u32 i = 0; i < TYPE_TO_SIZE[op->type]; i++) {
+                        for (u32 i = 0; i < TYPE_TO_SIZE[op->res_type]; i++) {
                             u32 idx = (*desc >> (8*i)) & 0xFF;
                             u.res_i32[i] = lhs_i32[idx];
                         }
                     } break;
                     default: assert(false);
                 }
-                svm_stack_push_selvalue(u.res, op->type);
+                svm_stack_push_selvalue(u.res, op->res_type);
+            } break;
+
+            case OP_TYPECONV: {
+                u32 ftsize = TYPE_TO_SIZE[op->from_type];
+                assert(ftsize <= 4);
+                void *val = svm_stack_pop(ftsize);
+                union {
+                    u8  tmp_raw;
+                    u32 tmp_u32;
+                    i32 tmp_i32;
+                    f32 tmp_f32;
+                } u;
+                memcpy(&u.tmp_raw, val, ftsize);
+                switch (op->res_type) {
+                    case TYPE_INT: {
+                        switch (op->from_type) {
+                            case TYPE_BOOL: {i32 tmp = (i32)(b8)u.tmp_i32; svm_stack_push(&tmp, sizeof(tmp));} break;
+                            case TYPE_UINT: {i32 tmp = (i32)u.tmp_u32; svm_stack_push(&tmp, sizeof(tmp));} break;
+                            default: assert(false);
+                        }
+                    } break;
+                    case TYPE_UINT: {
+                        switch (op->from_type) {
+                            case TYPE_BOOL: {u32 tmp = (u32)(b8)u.tmp_i32; svm_stack_push(&tmp, sizeof(tmp));} break;
+                            default: assert(false);
+                        }
+                    } break;
+                    case TYPE_FLOAT: {
+                        switch (op->from_type) {
+                            case TYPE_BOOL: {f32 tmp = (f32)(b8)u.tmp_i32; svm_stack_push(&tmp, sizeof(tmp));} break;
+                            case TYPE_INT:  {f32 tmp = (f32)u.tmp_i32; svm_stack_push(&tmp, sizeof(tmp));} break;
+                            case TYPE_UINT: {f32 tmp = (f32)u.tmp_u32; svm_stack_push(&tmp, sizeof(tmp));} break;
+                            default: assert(false);
+                        }
+                    } break;
+                    default: assert(false);
+                }
             } break;
         }
     }
@@ -755,6 +878,16 @@ static inline Mat2 mulm2(Mat2 *lhs, Mat2 *rhs) { return mat2_mul_mat2(*lhs, *rhs
 static inline Mat3 mulm3(Mat3 *lhs, Mat3 *rhs) { return mat3_mul_mat3(*lhs, *rhs);}
 static inline Mat4 mulm4(Mat4 *lhs, Mat4 *rhs) { return mat4_mul_mat4(*lhs, *rhs);}
 
+static inline Vec2 mulmv2(Mat2 *m, Vec2 *v) { return mat2_mul_vec2(*m, *v); }  
+static inline Vec3 mulmv3(Mat3 *m, Vec3 *v) { return mat3_mul_vec3(*m, *v); }  
+static inline Vec4 mulmv4(Mat4 *m, Vec4 *v) { return mat4_mul_vec4(*m, *v); }  
+static inline Vec2 mulvs2(Vec2 *v, f32 *s) { return vec2_mul_scalar(*v, *s); }
+static inline Vec3 mulvs3(Vec3 *v, f32 *s) { return vec3_mul_scalar(*v, *s); }
+static inline Vec4 mulvs4(Vec4 *v, f32 *s) { return vec4_mul_scalar(*v, *s); }
+static inline Mat2 mulms2(Mat2 *m, f32 *s) { return mat2_mul_scalar(*m, *s); }
+static inline Mat3 mulms3(Mat3 *m, f32 *s) { return mat3_mul_scalar(*m, *s); }
+static inline Mat4 mulms4(Mat4 *m, f32 *s) { return mat4_mul_scalar(*m, *s); }
+
 static inline i32 divi(i32 *lhs, i32 *rhs) { return (*lhs) / (*rhs); }
 static inline u32 divu(u32 *lhs, u32 *rhs) { return (*lhs) / (*rhs); }
 static inline f32 divf(f32 *lhs, f32 *rhs) { return (*lhs) / (*rhs); }
@@ -764,6 +897,13 @@ static inline Vec4 divv4(Vec4 *lhs, Vec4 *rhs) { return vec4_hadamard(*lhs, vec4
 static inline IVec2 diviv2(IVec2 *lhs, IVec2 *rhs) { return ivec2_hadamard_div(*lhs, *rhs);}
 static inline IVec3 diviv3(IVec3 *lhs, IVec3 *rhs) { return ivec3_hadamard_div(*lhs, *rhs);}
 static inline IVec4 diviv4(IVec4 *lhs, IVec4 *rhs) { return ivec4_hadamard_div(*lhs, *rhs);}
+
+static inline Vec2 divvs2(Vec2 *v, f32 *s) { return vec2_mul_scalar(*v, 1.0f / (*s)); }
+static inline Vec3 divvs3(Vec3 *v, f32 *s) { return vec3_mul_scalar(*v, 1.0f / (*s)); }
+static inline Vec4 divvs4(Vec4 *v, f32 *s) { return vec4_mul_scalar(*v, 1.0f / (*s)); }
+static inline Mat2 divms2(Mat2 *m, f32 *s) { return mat2_mul_scalar(*m, 1.0f / (*s)); }
+static inline Mat3 divms3(Mat3 *m, f32 *s) { return mat3_mul_scalar(*m, 1.0f / (*s)); }
+static inline Mat4 divms4(Mat4 *m, f32 *s) { return mat4_mul_scalar(*m, 1.0f / (*s)); }
 
 static inline i32 remi(i32 *lhs, i32 *rhs) { return (*lhs) % (*rhs); }
 static inline u32 remu(u32 *lhs, u32 *rhs) { return (*lhs) % (*rhs); }
@@ -854,6 +994,14 @@ static SelValue fn_output_of_ex_(void *args)
         log_error("SEL: In call to output_of_ex(\"" SV_FMT "\") - "
                   "Shader name refers to the current shader", 
                   SV_ARG(name));
+    }
+    /* TODO do this check in some other better non-hardcoded way */
+    if ((filter != GL_NEAREST) && (filter != GL_LINEAR)) {
+        filter = GL_LINEAR;
+    }
+    if ((wrap != GL_REPEAT) && (wrap != GL_MIRRORED_REPEAT) && 
+        (wrap != GL_CLAMP_TO_EDGE) && (wrap != GL_CLAMP_TO_BORDER)) {
+        wrap = GL_REPEAT;
     }
     return (SelValue) {
         .val_tex = {
@@ -1569,6 +1717,18 @@ static SelValue fn_mat2_id_(void *args)
     return (SelValue) {.val_mat2 = HGLM_MAT2_IDENTITY};
 }
 
+static SelValue fn_mat2_make_scale_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    return (SelValue) {.val_mat2 = hglm_mat2_make_scale(args_v2[0])};
+}
+
+static SelValue fn_mat2_make_rotation_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_mat2 = hglm_mat2_make_rotation(args_f32[0])};
+}
+
 
 /* ---------------------- MAT3 functions -------------------- */
 
@@ -1582,6 +1742,18 @@ static SelValue fn_mat3_id_(void *args)
 {
     (void) args;
     return (SelValue) {.val_mat3 = HGLM_MAT3_IDENTITY};
+}
+
+static SelValue fn_mat3_make_scale_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    return (SelValue) {.val_mat3 = hglm_mat3_make_scale(args_v3[0])};
+}
+
+static SelValue fn_mat3_make_rotation_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_mat3 = hglm_mat3_make_rotation(args_f32[0], *(Vec3*)&args_f32[1])};
 }
 
 

@@ -106,16 +106,21 @@ typedef enum
     OP_NEG,
     OP_FUNC,
     OP_SWIZZLE,
+    OP_TYPECONV,
 } OpKind;
 
 typedef struct
 {
     u8 kind;
-    u8 type;
+    u8 res_type;
     union {
         struct {
             u8 lhs_type;
             u8 rhs_type;
+        };
+        struct {
+            u8 from_type;
+            u8 pad_;
         };
         u8 argsize;
     };
@@ -191,7 +196,6 @@ static const u32 TYPE_TO_SIZE[] =
     [TYPE_AND_NAMECHECKER_ERROR_] = 0,
 };
 static_assert(sizeof(TYPE_TO_SIZE)/sizeof(TYPE_TO_SIZE[0]) == N_TYPES);
-
 
 /*--- Public function prototypes --------------------------------------------------------*/
 
