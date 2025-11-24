@@ -155,7 +155,6 @@ static SelValue fn_fract_(void *args);
 static SelValue fn_min_(void *args);
 static SelValue fn_max_(void *args);
 static SelValue fn_clamp_(void *args);
-static SelValue fn_lerp_(void *args);
 static SelValue fn_ilerp_(void *args);
 static SelValue fn_remap_(void *args);
 static SelValue fn_lerpsmooth_(void *args);
@@ -163,6 +162,8 @@ static SelValue fn_smoothstep_(void *args);
 static SelValue fn_radians_(void *args);
 static SelValue fn_perlin3D_(void *args);
 static SelValue fn_aspect_ratio_(void *args);
+static SelValue fn_lerpf_(void *args);
+static SelValue fn_lerpv2_(void *args);
 
 static SelValue fn_vec2_(void *args);
 static SelValue fn_vec2_from_polar_(void *args);
@@ -334,7 +335,6 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("min"),          .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_min_,          .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float min(float a, float b)", .desc = "Returns the minimum of `a` and `b`", },
     { .id = SV_LIT("max"),          .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_max_,          .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float max(float a, float b)", .desc = "Returns the maximum of `a` and `b`", },
     { .id = SV_LIT("clamp"),        .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_clamp_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float clamp(float x, float min, float max)", .desc = "Returns x clamped to the range [`min`,`max`]", },
-    { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
     { .id = SV_LIT("ilerp"),        .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_ilerp_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float ilerp(float a, float b, float x)", .desc = "Calculates the inverse of lerp(a,b,t). I.e. solves the equation x = a*(1-t)+b*t for t.", },
     { .id = SV_LIT("remap"),        .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_remap_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float remap(float in_min, float in_max, float out_min, float out_max, float x)", .desc = "See Freya Holmér's talks :-)", },
     { .id = SV_LIT("lerpsmooth"),   .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerpsmooth_,   .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},             .synopsis = "float lerpsmooth(float a, float b, float dt, float omega)", .desc = "See Freya Holmér's talks :-)" , },
@@ -342,6 +342,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("radians"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_radians_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float radians(float degrees)", .desc = "Converts degrees into radians", },
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
+    { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerpf_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("lerp"),         .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_lerpv2_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},                           .synopsis = "float lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
     { .id = SV_LIT("vec2_from_polar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_polar_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = "Creates a 2D vector from the polar coordinates `r` and `phi`", },
@@ -450,7 +452,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("eval_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat3", },
     { .id = SV_LIT("eval_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat4", },
 };
-const size_t N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
+const u32 N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
 /*--- Private variables -----------------------------------------------------------------*/
 
@@ -1387,12 +1389,6 @@ static SelValue fn_clamp_(void *args)
     return (SelValue) {.val_f32 = hglm_clamp(args_f32[0], args_f32[1], args_f32[2])}; 
 }
 
-static SelValue fn_lerp_(void *args)
-{
-    f32 *args_f32 = (f32 *) args;
-    return (SelValue) {.val_f32 = hglm_lerp(args_f32[0], args_f32[1], args_f32[2])}; 
-}
-
 static SelValue fn_ilerp_(void *args)
 {
     f32 *args_f32 = (f32 *) args;
@@ -1434,6 +1430,20 @@ static SelValue fn_aspect_ratio_(void *args)
     (void) args;
     IVec2 ires = gui_shader_window_size();
     return (SelValue) {.val_f32 = (f32)ires.x / (f32)ires.y}; 
+}
+
+static SelValue fn_lerpf_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = hglm_lerp(args_f32[0], args_f32[1], args_f32[2])}; 
+}
+
+static SelValue fn_lerpv2_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    u8 *args8 = (u8 *) args;
+    f32 *args_f32 = (f32 *) (args8 + 2*sizeof(Vec2));
+    return (SelValue) {.val_vec2 = hglm_vec2_lerp(args_v2[0], args_v2[1], args_f32[0])}; 
 }
 
 

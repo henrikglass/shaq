@@ -40,7 +40,7 @@
     do {                                                   \
         log_error("Type-/namecheck error: " __VA_ARGS__);  \
         return (TypeAndQualifier) {                        \
-            TYPE_AND_NAMECHECKER_ERROR_,                   \
+            TYPE_OR_NAME_ERR_,                             \
             QUALIFIER_NONE                                 \
         };                                                 \
     } while (0)
@@ -49,7 +49,7 @@
     if (!(cond_)) {                                        \
         log_error("Type-/namecheck error: " __VA_ARGS__);  \
         return (TypeAndQualifier) {                        \
-            TYPE_AND_NAMECHECKER_ERROR_,                   \
+            TYPE_OR_NAME_ERR_,                             \
             QUALIFIER_NONE                                 \
         };                                                 \
     }
@@ -142,8 +142,13 @@ typedef struct ExprTree
         struct ExprTree *lhs;
     };
     struct ExprTree *rhs;
+    u32 func_id;   // If this tree node is a function call then this value will be
+                   // assigned the ID of the built-in function in the type- and
+                   // namechecker pass. If no matching built-in function is found
+                   // the type- and namechecker pass will not succeed, and the root
+                   // of the tree will have sentinel type TYPE_OR_NAME_ERR_.
     b8 asymmetric; // true iff all of the following are true:
-                   //     - this is a binary expression 
+                   //     - this tree node is a binary expression 
                    //     - lhs and rhs are of different types
                    //     - neither lhs or rhs must be implicitly type converted
                    //
@@ -252,7 +257,7 @@ const Const BUILTIN_CONSTANTS[] =
     {.id = SV_LIT("GL_SRGB8"),           .type = TYPE_INT,  .value.val_i32  = GL_SRGB8 },
     {.id = SV_LIT("GL_SRGB8_ALPHA8"),    .type = TYPE_INT,  .value.val_i32  = GL_SRGB8_ALPHA8 },
 };
-static const size_t N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
+static const u32 N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
 /*--- Public functions ------------------------------------------------------------------*/
 
@@ -273,7 +278,7 @@ ExeExpr *sel_compile(const char *src, Allocator *alloc)
     /* type + namecheck step */
     TypeAndQualifier t = type_and_namecheck(e);
     assert(t.type != TYPE_NIL); // should not be possible
-    if (t.type == TYPE_AND_NAMECHECKER_ERROR_) {
+    if (t.type == TYPE_OR_NAME_ERR_) {
         goto out;
     }
 
@@ -337,7 +342,7 @@ void sel_print_value(Type t, SelValue v)
             else if (v.val_tex.kind == LOADED_TEXTURE) printf("loaded texture: %u\n", v.val_tex.id);
         } break;
         case TYPE_NIL:     printf("<NIL>\n"); break;
-        case TYPE_AND_NAMECHECKER_ERROR_:
+        case TYPE_OR_NAME_ERR_:
         case N_TYPES:
             printf("-\n");
     }
@@ -827,13 +832,62 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         } break;
         
         case EXPR_FUNC: {
-            for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
-                if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
-                    t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes, true);
-                    goto out;
+            //for (size_t i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
+            //    if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
+            //        // TODO function overloading
+            //        t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes, true);
+            //        goto out;
+            //    } 
+            //}
+            //TYPE_AND_NAMECHECK_ERROR("No such function: `" SV_FMT "(..)`.", SV_ARG(e->token.text));
+            
+            // TODO sort builtin functions by name and binary search?
+            u32 candidates[32];
+            u32 n_candidates = 0;
+            for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
+                if (!sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
+                    continue;
                 } 
+
+                if (n_candidates < 32) {
+                    candidates[n_candidates++] = i;
+                }
+                t0 = type_and_namecheck_function(e->child, &BUILTIN_FUNCTIONS[i], BUILTIN_FUNCTIONS[i].argtypes, true);
+
+                /* Not a match? Continue */
+                if(t0.type == TYPE_NIL) {
+                    continue;
+                }
+
+                /* Error typechecking argument? Propagate upwards*/
+                if(t0.type == TYPE_OR_NAME_ERR_) {
+                    TYPE_AND_NAMECHECK_ERROR("type error in arguments to function: `" SV_FMT "(..)`", SV_ARG(e->token.text));
+                }
+
+                /* Match! */
+                e->func_id = i;
+                goto out;
             }
-            TYPE_AND_NAMECHECK_ERROR("No such function: `" SV_FMT "(..)`.", SV_ARG(e->token.text));
+
+            /* No match found. */
+            if(t0.type == TYPE_NIL) {
+                // TODO better error message (show types of passed arguments?)
+                if (n_candidates > 0) {
+                    log_error("Type-/namecheck error: No matching function for `" SV_FMT "(..)` "
+                              "with the given arguments", SV_ARG(e->token.text));
+                    log_info(" Candidates are:");
+                    for (u32 i = 0; i < n_candidates; i++) {
+                        u32 id = candidates[i];
+                        log_info("     %s", BUILTIN_FUNCTIONS[id].synopsis);
+                    }
+                } else {
+                    log_error("Type-/namecheck error: No such built-in function `" SV_FMT "(..)`", SV_ARG(e->token.text));
+                }
+                return (TypeAndQualifier) {
+                    TYPE_OR_NAME_ERR_,
+                    QUALIFIER_NONE,
+                };
+            }
         } break;
         
         case EXPR_ARGLIST: {
@@ -859,7 +913,7 @@ static TypeAndQualifier type_and_namecheck(ExprTree *e)
         
         case EXPR_ID: {
             /* Freestanding identifier - must be a constant */
-            for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
+            for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     t0 = (TypeAndQualifier) {BUILTIN_CONSTANTS[i].type, QUALIFIER_CONST};
                     goto out;
@@ -1018,9 +1072,20 @@ static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
 
 static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args)
 {
+    const TypeAndQualifier NO_MATCH = (TypeAndQualifier){
+        .type      = TYPE_NIL,
+        .qualifier = QUALIFIER_NONE,
+    };
+
     /* no more actual arguments? */
     if (e == NULL) {
-        TYPE_AND_NAMECHECK_ASSERT(*argtypes == TYPE_NIL, "Too few arguments to built-in function: `%s`.", f->synopsis);
+
+        if (*argtypes != TYPE_NIL) {
+            /* Not a match: Too few arguments to function */
+            return NO_MATCH;
+        }
+        
+        /* Match! */
         return (TypeAndQualifier){
             .type = f->type, 
             .qualifier = ((f->qualifier == QUALIFIER_PURE) && const_args) ? QUALIFIER_CONST : QUALIFIER_NONE,
@@ -1029,22 +1094,25 @@ static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, 
 
     /* no more arguments expected? */
     if (*argtypes == TYPE_NIL) {
-        TYPE_AND_NAMECHECK_ERROR("Too many arguments to built-in function: `%s`.", f->synopsis);
-        return (TypeAndQualifier){
-            .type = f->type, 
-            .qualifier = ((f->qualifier == QUALIFIER_PURE) && const_args) ? QUALIFIER_CONST : QUALIFIER_NONE,
-        };
+        /* Not a match: Too many arguments to function */
+        return NO_MATCH;
     }
 
     /* Typecheck left-hand-side expression (head of argslist)*/
-    TYPE_AND_NAMECHECK_ASSERT(e->kind == EXPR_ARGLIST, "You should not see this #4");
+    assert(e->kind == EXPR_ARGLIST && "You should not see this #4");
     TypeAndQualifier t = type_and_namecheck(e->lhs);
-    if (t.type == TYPE_AND_NAMECHECKER_ERROR_) {
+    if (t.type == TYPE_OR_NAME_ERR_) {
+        /* Error typechecking argument: propagate error upwards */
         return t;
     }
-    TYPE_AND_NAMECHECK_ASSERT(t.type == *argtypes, "Type mismatch in arguments to built-in function: "
-                              "`%s`. Expected `%s` - Got `%s`.", f->synopsis, TYPE_TO_STR[*argtypes], 
-                              TYPE_TO_STR[t.type]);
+    //TYPE_AND_NAMECHECK_ASSERT(t.type == *argtypes, "Type mismatch in arguments to built-in function: "
+    //                          "`%s`. Expected `%s` - Got `%s`.", f->synopsis, TYPE_TO_STR[*argtypes], 
+    //                          TYPE_TO_STR[t.type]);
+
+    if (t.type != *argtypes) {
+        /* Not a match: Type mismatch for argument */
+        return NO_MATCH;
+    }
 
     /* Typecheck right-hand-side expression (tail of argslist)*/
     return type_and_namecheck_function(e->rhs, f, ++argtypes, const_args && (t.qualifier == QUALIFIER_CONST));
@@ -1102,7 +1170,7 @@ static inline Type type_promote(Type from, Type to)
         [TYPE_MAT4]      = {TYPE_NIL},
         [TYPE_STR]       = {TYPE_NIL},
         [TYPE_TEXTURE]   = {TYPE_NIL},
-        [TYPE_AND_NAMECHECKER_ERROR_] = {TYPE_NIL},
+        [TYPE_OR_NAME_ERR_] = {TYPE_NIL},
     };
 
     if (from == to) {
@@ -1235,18 +1303,19 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
 
         case EXPR_FUNC: {
             codegen_expr(exe, e->child, alloc);
-            u32 i = 0;
-            for (i = 0; i < (u32)N_BUILTIN_FUNCTIONS; i++) {
-                if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
-                    break;
-                }
-            }
+            // TODO function overloading: lookup function in type- and namechecker pass instead.
+            //u32 i = 0;
+            //for (i = 0; i < (u32)N_BUILTIN_FUNCTIONS; i++) {
+            //    if (sv_equals(e->token.text, BUILTIN_FUNCTIONS[i].id)) {
+            //        break;
+            //    }
+            //}
             exe_append_op(exe, (Op){
                 .kind     = OP_FUNC,
                 .res_type = e->type,
                 .argsize  = sizeof(u32),
             }, alloc);
-            exe_append_u32(exe, i, alloc);
+            exe_append_u32(exe, e->func_id, alloc);
             //printf("FUNC: " SV_FMT "\n", SV_ARG(e->token.text));
         } break;
 
@@ -1282,7 +1351,7 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
 
         case EXPR_ID: {
             /* Freestanding identifier - must be a constant */
-            for (size_t i = 0; i < N_BUILTIN_CONSTANTS; i++) {
+            for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
                 if (sv_equals(e->token.text, BUILTIN_CONSTANTS[i].id)) {
                     exe_append_op(exe, (Op){
                         .kind     = OP_PUSH,

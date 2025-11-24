@@ -589,7 +589,7 @@ static inline void draw_uniform(const Uniform *u)
         case TYPE_TEXTURE: imgui_textf("="); imgui_textf(u->exe->source_code); break;
         case TYPE_STR:     imgui_textf("str TODO"); break;
         case TYPE_NIL:
-        case TYPE_AND_NAMECHECKER_ERROR_:
+        case TYPE_OR_NAME_ERR_:
         case N_TYPES:
             log_error("Strange logic error that shouldn't happen<%s:%d>", __FILE__, __LINE__);
     }

@@ -37,7 +37,7 @@ typedef enum
     TYPE_MAT4,
     TYPE_STR,
     TYPE_TEXTURE,
-    TYPE_AND_NAMECHECKER_ERROR_,
+    TYPE_OR_NAME_ERR_,
     N_TYPES,
 } Type;
 static_assert(N_TYPES <= 256, "");
@@ -152,7 +152,7 @@ typedef struct
 /*--- Public variables ------------------------------------------------------------------*/
 
 extern const Func BUILTIN_FUNCTIONS[];
-extern const size_t N_BUILTIN_FUNCTIONS;
+extern const u32 N_BUILTIN_FUNCTIONS;
 
 static const char *const TYPE_TO_STR[] =
 {
@@ -172,7 +172,7 @@ static const char *const TYPE_TO_STR[] =
     [TYPE_MAT4]       = "mat4",
     [TYPE_STR]        = "str",
     [TYPE_TEXTURE]    = "sampler2D",
-    [TYPE_AND_NAMECHECKER_ERROR_] = "type-/namechecker error",
+    [TYPE_OR_NAME_ERR_] = "type-/namechecker error",
 };
 
 static const u32 TYPE_TO_SIZE[] = 
@@ -193,7 +193,7 @@ static const u32 TYPE_TO_SIZE[] =
     [TYPE_MAT4]      = 64,
     [TYPE_STR]       = sizeof(StringView),
     [TYPE_TEXTURE]   = sizeof(TextureDescriptor),
-    [TYPE_AND_NAMECHECKER_ERROR_] = 0,
+    [TYPE_OR_NAME_ERR_] = 0,
 };
 static_assert(sizeof(TYPE_TO_SIZE)/sizeof(TYPE_TO_SIZE[0]) == N_TYPES);
 

@@ -102,7 +102,6 @@ float fract(float x)                                                            
 float min(float a, float b)                                                      Returns the minimum of `a` and `b`
 float max(float a, float b)                                                      Returns the maximum of `a` and `b`
 float clamp(float x, float min, float max)                                       Returns x clamped to the range [`min`,`max`]
-float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 float ilerp(float a, float b, float x)                                           Calculates the inverse of lerp(a,b,t). I.e. solves the equation x = a*(1-t)+b*t for t.
 float remap(float in_min, float in_max, float out_min, float out_max, float x)   See Freya Holmér's talks :-)
 float lerpsmooth(float a, float b, float dt, float omega)                        See Freya Holmér's talks :-)
@@ -110,6 +109,7 @@ float smoothstep(float t)                                                       
 float radians(float degrees)                                                     Converts degrees into radians
 float perlin3D(float x, float y, float z)                                        Perlin noise at (x,y,z)
 float aspect_ratio()                                                             Returns the current window aspect ratio (width/height)
+float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 float vec2_distance(vec2 a, vec2 b)                                              Returns the absolute distance between `a` and `b`
 float vec2_length(vec2 v)                                                        Returns the absolute length of `v`
 float vec2_dot(vec2 a, vec2 b)                                                   Returns the dot product of `a` and `b`
@@ -129,6 +129,7 @@ float eval_float(str expr)                                                      
 
 ## Returning vec2:
 ```
+float lerp(vec2 a, vec2 b, float t)                                              Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 vec2 vec2(float x, float y)                                                      Creates a 2D vector with components `x` and `y`
 vec2 vec2_from_polar(float r, float phi)                                         Creates a 2D vector from the polar coordinates `r` and `phi`
 vec2 vec2_normalize(vec2 v)                                                      Returns the normalized vector of `v`

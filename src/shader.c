@@ -367,7 +367,7 @@ void shader_update_uniforms(Shader *s)
             } break; 
             case TYPE_STR:
             case TYPE_NIL:
-            case TYPE_AND_NAMECHECKER_ERROR_:
+            case TYPE_OR_NAME_ERR_:
             case N_TYPES:
                 log_error("Strange logic error that shouldn't happen<%s:%d>", __FILE__, __LINE__);
         }
