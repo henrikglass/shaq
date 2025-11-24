@@ -161,6 +161,7 @@ spell compositor, ok?
 
 # Planned features and fixes
 
+* SEL: Replace type specific built-in functions with overloads
 * Fix continuous reload on GLFW window resize.
 * Rework GUI a bit (e.g. play/pause symbol)
 * Cubemaps (SEL: SamplerCube)
