@@ -162,15 +162,12 @@ spell compositor, ok?
 # Planned features and fixes
 
 * Fix continuous reload on GLFW window resize.
-* SEL - text\_input() + eval(str sel\_expr)
-* SEL - dynamic type system (e.g. evaluate type from argument types). OP\_CONVERT?
 * Rework GUI a bit (e.g. play/pause symbol)
 * Cubemaps (SEL: SamplerCube)
 * SEL - load\_video()?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
-* SEL - Matmat, matvec, matscalar, vecscalar, etc. multiplication, 
 * SEL - boolean arithmetic (&&, ||, !, etc.)
 * Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined) (libffi?)
