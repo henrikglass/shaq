@@ -184,45 +184,36 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
         }
     }
 
-    if (action == GLFW_PRESS && mods == GLFW_MOD_ALT) {
-        switch (key) {
-            case GLFW_KEY_ENTER: {
-                renderer_toggle_fullscreen();
-            } break;
-        }
+#define KEY(m, k) (action == GLFW_PRESS && mods == (m) && key == (k))
+    if (SHAQ_KEY_SHORTCUT_FULLSCREEN) {
+        renderer_toggle_fullscreen();
+    } else if (SHAQ_KEY_SHORTCUT_DARKMODE_TOGGLE) {
+        gui_toggle_darkmode();
+    } else if (SHAQ_KEY_SHORTCUT_MAXIMIZE_SHADER_WINDOW) {
+        gui_toggle_maximized_shader_window();
+    } else if (SHAQ_KEY_SHORTCUT_FORCE_RELOAD) {
+        user_input.should_reload = true;
+    } else if (SHAQ_KEY_SHORTCUT_RESET_TIME) {
+        shaq_reset_time();
+    } else if (SHAQ_KEY_SHORTCUT_PAUSE_TOGGLE) {
+        shaq_toggle_time_pause();
+    } else if (SHAQ_KEY_SHORTCUT_OPEN_FILE_DIALOG) {
+        imgui_open_file_dialog();
+    } else if (SHAQ_KEY_SHORTCUT_EXIT) {
+        glfwSetWindowShouldClose(renderer_get_glfw_window(), true);
+    } else if (SHAQ_KEY_SHORTCUT_DPI_LARGER) {
+        gui_change_dpi_scale_by_amount(0.2f);
+    } else if (SHAQ_KEY_SHORTCUT_DPI_SMALLER) {
+        gui_change_dpi_scale_by_amount(-0.2f);
+    } else if (SHAQ_KEY_SHORTCUT_DPI_RESET) {
+        gui_set_dpi_scale(1.0f); // TODO set to default value as prescribed by the OS scaling
+#if 0
+    } else {
+        printf("key = %d\n", key);
+#endif
     }
+#undef KEY
 
-    if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL) {
-        switch (key) {
-            case GLFW_KEY_D: {
-                gui_toggle_darkmode();
-            } break;
-
-            case GLFW_KEY_F: {
-                gui_toggle_maximized_shader_window();
-            } break;
-
-            case GLFW_KEY_R: {
-                user_input.should_reload = true;
-            } break;
-
-            case GLFW_KEY_T: {
-                shaq_reset_time();
-            } break;
-
-            case GLFW_KEY_P: {
-                shaq_toggle_time_pause();
-            } break;
-
-            case GLFW_KEY_O: {
-                imgui_open_file_dialog();
-            } break;
-
-            case GLFW_KEY_W: {
-                glfwSetWindowShouldClose(renderer_get_glfw_window(), true);
-            } break;
-        }
-    }
 }
 
 /*--- Private functions -----------------------------------------------------------------*/

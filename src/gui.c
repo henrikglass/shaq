@@ -396,6 +396,16 @@ void gui_toggle_darkmode()
     imgui_set_darkmode(gui.dark_mode);
 }
 
+void gui_set_dpi_scale(f32 scale)
+{
+    imgui_set_dpi_scale(scale);
+}
+
+void gui_change_dpi_scale_by_amount(f32 amount)
+{
+    imgui_change_dpi_scale_by_amount(amount);
+}
+
 SelValue gui_get_widget_value(StringView label,
                               WidgetKind kind,
                               void *secondary_args,

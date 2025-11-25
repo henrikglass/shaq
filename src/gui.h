@@ -58,6 +58,8 @@ b8 gui_file_dialog_is_open(void);
 b8 gui_draw_file_dialog(char *ini_filepath);
 b8 gui_darkmode_is_enabled(void);
 void gui_toggle_darkmode(void);
+void gui_set_dpi_scale(f32 scale);
+void gui_change_dpi_scale_by_amount(f32 amount);
 SelValue gui_get_widget_value(StringView label,
                               WidgetKind kind,
                               void *secondary_args,

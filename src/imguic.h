@@ -38,6 +38,8 @@ b8 imgui_begin_overlay_bottom_left(const char *str);
 b8 imgui_current_window_is_hovered(void);
 b8 imgui_any_window_is_hovered(void);
 b8 imgui_any_item_is_hovered(void);
+void imgui_set_dpi_scale(float scale);
+void imgui_change_dpi_scale_by_amount(float amount);
 void imgui_begin_child(const char *label, u32 color);
 void imgui_begin_table(const char *label, i32 n_cols);
 b8 imgui_collapsing_header(const char *label);

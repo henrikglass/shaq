@@ -161,6 +161,22 @@ b8 imgui_any_item_is_hovered()
     return 0 != ImGui::IsAnyItemHovered();
 }
 
+void imgui_set_dpi_scale(float scale)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.FontScaleDpi = scale;
+    style.FontScaleDpi = (style.FontScaleDpi > 4.0f) ? 4.0f : style.FontScaleDpi;
+    style.FontScaleDpi = (style.FontScaleDpi < 0.5f) ? 0.5f : style.FontScaleDpi;
+}
+
+void imgui_change_dpi_scale_by_amount(float amount)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.FontScaleDpi += amount;
+    style.FontScaleDpi = (style.FontScaleDpi > 4.0f) ? 4.0f : style.FontScaleDpi;
+    style.FontScaleDpi = (style.FontScaleDpi < 0.5f) ? 0.5f : style.FontScaleDpi;
+}
+
 void imgui_begin_child(const char *label, u32 color)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32((color >> 24) & 0xFF,
