@@ -161,8 +161,8 @@ spell compositor, ok?
 
 # Planned features and fixes
 
-* SEL: Replace type specific built-in functions with overloads
-* SEL: Support for mulscalar with ints (ivec?)
+* SEL: Replace more type specific built-in functions with overloads
+* SEL: Support for mulscalar with ints (ivec forgotten?)
 * SEL: GLSL-style step function
 * Fix continuous reload on GLFW window resize.
 * Rework GUI a bit (e.g. play/pause symbol)
