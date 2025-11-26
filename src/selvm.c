@@ -162,8 +162,7 @@ static SelValue fn_smoothstep_(void *args);
 static SelValue fn_radians_(void *args);
 static SelValue fn_perlin3D_(void *args);
 static SelValue fn_aspect_ratio_(void *args);
-static SelValue fn_lerpf_(void *args);
-static SelValue fn_lerpv2_(void *args);
+static SelValue fn_lerp_(void *args);
 
 static SelValue fn_vec2_(void *args);
 static SelValue fn_vec2_from_polar_(void *args);
@@ -171,7 +170,6 @@ static SelValue fn_vec2_distance_(void *args);
 static SelValue fn_vec2_length_(void *args);
 static SelValue fn_vec2_normalize_(void *args);
 static SelValue fn_vec2_dot_(void *args);
-static SelValue fn_vec2_mul_scalar_(void *args);
 static SelValue fn_vec2_lerp_(void *args);
 static SelValue fn_vec2_slerp_(void *args);
 static SelValue fn_mouse_position_(void *args);
@@ -184,7 +182,6 @@ static SelValue fn_vec3_distance_(void *args);
 static SelValue fn_vec3_length_(void *args);
 static SelValue fn_vec3_normalize_(void *args);
 static SelValue fn_vec3_dot_(void *args);
-static SelValue fn_vec3_mul_scalar_(void *args);
 static SelValue fn_vec3_lerp_(void *args);
 static SelValue fn_vec3_slerp_(void *args);
 static SelValue fn_vec3_cross_(void *args);
@@ -194,7 +191,6 @@ static SelValue fn_vec4_distance_(void *args);
 static SelValue fn_vec4_length_(void *args);
 static SelValue fn_vec4_normalize_(void *args);
 static SelValue fn_vec4_dot_(void *args);
-static SelValue fn_vec4_mul_scalar_(void *args);
 static SelValue fn_vec4_lerp_(void *args);
 static SelValue fn_rgba_(void *args);
 static SelValue fn_background_color_(void *args);
@@ -224,12 +220,6 @@ static SelValue fn_mat4_make_scale_(void *args);
 static SelValue fn_mat4_make_rotation_(void *args);
 static SelValue fn_mat4_make_translation_(void *args);
 static SelValue fn_mat4_look_at_(void *args);
-static SelValue fn_mat4_scale_(void *args);
-static SelValue fn_mat4_rotate_(void *args);
-static SelValue fn_mat4_translate_(void *args);
-static SelValue fn_mat4_mul_mat4_(void *args);
-static SelValue fn_mat4_mul_vec4_(void *args);
-static SelValue fn_mat4_mul_scalar_(void *args);
 
 static SelValue fn_input_float_(void *args);
 static SelValue fn_checkbox_(void *args);
@@ -295,13 +285,13 @@ const Func BUILTIN_FUNCTIONS[] =
 
     { .id = SV_LIT("int"),           .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_int_,           .argtypes = {TYPE_FLOAT, TYPE_NIL},          .synopsis = "int int(float x)", .desc = "Typecast float to int.", },
     { .id = SV_LIT("unsigned"),      .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_unsigned_,      .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "uint unsigned(int x)", .desc = "Typecast int to uint.", },
-    { .id = SV_LIT("mini"),          .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_mini_,          .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int mini(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },
-    { .id = SV_LIT("maxi"),          .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_maxi_,          .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int maxi(int a, int b)", .desc = "Returns the maximum of `a` and `b`.", },
-    { .id = SV_LIT("randi"),         .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_randi_,         .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int randi(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
+    { .id = SV_LIT("min"),           .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_mini_,          .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int min(int a, int b)", .desc = "Returns the minimum of `a` and `b`.", },
+    { .id = SV_LIT("max"),           .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_maxi_,          .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int max(int a, int b)", .desc = "Returns the maximum of `a` and `b`.", },
+    { .id = SV_LIT("rand"),          .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_randi_,         .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int rand(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
     { .id = SV_LIT("iota"),          .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_iota_,          .argtypes = {TYPE_NIL},                      .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
     { .id = SV_LIT("frame_count"),   .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_frame_count_,   .argtypes = {TYPE_NIL},                      .synopsis = "int frame_count()", .desc = "Returns the frame count.", },
 
-    { .id = SV_LIT("signed"), .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_signed_, .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "int signed(uint x)", .desc = "Typecast uint to int.", },
+    { .id = SV_LIT("int"),    .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_signed_, .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "int int(uint x)", .desc = "Typecast uint to int.", },
     { .id = SV_LIT("xor"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_xor_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint xor(uint a, uint b)", .desc = "bitwise XOR of `a` and `b`.", },
     { .id = SV_LIT("and"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_and_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint and(uint a, uint b)", .desc = "bitwise AND of `a` and `b`.", },
     { .id = SV_LIT("or"),     .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_or_,     .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint or(uint a, uint b)", .desc = "bitwise OR of `a` and `b`.", },
@@ -342,40 +332,36 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("radians"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_radians_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float radians(float degrees)", .desc = "Converts degrees into radians", },
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
-    { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerpf_,        .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
-    { .id = SV_LIT("lerp"),         .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_lerpv2_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},                           .synopsis = "float lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
     { .id = SV_LIT("vec2_from_polar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_polar_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = "Creates a 2D vector from the polar coordinates `r` and `phi`", },
-    { .id = SV_LIT("vec2_distance"),       .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_distance_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float vec2_distance(vec2 a, vec2 b)", .desc = "Returns the absolute distance between `a` and `b`", },
-    { .id = SV_LIT("vec2_length"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_length_,         .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "float vec2_length(vec2 v)", .desc = "Returns the absolute length of `v`", },
-    { .id = SV_LIT("vec2_normalize"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_normalize_,      .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 vec2_normalize(vec2 v)", .desc = "Returns the normalized vector of `v`", },
-    { .id = SV_LIT("vec2_dot"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_dot_,            .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float vec2_dot(vec2 a, vec2 b)", .desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("vec2_mul_scalar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_mul_scalar_,     .argtypes = {TYPE_VEC2, TYPE_FLOAT, TYPE_NIL},            .synopsis = "vec2 vec2_mul_scalar(vec2 v, float s)", .desc = "Calculates the scalar-vector multiplication `s`*`v`", },
-    { .id = SV_LIT("vec2_lerp"),           .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
-    { .id = SV_LIT("vec2_slerp"),          .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,          .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 vec2_slerp(vec2 a, vec2 b, float t)", .desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.", },
+    { .id = SV_LIT("distance"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_distance_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float distance(vec2 a, vec2 b)", .desc = "Returns the absolute distance between `a` and `b`", },
+    { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_length_,         .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "float length(vec2 v)", .desc = "Returns the absolute length of `v`", },
+    { .id = SV_LIT("normalize"),           .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_normalize_,      .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 normalize(vec2 v)", .desc = "Returns the normalized vector of `v`", },
+    { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_dot_,            .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float dot(vec2 a, vec2 b)", .desc = "Returns the dot product of `a` and `b`", },
+    { .id = SV_LIT("lerp"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("slerp"),               .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,          .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 slerp(vec2 a, vec2 b, float t)", .desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.", },
     { .id = SV_LIT("mouse_position"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,      .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = "Returns the current mouse position, in pixel coordinates.", },
     { .id = SV_LIT("mouse_position_last"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_last_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position_last()", .desc = "Returns the mouse position from the last frame, in pixel coordinates.", },
     { .id = SV_LIT("mouse_drag_position"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_drag_position_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_drag_position()", .desc = "Returns the mouse position from when the left mouse button was last held, in pixel coordinates.", },
 
     { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = "Creates a 3D vector with components `x`, `y`, and `z`", },
-    { .id = SV_LIT("vec2_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = "Creates a 2D vector from the spherical coordinates `r`, `phi`, and `theta`", },
-    { .id = SV_LIT("vec3_distance"),       .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_distance_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float vec3_distance(vec3 a, vec3 b)",                        . desc = "Returns the absolute distance between `a` and `b`", },
-    { .id = SV_LIT("vec3_length"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "float vec3_length(vec3 v)",                                  . desc = "Returns the absolute length of `v`", },
-    { .id = SV_LIT("vec3_normalize"),      .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 vec3_normalize(vec3 v)",                               . desc = "Returns the normalized vector of `v`", },
-    { .id = SV_LIT("vec3_dot"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_dot_,            .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float vec3_dot(vec3 a, vec3 b)",                             . desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("vec3_mul_scalar"),     .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_mul_scalar_,     .argtypes = {TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},              .synopsis = "vec3 vec3_mul_scalar(vec3 v, float s)",                     . desc = "Calculates the scalar-vector multiplication `s`*`v`", },
-    { .id = SV_LIT("vec3_lerp"),           .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 vec3_lerp(vec3 a, vec3 b, float t)",                   . desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
-    { .id = SV_LIT("vec3_slerp"),          .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 vec3_slerp(vec3 a, vec3 b, float t)",                  . desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.", },
-    { .id = SV_LIT("vec3_cross"),          .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 vec3_cross(vec3 a, vec3 b)",                           . desc = "Returns the cross product of `a` and `b`", },
+    { .id = SV_LIT("vec3_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = "Creates a 2D vector from the spherical coordinates `r`, `phi`, and `theta`", },
+    { .id = SV_LIT("distance"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_distance_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float distance(vec3 a, vec3 b)",                            . desc = "Returns the absolute distance between `a` and `b`", },
+    { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "float length(vec3 v)",                                      . desc = "Returns the absolute length of `v`", },
+    { .id = SV_LIT("normalize"),           .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 normalize(vec3 v)",                                    . desc = "Returns the normalized vector of `v`", },
+    { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_dot_,            .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float dot(vec3 a, vec3 b)",                                 . desc = "Returns the dot product of `a` and `b`", },
+    { .id = SV_LIT("lerp"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 lerp(vec3 a, vec3 b, float t)",                        . desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("slerp"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 slerp(vec3 a, vec3 b, float t)",                       . desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.", },
+    { .id = SV_LIT("cross"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 cross(vec3 a, vec3 b)",                                . desc = "Returns the cross product of `a` and `b`", },
 
     { .id = SV_LIT("vec4"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_,             .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = "Creates a 4D vector with components `x`, `y`, `z`, and `w`", },
-    { .id = SV_LIT("vec4_distance"),    .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_distance_,    .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_distance(vec4 a, vec4 b)",           .desc = "Returns the absolute distance between `a` and `b`", },
-    { .id = SV_LIT("vec4_length"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_length_,      .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "float vec4_length(vec4 v)",                     .desc = "Returns the absolute length of `v`", },
-    { .id = SV_LIT("vec4_normalize"),   .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,   .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 vec4_normalize(vec4 v)",                   .desc = "Returns the normalized vector of `v`", },
-    { .id = SV_LIT("vec4_dot"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,         .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float vec4_dot(vec4 a, vec4 b)",                .desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("vec4_mul_scalar"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_mul_scalar_,  .argtypes = {TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},                          .synopsis = "vec4 vec4_mul_scalar(vec4 v, float s)",         .desc = "Calculates the scalar-vector multiplication `s`*`v`", },
-    { .id = SV_LIT("vec4_lerp"),        .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 vec4_lerp(vec4 a, vec4 b, float t)",       .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("distance"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_distance_,    .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float distance(vec4 a, vec4 b)",                .desc = "Returns the absolute distance between `a` and `b`", },
+    { .id = SV_LIT("length"),           .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_length_,      .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "float length(vec4 v)",                          .desc = "Returns the absolute length of `v`", },
+    { .id = SV_LIT("normalize"),        .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,   .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 normalize(vec4 v)",                        .desc = "Returns the normalized vector of `v`", },
+    { .id = SV_LIT("dot"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,         .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float dot(vec4 a, vec4 b)",                     .desc = "Returns the dot product of `a` and `b`", },
+    { .id = SV_LIT("lerp"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 lerp(vec4 a, vec4 b, float t)",            .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
     { .id = SV_LIT("rgba"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,             .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
     { .id = SV_LIT("background_color"), .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_background_color_, .argtypes = {TYPE_NIL},                                                 .synopsis = "vec4 background_color()",                       .desc = "Returns the current background color, with components normalized to 0.0 - 1.0", },
 
@@ -390,26 +376,20 @@ const Func BUILTIN_FUNCTIONS[] =
 
     { .id = SV_LIT("mat2"),               .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_,               .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL}, .synopsis = "mat2 mat2(vec2 c0, vec2 c1)", .desc = "Creates a 2x2 matrix with column vectors `c0` and `c1`", },
     { .id = SV_LIT("mat2_id"),            .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_id_,            .argtypes = {TYPE_NIL},                       .synopsis = "mat2 mat2_id()", .desc = "Creates a 2x2 identity matrix", },
-    { .id = SV_LIT("mat2_make_scale"),    .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_make_scale_,    .argtypes = {TYPE_VEC2, TYPE_NIL},            .synopsis = "mat2 mat2_make_scale(vec2 v)",         .desc = "Creates a 2x2 scaling matrix with scaling coefficients for the x and y-axes given by `v`.", },
-    { .id = SV_LIT("mat2_make_rotation"), .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_make_rotation_, .argtypes = {TYPE_FLOAT, TYPE_NIL},           .synopsis = "mat2 mat2_make_rotation(float angle)", .desc = "Creates a 2x2 rotation matrix where the rotation operation is given by `angle`.", },
+    { .id = SV_LIT("mat2_scale"),         .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_make_scale_,    .argtypes = {TYPE_VEC2, TYPE_NIL},            .synopsis = "mat2 mat2_scale(vec2 v)",         .desc = "Creates a 2x2 scaling matrix with scaling coefficients for the x and y-axes given by `v`.", },
+    { .id = SV_LIT("mat2_rotation"),      .type = TYPE_MAT2, .qualifier = QUALIFIER_PURE, .impl = fn_mat2_make_rotation_, .argtypes = {TYPE_FLOAT, TYPE_NIL},           .synopsis = "mat2 mat2_rotation(float angle)", .desc = "Creates a 2x2 rotation matrix where the rotation operation is given by `angle`.", },
 
     { .id = SV_LIT("mat3"),               .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_,               .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL}, .synopsis = "mat3 mat3(vec3 c0, vec3 c1, vec3 c2)", .desc = "Creates a 3x3 matrix with column vectors `c0`, `c1`, and `c2`", },
     { .id = SV_LIT("mat3_id"),            .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_id_,            .argtypes = {TYPE_NIL},                                  .synopsis = "mat3 mat3_id()", .desc = "Creates a 3x3 identity matrix", },
-    { .id = SV_LIT("mat3_make_scale"),    .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_make_scale_,    .argtypes = {TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat3 mat3_make_scale(vec3 v)",                         .desc = "Creates a 3x3 scaling matrix with scaling coefficients for the x, y, and z-axes given by `v`.", },
-    { .id = SV_LIT("mat3_make_rotation"), .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_make_rotation_, .argtypes = {TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},           .synopsis = "mat3 mat3_make_rotation(float angle, vec3 axis)",      .desc = "Creates a 3x3 rotation matrix where the rotation operation is given by `angle` and `axis`.", },
+    { .id = SV_LIT("mat3_scale"),         .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_make_scale_,    .argtypes = {TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat3 mat3_scale(vec3 v)",                         .desc = "Creates a 3x3 scaling matrix with scaling coefficients for the x, y, and z-axes given by `v`.", },
+    { .id = SV_LIT("mat3_rotation"),      .type = TYPE_MAT3, .qualifier = QUALIFIER_PURE, .impl = fn_mat3_make_rotation_, .argtypes = {TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},           .synopsis = "mat3 mat3_rotation(float angle, vec3 axis)",      .desc = "Creates a 3x3 rotation matrix where the rotation operation is given by `angle` and `axis`.", },
 
     { .id = SV_LIT("mat4"),                  .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_,                  .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_VEC4, TYPE_NIL}, .synopsis = "mat4 mat4(vec4 c0, vec4 c1, vec4 c2, vec4 c3)",        .desc = "Creates a 4x4 matrix with column vectors `c0`, `c1`, `c2`, and `c3`.", },
     { .id = SV_LIT("mat4_id"),               .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_id_,               .argtypes = {TYPE_NIL},                                             .synopsis = "mat4 mat4_id()",                                       .desc = "Creates a 4x4 identity matrix.", },
-    { .id = SV_LIT("mat4_make_scale"),       .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_make_scale_,       .argtypes = {TYPE_VEC3, TYPE_NIL},                                  .synopsis = "mat4 mat4_make_scale(vec3 v)",                         .desc = "Creates a 4x4 scaling matrix for 3D vectors with scaling coefficients for the x, y, and z-axes given by `v`.", },
-    { .id = SV_LIT("mat4_make_rotation"),    .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_make_rotation_,    .argtypes = {TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},                      .synopsis = "mat4 mat4_make_rotation(float angle, vec3 axis)",      .desc = "Creates a 4x4 rotation matrix for 3D vectors where the rotation operation is given by `angle` and `axis`.", },
-    { .id = SV_LIT("mat4_make_translation"), .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_make_translation_, .argtypes = {TYPE_VEC3, TYPE_NIL},                                  .synopsis = "mat4 mat4_make_translation(vec3 v)",                   .desc = "Creates a 4x4 translation matrix for 3D vectors where translation components for the x, y, and x-axes is given by `v`.", },
+    { .id = SV_LIT("mat4_scale"),            .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_make_scale_,       .argtypes = {TYPE_VEC3, TYPE_NIL},                                  .synopsis = "mat4 mat4_scale(vec3 v)",                              .desc = "Creates a 4x4 scaling matrix for 3D vectors with scaling coefficients for the x, y, and z-axes given by `v`.", },
+    { .id = SV_LIT("mat4_rotation"),         .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_make_rotation_,    .argtypes = {TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},                      .synopsis = "mat4 mat4_rotation(float angle, vec3 axis)",           .desc = "Creates a 4x4 rotation matrix for 3D vectors where the rotation operation is given by `angle` and `axis`.", },
+    { .id = SV_LIT("mat4_translation"),      .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_make_translation_, .argtypes = {TYPE_VEC3, TYPE_NIL},                                  .synopsis = "mat4 mat4_translation(vec3 v)",                        .desc = "Creates a 4x4 translation matrix for 3D vectors where translation components for the x, y, and x-axes is given by `v`.", },
     { .id = SV_LIT("mat4_look_at"),          .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_look_at_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_VEC3, TYPE_NIL},            .synopsis = "mat4 mat4_look_at(vec3 camera, vec3 target, vec3 up)", .desc = "Creates a 4x4 \"look-at\" view matrix, given a camera position `camera`, a target position `target`, and up-vector `up`.", },
-    { .id = SV_LIT("mat4_scale"),            .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_scale_,            .argtypes = {TYPE_MAT4, TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat4 mat4_scale(mat4 m, vec3 v)",                      .desc = "Applies a scale-operation on `m` given scaling coefficients in `v`.", },
-    { .id = SV_LIT("mat4_rotate"),           .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_rotate_,           .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_VEC3, TYPE_NIL},           .synopsis = "mat4 mat4_rotate(mat4 m, float angle, vec3 axis)",     .desc = "Applies a rotation-operation on `m` given `angle` and `axis`.", },
-    { .id = SV_LIT("mat4_translate"),        .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_translate_,        .argtypes = {TYPE_MAT4, TYPE_VEC3, TYPE_NIL},                       .synopsis = "mat4 mat4_translate(mat4 m, vec3 v)",                  .desc = "Applies a translation-operation on `m` given translation components in `v`.", },
-    { .id = SV_LIT("mat4_mul_mat4"),         .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_mat4_,         .argtypes = {TYPE_MAT4, TYPE_MAT4, TYPE_NIL},                       .synopsis = "mat4 mat4_mul_mat4(mat4 lhs, mat4 rhs)",               .desc = "Calculates the matrix-matrix multiplication `lhs`*`rhs`", },
-    { .id = SV_LIT("mat4_mul_vec4"),         .type = TYPE_VEC4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_vec4_,         .argtypes = {TYPE_MAT4, TYPE_VEC4, TYPE_NIL},                       .synopsis = "vec4 mat4_mul_vec4(mat4 m, vec4 v)",                   .desc = "Calculates the matrix-vector multiplication `m`*`v`", },
-    { .id = SV_LIT("mat4_mul_scalar"),       .type = TYPE_MAT4, .qualifier = QUALIFIER_PURE, .impl = fn_mat4_mul_scalar_,       .argtypes = {TYPE_MAT4, TYPE_FLOAT, TYPE_NIL},                      .synopsis = "mat4 mat4_mul_scalar(mat4 m, float s)",                .desc = "Calculates the matrix-scalar multiplication `m`*`s`", },
 
     { .id = SV_LIT("input_float"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_input_float_,      .argtypes = {TYPE_STR, TYPE_FLOAT, TYPE_NIL}, .synopsis = "float input_float(str label, float default)", .desc = "Creates an input widget for floats with the label `label` and default value `default`", },
     { .id = SV_LIT("checkbox"),         .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_checkbox_,         .argtypes = {TYPE_STR, TYPE_BOOL, TYPE_NIL}, .synopsis = "bool checkbox(str label, bool default)", .desc = "Creates a checkbox widget with the label `label` and default value `default`", },
@@ -438,19 +418,19 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("copy_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat3_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat3 copy_mat3(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
     { .id = SV_LIT("copy_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_copy_mat4_,  .argtypes = {TYPE_STR, TYPE_STR, TYPE_NIL}, .synopsis = "mat4 copy_mat4(str shader, str var)", .desc = "Copies the value last assigned to the uniform variable `var` in the shader `shader`", },
 
-    { .id = SV_LIT("eval_bool"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_bool_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool eval_bool(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a bool", },
-    { .id = SV_LIT("eval_int"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_eval_int_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "int eval_int(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a int", },
-    { .id = SV_LIT("eval_uint"),  .type = TYPE_UINT,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_uint_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "uint eval_uint(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a uint", },
+    { .id = SV_LIT("eval_bool"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_bool_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool eval_bool(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a bool", },
+    { .id = SV_LIT("eval_int"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_eval_int_,   .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "int eval_int(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a int", },
+    { .id = SV_LIT("eval_uint"),  .type = TYPE_UINT,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_uint_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "uint eval_uint(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a uint", },
     { .id = SV_LIT("eval_float"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_eval_float_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "float eval_float(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a float", },
-    { .id = SV_LIT("eval_vec2"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec2_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec2 eval_vec2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec2", },
-    { .id = SV_LIT("eval_vec3"),  .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec3 eval_vec3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec3", },
-    { .id = SV_LIT("eval_vec4"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec4 eval_vec4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec4", },
+    { .id = SV_LIT("eval_vec2"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec2_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec2 eval_vec2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec2", },
+    { .id = SV_LIT("eval_vec3"),  .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec3_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec3 eval_vec3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec3", },
+    { .id = SV_LIT("eval_vec4"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec4_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec4 eval_vec4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a vec4", },
     { .id = SV_LIT("eval_ivec2"), .type = TYPE_IVEC2, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec2_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec2 eval_ivec2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a ivec2", },
     { .id = SV_LIT("eval_ivec3"), .type = TYPE_IVEC3, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec3 eval_ivec3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a ivec3", },
     { .id = SV_LIT("eval_ivec4"), .type = TYPE_IVEC4, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec4 eval_ivec4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a ivec4", },
-    { .id = SV_LIT("eval_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat2_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat2 eval_mat2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat2", },
-    { .id = SV_LIT("eval_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat3", },
-    { .id = SV_LIT("eval_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat4", },
+    { .id = SV_LIT("eval_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat2_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat2 eval_mat2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat2", },
+    { .id = SV_LIT("eval_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat3", },
+    { .id = SV_LIT("eval_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat4", },
 };
 const u32 N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -1432,18 +1412,10 @@ static SelValue fn_aspect_ratio_(void *args)
     return (SelValue) {.val_f32 = (f32)ires.x / (f32)ires.y}; 
 }
 
-static SelValue fn_lerpf_(void *args)
+static SelValue fn_lerp_(void *args)
 {
     f32 *args_f32 = (f32 *) args;
     return (SelValue) {.val_f32 = hglm_lerp(args_f32[0], args_f32[1], args_f32[2])}; 
-}
-
-static SelValue fn_lerpv2_(void *args)
-{
-    Vec2 *args_v2 = (Vec2 *) args;
-    u8 *args8 = (u8 *) args;
-    f32 *args_f32 = (f32 *) (args8 + 2*sizeof(Vec2));
-    return (SelValue) {.val_vec2 = hglm_vec2_lerp(args_v2[0], args_v2[1], args_f32[0])}; 
 }
 
 
@@ -1483,12 +1455,6 @@ static SelValue fn_vec2_dot_(void *args)
 {
     Vec2 *args_v2 = (Vec2 *) args;
     return (SelValue) {.val_f32 = hglm_vec2_dot(args_v2[0], args_v2[1])};
-}
-
-static SelValue fn_vec2_mul_scalar_(void *args)
-{
-    Vec2 *args_v2 = (Vec2 *) args;
-    return (SelValue) {.val_vec2 = hglm_vec2_mul_scalar(args_v2[0], *(f32*)&args_v2[1])};
 }
 
 static SelValue fn_vec2_lerp_(void *args)
@@ -1560,12 +1526,6 @@ static SelValue fn_vec3_dot_(void *args)
     return (SelValue) {.val_f32 = hglm_vec3_dot(args_v3[0], args_v3[1])};
 } 
   
-static SelValue fn_vec3_mul_scalar_(void *args)
-{
-    Vec3 *args_v3 = (Vec3 *) args;
-    return (SelValue) {.val_vec3 = hglm_vec3_mul_scalar(args_v3[0], *(f32*)&args_v3[1])};
-} 
-  
 static SelValue fn_vec3_lerp_(void *args)
 {
     Vec3 *args_v3 = (Vec3 *) args;
@@ -1615,12 +1575,6 @@ static SelValue fn_vec4_dot_(void *args)
 {
     Vec4 *args_v4 = (Vec4 *) args;
     return (SelValue) {.val_f32 = hglm_vec4_dot(args_v4[0], args_v4[1])};
-} 
-  
-static SelValue fn_vec4_mul_scalar_(void *args)
-{
-    Vec4 *args_v4 = (Vec4 *) args;
-    return (SelValue) {.val_vec4 = hglm_vec4_mul_scalar(args_v4[0], *(f32*)&args_v4[1])};
 } 
   
 static SelValue fn_vec4_lerp_(void *args)
@@ -1803,45 +1757,6 @@ static SelValue fn_mat4_look_at_(void *args)
 { 
     Vec3 *args_v3 = (Vec3 *) args;
     return (SelValue) {.val_mat4 = hglm_mat4_look_at(args_v3[0], args_v3[1], args_v3[2])};
-}  
-
-static SelValue fn_mat4_scale_(void *args)
-{ 
-    Mat4 *args_m4 = (Mat4 *) args;
-    return (SelValue) {.val_mat4 = hglm_mat4_scale(args_m4[0], *(Vec3*)&args_m4[1])};
-}  
-
-static SelValue fn_mat4_rotate_(void *args)
-{ 
-    u8 *args8 = (u8 *) args;
-    Mat4 *args_m4 = (Mat4 *) args;
-    return (SelValue) {.val_mat4 = hglm_mat4_rotate(args_m4[0], 
-                                                   *(f32*)(args8 + sizeof(Mat4)), 
-                                                   *(Vec3*)(args8 + sizeof(Mat4) + sizeof(Vec3)))};
-}  
-
-static SelValue fn_mat4_translate_(void *args)
-{ 
-    Mat4 *args_m4 = (Mat4 *) args;
-    return (SelValue) {.val_mat4 = hglm_mat4_translate(args_m4[0], *(Vec3*)&args_m4[1])};
-}  
-
-static SelValue fn_mat4_mul_mat4_(void *args)
-{ 
-    Mat4 *args_m4 = (Mat4 *) args;
-    return (SelValue) {.val_mat4 = hglm_mat4_mul_mat4(args_m4[0], args_m4[1])};
-}  
-
-static SelValue fn_mat4_mul_vec4_(void *args)
-{ 
-    Mat4 *args_m4 = (Mat4 *) args;
-    return (SelValue) {.val_vec4 = hglm_mat4_mul_vec4(args_m4[0], *(Vec4*)&args_m4[1])};
-}  
-
-static SelValue fn_mat4_mul_scalar_(void *args)
-{ 
-    Mat4 *args_m4 = (Mat4 *) args;
-    return (SelValue) {.val_mat4 = hglm_mat4_mul_scalar(args_m4[0], *(f32*)&args_m4[1])};
 }  
 
 
