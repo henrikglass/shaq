@@ -142,22 +142,25 @@ typedef struct ExprTree
         struct ExprTree *lhs;
     };
     struct ExprTree *rhs;
-    u32 func_id;   // If this tree node is a function call then this value will be
-                   // assigned the ID of the built-in function in the type- and
-                   // namechecker pass. If no matching built-in function is found
-                   // the type- and namechecker pass will not succeed, and the root
-                   // of the tree will have sentinel type TYPE_OR_NAME_ERR_.
-    b8 asymmetric; // true iff all of the following are true:
-                   //     - this tree node is a binary expression 
-                   //     - lhs and rhs are of different types
-                   //     - neither lhs or rhs must be implicitly type converted
-                   //
-                   // This is used to mark binary operations such as matrix-vector-, 
-                   // matrix-scalar-, and vector-scalar multiplications. Conversely,
-                   // regular bool-float-, float-int, and uint-int, multiplications
-                   // are not marked as asymmetric, meaning one of the operands will
-                   // be implicitly type converted into the type of the other operand,
-                   // according to the type promotion rules, before being operated upon.
+    Type convert_to; // If this value is != TYPE_NIL, The result of the computation
+                     // of this expression tree must be converted from type `type`
+                     // to type `convert_to`
+    u32 func_id;     // If this tree node is a function call then this value will be
+                     // assigned the ID of the built-in function in the type- and
+                     // namechecker pass. If no matching built-in function is found
+                     // the type- and namechecker pass will not succeed, and the root
+                     // of the tree will have sentinel type TYPE_OR_NAME_ERR_.
+    //b8 asymmetric;   // true iff all of the following are true:
+    //                 //     - this tree node is a binary expression 
+    //                 //     - lhs and rhs are of different types
+    //                 //     - neither lhs or rhs must be implicitly type converted
+    //                 //
+    //                 // This is used to mark binary operations such as matrix-vector-, 
+    //                 // matrix-scalar-, and vector-scalar multiplications. Conversely,
+    //                 // regular bool-float-, float-int, and uint-int, multiplications
+    //                 // are not marked as asymmetric, meaning one of the operands will
+    //                 // be implicitly type converted into the type of the other operand,
+    //                 // according to the type promotion rules, before being operated upon.
 } ExprTree;
 
 
@@ -287,6 +290,7 @@ ExeExpr *sel_compile(const char *src, Allocator *alloc)
 
     /* Attach source code reference */
     exe->source_code = src;
+    exe->tree = e; // TODO remove
 
 out:
     return exe;
@@ -674,7 +678,7 @@ static i32 parse_arglist_expr(ExprTree **e, Lexer *l)
 
 static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, ExprTree *rhs)
 {
-    ExprTree *e = hgl_alloc(g_frame_arena, sizeof(ExprTree));
+    ExprTree *e = hgl_zalloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     e->lhs = lhs;
@@ -684,7 +688,7 @@ static ExprTree *new_binary_expr(ExprKind kind, Token token, ExprTree *lhs, Expr
 
 static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child)
 {
-    ExprTree *e = hgl_alloc(g_frame_arena, sizeof(ExprTree));
+    ExprTree *e = hgl_zalloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     e->child = child;
@@ -693,7 +697,7 @@ static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child)
 
 static ExprTree *new_atom_expr(ExprKind kind, Token token)
 {
-    ExprTree *e = hgl_alloc(g_frame_arena, sizeof(ExprTree));
+    ExprTree *e = hgl_zalloc(g_frame_arena, sizeof(ExprTree));
     e->kind = kind;
     e->token = token;
     return e;
@@ -957,7 +961,9 @@ static TypeAndQualifier type_and_namecheck_add_expr(ExprTree *e)
     TYPE_AND_NAMECHECK_ASSERT(t != TYPE_TEXTURE, "Arithmetic is not allowed on textures.");
  
     // Always mark expr as asymmetric for now
-    e->asymmetric = false;
+    //e->asymmetric = false;
+    if (t != t0.type) { lhs->convert_to = t; }
+    if (t != t1.type) { rhs->convert_to = t; }
 
     /* Inherit qualifier from the intersection of the lhs & rhs qualifiers */
     result.type = t;
@@ -980,9 +986,11 @@ static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
     ExprTree *rhs = e->rhs;
     ExprKind kind = e->kind;
     TypeAndQualifier result;
-    TypeAndQualifier rhs_qtype = type_and_namecheck(lhs);
-    TypeAndQualifier lhs_qtype = type_and_namecheck(rhs);
-    Type t = type_promote_either_or_none(rhs_qtype.type, lhs_qtype.type);
+    TypeAndQualifier t0 = type_and_namecheck(lhs);
+    TypeAndQualifier t1 = type_and_namecheck(rhs);
+
+    /* Try automatic type promotion if necessary */
+    Type t = type_promote_either_or_none(t0.type, t1.type);
 
     /* 
      * operand_types = lhs_type << 16 + rhs_type
@@ -990,39 +998,64 @@ static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
     typedef struct {
         u32 operand_types;
         u32 result_type;
+        Type convert_lhs_to;
+        Type convert_rhs_to;
     } LookupTableEntry;
     static const LookupTableEntry asym_mul_res_type[] = {
-        { .operand_types = (TYPE_MAT2  << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2},
-        { .operand_types = (TYPE_VEC2  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC2},
-        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2},
-        { .operand_types = (TYPE_MAT3  << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3},
-        { .operand_types = (TYPE_VEC3  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC3},
-        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3},
-        { .operand_types = (TYPE_MAT4  << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4},
-        { .operand_types = (TYPE_VEC4  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC4},
-        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4},
-        { .operand_types = (TYPE_MAT2  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT2},
-        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT2,  .result_type = TYPE_MAT2},
-        { .operand_types = (TYPE_MAT3  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT3},
-        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT3,  .result_type = TYPE_MAT3},
-        { .operand_types = (TYPE_MAT4  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT4},
-        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT4,  .result_type = TYPE_MAT4},
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2, },
+        { .operand_types = (TYPE_VEC2  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC2, },
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2, },
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3, },
+        { .operand_types = (TYPE_VEC3  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC3, },
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3, },
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4, },
+        { .operand_types = (TYPE_VEC4  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC4, },
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4, },
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT2, },
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT2,  .result_type = TYPE_MAT2, },
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT3, },
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT3,  .result_type = TYPE_MAT3, },
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT4, },
+        { .operand_types = (TYPE_FLOAT << 16) + TYPE_MAT4,  .result_type = TYPE_MAT4, },
+
+        { .operand_types = (TYPE_IVEC2 << 16) + TYPE_INT,   .result_type = TYPE_IVEC2, },
+        { .operand_types = (TYPE_INT   << 16) + TYPE_IVEC2, .result_type = TYPE_IVEC2, },
+        { .operand_types = (TYPE_IVEC3 << 16) + TYPE_INT,   .result_type = TYPE_IVEC3, },
+        { .operand_types = (TYPE_INT   << 16) + TYPE_IVEC3, .result_type = TYPE_IVEC3, },
+        { .operand_types = (TYPE_IVEC4 << 16) + TYPE_INT,   .result_type = TYPE_IVEC4, },
+        { .operand_types = (TYPE_INT   << 16) + TYPE_IVEC4, .result_type = TYPE_IVEC4, },
+
+        { .operand_types = (TYPE_VEC2  << 16) + TYPE_INT,   .result_type = TYPE_VEC2, .convert_rhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_INT   << 16) + TYPE_VEC2,  .result_type = TYPE_VEC2, .convert_lhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_VEC3  << 16) + TYPE_INT,   .result_type = TYPE_VEC3, .convert_rhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_INT   << 16) + TYPE_VEC3,  .result_type = TYPE_VEC3, .convert_lhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_VEC4  << 16) + TYPE_INT,   .result_type = TYPE_VEC4, .convert_rhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_INT   << 16) + TYPE_VEC4,  .result_type = TYPE_VEC4, .convert_lhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_INT,   .result_type = TYPE_MAT2, .convert_rhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_INT   << 16) + TYPE_MAT2,  .result_type = TYPE_MAT2, .convert_lhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_INT,   .result_type = TYPE_MAT3, .convert_rhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_INT   << 16) + TYPE_MAT3,  .result_type = TYPE_MAT3, .convert_lhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_INT,   .result_type = TYPE_MAT4, .convert_rhs_to = TYPE_FLOAT},
+        { .operand_types = (TYPE_INT   << 16) + TYPE_MAT4,  .result_type = TYPE_MAT4, .convert_lhs_to = TYPE_FLOAT},
     };
     static const LookupTableEntry asym_div_res_type[] = {
-        { .operand_types = (TYPE_VEC2  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC2},
-        { .operand_types = (TYPE_VEC3  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC3},
-        { .operand_types = (TYPE_VEC4  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC4},
-        { .operand_types = (TYPE_MAT2  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT2},
-        { .operand_types = (TYPE_MAT3  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT3},
-        { .operand_types = (TYPE_MAT4  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT4},
+        { .operand_types = (TYPE_VEC2  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC2, },
+        { .operand_types = (TYPE_VEC3  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC3, },
+        { .operand_types = (TYPE_VEC4  << 16) + TYPE_FLOAT, .result_type = TYPE_VEC4, },
+        { .operand_types = (TYPE_MAT2  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT2, },
+        { .operand_types = (TYPE_MAT3  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT3, },
+        { .operand_types = (TYPE_MAT4  << 16) + TYPE_FLOAT, .result_type = TYPE_MAT4, },
     };
 
+    /* Automatic type promotion failed? Look up result type in tables */
     if (t == TYPE_NIL) {
-        e->asymmetric = true;
-        u32 k = (rhs_qtype.type << 16) + lhs_qtype.type;
+        //e->asymmetric = true;
+        u32 k = (t0.type << 16) + t1.type;
         if (kind == EXPR_MUL) {
             for (u32 i = 0; i < sizeof(asym_mul_res_type)/sizeof(asym_mul_res_type[0]); i++) {
                 if (asym_mul_res_type[i].operand_types != k) continue;
+                lhs->convert_to = asym_mul_res_type[i].convert_lhs_to;
+                rhs->convert_to = asym_mul_res_type[i].convert_rhs_to;
                 t = asym_mul_res_type[i].result_type;
                 break;
             }
@@ -1030,6 +1063,8 @@ static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
             assert(kind == EXPR_DIV);
             for (u32 i = 0; i < sizeof(asym_div_res_type)/sizeof(asym_div_res_type[0]); i++) {
                 if (asym_div_res_type[i].operand_types != k) continue;
+                lhs->convert_to = asym_div_res_type[i].convert_lhs_to;
+                rhs->convert_to = asym_div_res_type[i].convert_rhs_to;
                 t = asym_div_res_type[i].result_type;
                 break;
             }
@@ -1037,10 +1072,15 @@ static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
         
         if (t == TYPE_NIL) {
             TYPE_AND_NAMECHECK_ERROR("Operands to binary `%c` expression have incompatible types: %s and %s",
-                                     (kind == EXPR_MUL) ? '*' : '/', TYPE_TO_STR[rhs_qtype.type],  TYPE_TO_STR[lhs_qtype.type]);
+                                     (kind == EXPR_MUL) ? '*' : '/', TYPE_TO_STR[t0.type],  TYPE_TO_STR[t1.type]);
         }
     } else {
-        e->asymmetric = false;
+        //e->asymmetric = false;
+        //rhs->convert_to = TYPE_NIL;
+        //lhs->convert_to = TYPE_NIL;
+
+        if (t != t0.type) { lhs->convert_to = t; }
+        if (t != t1.type) { rhs->convert_to = t; }
 
         /* rules that apply to both arguments */
         // --- 
@@ -1057,8 +1097,8 @@ static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e)
 
     /* Inherit qualifier from the intersection of the lhs & rhs qualifiers */
     result.type = t;
-    if ((rhs_qtype.qualifier == QUALIFIER_CONST) && 
-        (lhs_qtype.qualifier == QUALIFIER_CONST)) {
+    if ((t0.qualifier == QUALIFIER_CONST) && 
+        (t1.qualifier == QUALIFIER_CONST)) {
         result.qualifier = QUALIFIER_CONST;
     } else {
         result.qualifier = QUALIFIER_NONE;
@@ -1225,40 +1265,38 @@ static void codegen_expr(ExeExpr *exe, const ExprTree *e, Allocator *alloc)
         case EXPR_SUB:
         case EXPR_MUL:
         case EXPR_DIV: {
-            if (e->asymmetric) {
-                codegen_expr(exe, e->lhs, alloc);
-                codegen_expr(exe, e->rhs, alloc);
+            Type effective_lhs_type = e->lhs->type;
+            Type effective_rhs_type = e->rhs->type;
+
+            /* codegen lhs - maybe typeconvert */
+            codegen_expr(exe, e->lhs, alloc);
+            if (e->lhs->convert_to != TYPE_NIL) {
                 exe_append_op(exe, (Op){
-                    .kind     = expr_to_op[e->kind],
-                    .res_type = e->type,
-                    .lhs_type = e->lhs->type,
-                    .rhs_type = e->rhs->type,
+                    .kind      = OP_TYPECONV,
+                    .res_type  = e->lhs->convert_to,
+                    .from_type = e->lhs->type,
                 }, alloc);
-            } else {
-                codegen_expr(exe, e->lhs, alloc);
-                if (e->type != e->lhs->type) {
-                    exe_append_op(exe, (Op){
-                        .kind      = OP_TYPECONV,
-                        .res_type  = e->type,
-                        .from_type = e->lhs->type,
-                    }, alloc);
-                }
-                codegen_expr(exe, e->rhs, alloc);
-                if (e->type != e->rhs->type) {
-                    exe_append_op(exe, (Op){
-                        .kind      = OP_TYPECONV,
-                        .res_type  = e->type,
-                        .from_type = e->rhs->type,
-                    }, alloc);
-                }
-                exe_append_op(exe, (Op){
-                    .kind     = expr_to_op[e->kind],
-                    .res_type = e->type,
-                    .lhs_type = e->type,
-                    .rhs_type = e->type,
-                }, alloc);
+                effective_lhs_type = e->lhs->convert_to;
             }
-            //printf("ARITH: %d\n", expr_to_op[e->kind]);
+
+            /* codegen rhs - maybe typeconvert */
+            codegen_expr(exe, e->rhs, alloc);
+            if (e->rhs->convert_to != TYPE_NIL) {
+                exe_append_op(exe, (Op){
+                    .kind      = OP_TYPECONV,
+                    .res_type  = e->rhs->convert_to,
+                    .from_type = e->rhs->type,
+                }, alloc);
+                effective_rhs_type = e->rhs->convert_to;
+            }
+
+            /* Append op-code */
+            exe_append_op(exe, (Op){
+                .kind     = expr_to_op[e->kind],
+                .res_type = e->type,
+                .lhs_type = effective_lhs_type,
+                .rhs_type = effective_rhs_type,
+            }, alloc);
         } break;
 
         case EXPR_REM: {

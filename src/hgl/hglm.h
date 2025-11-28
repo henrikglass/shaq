@@ -261,7 +261,7 @@ static HGL_INLINE HglmIVec2 hglm_ivec2_hadamard_mul(HglmIVec2 a, HglmIVec2 b);
 static HGL_INLINE HglmIVec2 hglm_ivec2_hadamard_div(HglmIVec2 a, HglmIVec2 b);
 static HGL_INLINE float hglm_ivec2_distance(HglmIVec2 a, HglmIVec2 b);
 static HGL_INLINE float hglm_ivec2_len(HglmIVec2 v);
-static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, float s);
+static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, int s);
 static HGL_INLINE HglmIVec2 hglm_ivec2_lerp(HglmIVec2 a, HglmIVec2 b, float amount);
 
 static HGL_INLINE HglmIVec3 hglm_ivec3_make(int x, int y, int z);
@@ -269,6 +269,7 @@ static HGL_INLINE HglmIVec3 hglm_ivec3_add(HglmIVec3 a, HglmIVec3 b);
 static HGL_INLINE HglmIVec3 hglm_ivec3_sub(HglmIVec3 a, HglmIVec3 b);
 static HGL_INLINE HglmIVec3 hglm_ivec3_hadamard_mul(HglmIVec3 a, HglmIVec3 b);
 static HGL_INLINE HglmIVec3 hglm_ivec3_hadamard_div(HglmIVec3 a, HglmIVec3 b);
+static HGL_INLINE HglmIVec3 hglm_ivec3_mul_scalar(HglmIVec3 v, int s);
 // TODO ...
 
 static HGL_INLINE HglmIVec4 hglm_ivec4_make(int x, int y, int z, int w);
@@ -276,6 +277,7 @@ static HGL_INLINE HglmIVec4 hglm_ivec4_add(HglmIVec4 a, HglmIVec4 b);
 static HGL_INLINE HglmIVec4 hglm_ivec4_sub(HglmIVec4 a, HglmIVec4 b);
 static HGL_INLINE HglmIVec4 hglm_ivec4_hadamard_mul(HglmIVec4 a, HglmIVec4 b);
 static HGL_INLINE HglmIVec4 hglm_ivec4_hadamard_div(HglmIVec4 a, HglmIVec4 b);
+static HGL_INLINE HglmIVec4 hglm_ivec4_mul_scalar(HglmIVec4 v, int s);
 // TODO ...
 
 static HGL_INLINE HglmVec2 hglm_vec2_make(float x, float y);
@@ -434,9 +436,9 @@ static HGL_INLINE float hglm_ivec2_len(HglmIVec2 v)
     return (int) sqrtf(v.x * v.x + v.y * v.y);
 }
 
-static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, float s)
+static HGL_INLINE HglmIVec2 hglm_ivec2_mul_scalar(HglmIVec2 v, int s)
 {
-    return (HglmIVec2) {.x = (int)(s * v.x), .y = (int)(s * v.y)};
+    return (HglmIVec2) {.x = s * v.x, .y = s * v.y};
 }
 
 static HGL_INLINE HglmIVec2 hglm_ivec2_lerp(HglmIVec2 a, HglmIVec2 b, float amount)
@@ -477,6 +479,11 @@ static HGL_INLINE HglmIVec3 hglm_ivec3_hadamard_div(HglmIVec3 a, HglmIVec3 b)
     return (HglmIVec3) {.x = a.x / b.x, .y = a.y / b.y, .z = a.z / b.z};
 }
 
+static HGL_INLINE HglmIVec3 hglm_ivec3_mul_scalar(HglmIVec3 v, int s)
+{
+    return (HglmIVec3) {.x = s * v.x, .y = s * v.y, .z = s * v.z};
+}
+
 
 /* ========== HglmIVec4 =======================================================*/
 
@@ -505,6 +512,11 @@ static HGL_INLINE HglmIVec4 hglm_ivec4_hadamard_mul(HglmIVec4 a, HglmIVec4 b)
 static HGL_INLINE HglmIVec4 hglm_ivec4_hadamard_div(HglmIVec4 a, HglmIVec4 b)
 {
     return (HglmIVec4) {.x = a.x / b.x, .y = a.y / b.y, .z = a.z / b.z, .w = a.w / b.w};
+}
+
+static HGL_INLINE HglmIVec4 hglm_ivec4_mul_scalar(HglmIVec4 v, int s)
+{
+    return (HglmIVec4) {.x = s * v.x, .y = s * v.y, .z = s * v.z, .w = s * v.w};
 }
 
 
@@ -1909,6 +1921,7 @@ typedef HglmMat    Mat;
 #define ivec3_sub                hglm_ivec3_sub
 #define ivec3_hadamard_mul       hglm_ivec3_hadamard_mul
 #define ivec3_hadamard_div       hglm_ivec3_hadamard_div
+#define ivec3_mul_scalar         hglm_ivec3_mul_scalar
 
 #define ivec4_print              hglm_ivec4_print
 #define ivec4_make               hglm_ivec4_make
@@ -1916,6 +1929,7 @@ typedef HglmMat    Mat;
 #define ivec4_sub                hglm_ivec4_sub
 #define ivec4_hadamard_mul       hglm_ivec4_hadamard_mul
 #define ivec4_hadamard_div       hglm_ivec4_hadamard_div
+#define ivec4_mul_scalar         hglm_ivec4_mul_scalar
 
 #define vec2_print               hglm_vec2_print
 #define vec2_make                hglm_vec2_make

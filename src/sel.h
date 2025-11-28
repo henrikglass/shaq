@@ -138,6 +138,7 @@ typedef struct
     SelValue cached_computed_value;
     b8 has_been_computed_once;
     const char *source_code;
+    struct ExprTree *tree; // TODO remove
 } ExeExpr;
 
 /* 

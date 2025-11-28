@@ -130,6 +130,7 @@ float eval_float(str expr)                                                      
 ## Returning vec2:
 ```
 vec2 vec2(float x, float y)                                                      Creates a 2D vector with components `x` and `y`
+vec2 vec2(ivec2 v)                                                               Creates a 2D vector from components of the 2D int vector `v`
 vec2 vec2_from_polar(float r, float phi)                                         Creates a 2D vector from the polar coordinates `r` and `phi`
 vec2 normalize(vec2 v)                                                           Returns the normalized vector of `v`
 vec2 lerp(vec2 a, vec2 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
@@ -145,7 +146,8 @@ vec2 eval_vec2(str expr)                                                        
 ## Returning vec3:
 ```
 vec3 vec3(float x, float y, float z)                                             Creates a 3D vector with components `x`, `y`, and `z`
-vec3 vec3_from_spherical(float r, float phi, float theta)                        Creates a 2D vector from the spherical coordinates `r`, `phi`, and `theta`
+vec3 vec3(ivec3 v)                                                               Creates a 3D vector from components of the 3D int vector `v`
+vec3 vec3_from_spherical(float r, float phi, float theta)                        Creates a 3D vector from the spherical coordinates `r`, `phi`, and `theta`
 vec3 normalize(vec3 v)                                                           Returns the normalized vector of `v`
 vec3 lerp(vec3 a, vec3 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 vec3 slerp(vec3 a, vec3 b, float t)                                              Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.
@@ -158,6 +160,7 @@ vec3 eval_vec3(str expr)                                                        
 ## Returning vec4:
 ```
 vec4 vec4(float x, float y, float z, float w)                                    Creates a 4D vector with components `x`, `y`, `z`, and `w`
+vec4 vec4(ivec4 v)                                                               Creates a 4D vector from components of the 4D int vector `v`
 vec4 normalize(vec4 v)                                                           Returns the normalized vector of `v`
 vec4 lerp(vec4 a, vec4 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
 vec4 rgba(int hexcode)                                                           Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode

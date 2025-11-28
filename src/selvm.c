@@ -58,6 +58,9 @@ static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs);
 static inline IVec2 muliv2(IVec2 *lhs, IVec2 *rhs);
 static inline IVec3 muliv3(IVec3 *lhs, IVec3 *rhs);
 static inline IVec4 muliv4(IVec4 *lhs, IVec4 *rhs);
+static inline IVec2 mulivs2(IVec2 *lhs, int *rhs);
+static inline IVec3 mulivs3(IVec3 *lhs, int *rhs);
+static inline IVec4 mulivs4(IVec4 *lhs, int *rhs);
 static inline Mat2 mulm2(Mat2 *lhs, Mat2 *rhs);
 static inline Mat3 mulm3(Mat3 *lhs, Mat3 *rhs);
 static inline Mat4 mulm4(Mat4 *lhs, Mat4 *rhs);
@@ -165,6 +168,7 @@ static SelValue fn_aspect_ratio_(void *args);
 static SelValue fn_lerp_(void *args);
 
 static SelValue fn_vec2_(void *args);
+static SelValue fn_vec2_from_ivec2_(void *args);
 static SelValue fn_vec2_from_polar_(void *args);
 static SelValue fn_vec2_distance_(void *args);
 static SelValue fn_vec2_length_(void *args);
@@ -177,6 +181,7 @@ static SelValue fn_mouse_position_last_(void *args);
 static SelValue fn_mouse_drag_position_(void *args);
 
 static SelValue fn_vec3_(void *args);
+static SelValue fn_vec3_from_ivec3_(void *args);
 static SelValue fn_vec3_from_spherical_(void *args);
 static SelValue fn_vec3_distance_(void *args);
 static SelValue fn_vec3_length_(void *args);
@@ -187,6 +192,7 @@ static SelValue fn_vec3_slerp_(void *args);
 static SelValue fn_vec3_cross_(void *args);
 
 static SelValue fn_vec4_(void *args);
+static SelValue fn_vec4_from_ivec4_(void *args);
 static SelValue fn_vec4_distance_(void *args);
 static SelValue fn_vec4_length_(void *args);
 static SelValue fn_vec4_normalize_(void *args);
@@ -335,6 +341,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
+    { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_ivec2_,     .argtypes = {TYPE_IVEC2, TYPE_NIL},                       .synopsis = "vec2 vec2(ivec2 v)", .desc = "Creates a 2D vector from components of the 2D int vector `v`", },
     { .id = SV_LIT("vec2_from_polar"),     .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_polar_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2_from_polar(float r, float phi)", .desc = "Creates a 2D vector from the polar coordinates `r` and `phi`", },
     { .id = SV_LIT("distance"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_distance_,       .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float distance(vec2 a, vec2 b)", .desc = "Returns the absolute distance between `a` and `b`", },
     { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_length_,         .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "float length(vec2 v)", .desc = "Returns the absolute length of `v`", },
@@ -347,7 +354,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("mouse_drag_position"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_drag_position_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_drag_position()", .desc = "Returns the mouse position from when the left mouse button was last held, in pixel coordinates.", },
 
     { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = "Creates a 3D vector with components `x`, `y`, and `z`", },
-    { .id = SV_LIT("vec3_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = "Creates a 2D vector from the spherical coordinates `r`, `phi`, and `theta`", },
+    { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_ivec3_,     .argtypes = {TYPE_IVEC3, TYPE_NIL},                         .synopsis = "vec3 vec3(ivec3 v)",                                        . desc = "Creates a 3D vector from components of the 3D int vector `v`", },
+    { .id = SV_LIT("vec3_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = "Creates a 3D vector from the spherical coordinates `r`, `phi`, and `theta`", },
     { .id = SV_LIT("distance"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_distance_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float distance(vec3 a, vec3 b)",                            . desc = "Returns the absolute distance between `a` and `b`", },
     { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "float length(vec3 v)",                                      . desc = "Returns the absolute length of `v`", },
     { .id = SV_LIT("normalize"),           .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 normalize(vec3 v)",                                    . desc = "Returns the normalized vector of `v`", },
@@ -357,6 +365,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("cross"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 cross(vec3 a, vec3 b)",                                . desc = "Returns the cross product of `a` and `b`", },
 
     { .id = SV_LIT("vec4"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_,             .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = "Creates a 4D vector with components `x`, `y`, `z`, and `w`", },
+    { .id = SV_LIT("vec4"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_from_ivec4_,  .argtypes = {TYPE_IVEC4, TYPE_NIL},                                     .synopsis = "vec4 vec4(ivec4 v)",                            .desc = "Creates a 4D vector from components of the 4D int vector `v`", },
     { .id = SV_LIT("distance"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_distance_,    .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float distance(vec4 a, vec4 b)",                .desc = "Returns the absolute distance between `a` and `b`", },
     { .id = SV_LIT("length"),           .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_length_,      .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "float length(vec4 v)",                          .desc = "Returns the absolute length of `v`", },
     { .id = SV_LIT("normalize"),        .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,   .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 normalize(vec4 v)",                        .desc = "Returns the normalized vector of `v`", },
@@ -589,6 +598,21 @@ static void svm_run()
                                  if (op->lhs_type == TYPE_MAT4  && op->rhs_type == TYPE_VEC4)  {Vec4 tmp = mulmv4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
                             else if (op->lhs_type == TYPE_VEC4  && op->rhs_type == TYPE_FLOAT) {Vec4 tmp = mulvs4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
                             else if (op->lhs_type == TYPE_FLOAT && op->rhs_type == TYPE_VEC4)  {Vec4 tmp = mulvs4(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_IVEC2: {
+                                 if (op->lhs_type == TYPE_IVEC2 && op->rhs_type == TYPE_INT)   {IVec2 tmp = mulivs2(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_INT   && op->rhs_type == TYPE_IVEC2) {IVec2 tmp = mulivs2(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_IVEC3: {
+                                 if (op->lhs_type == TYPE_IVEC3 && op->rhs_type == TYPE_INT)   {IVec3 tmp = mulivs3(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_INT   && op->rhs_type == TYPE_IVEC3) {IVec3 tmp = mulivs3(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else assert(false); // BUG
+                        } break;
+                        case TYPE_IVEC4: {
+                                 if (op->lhs_type == TYPE_IVEC4 && op->rhs_type == TYPE_INT)   {IVec4 tmp = mulivs4(lhs, rhs); svm_stack_push(&tmp, sizeof(tmp));} 
+                            else if (op->lhs_type == TYPE_INT   && op->rhs_type == TYPE_IVEC4) {IVec4 tmp = mulivs4(rhs, lhs); svm_stack_push(&tmp, sizeof(tmp));} 
                             else assert(false); // BUG
                         } break;
                         case TYPE_MAT2: {
@@ -856,6 +880,9 @@ static inline Vec4 mulv4(Vec4 *lhs, Vec4 *rhs) { return vec4_hadamard(*lhs, *rhs
 static inline IVec2 muliv2(IVec2 *lhs, IVec2 *rhs) { return ivec2_hadamard_mul(*lhs, *rhs);}
 static inline IVec3 muliv3(IVec3 *lhs, IVec3 *rhs) { return ivec3_hadamard_mul(*lhs, *rhs);}
 static inline IVec4 muliv4(IVec4 *lhs, IVec4 *rhs) { return ivec4_hadamard_mul(*lhs, *rhs);}
+static inline IVec2 mulivs2(IVec2 *lhs, int *rhs) { return ivec2_mul_scalar(*lhs, *rhs); }
+static inline IVec3 mulivs3(IVec3 *lhs, int *rhs) { return ivec3_mul_scalar(*lhs, *rhs); }
+static inline IVec4 mulivs4(IVec4 *lhs, int *rhs) { return ivec4_mul_scalar(*lhs, *rhs); }
 static inline Mat2 mulm2(Mat2 *lhs, Mat2 *rhs) { return mat2_mul_mat2(*lhs, *rhs);}
 static inline Mat3 mulm3(Mat3 *lhs, Mat3 *rhs) { return mat3_mul_mat3(*lhs, *rhs);}
 static inline Mat4 mulm4(Mat4 *lhs, Mat4 *rhs) { return mat4_mul_mat4(*lhs, *rhs);}
@@ -1427,6 +1454,12 @@ static SelValue fn_vec2_(void *args)
     return (SelValue) {.val_vec2 = hglm_vec2_make(args_f32[0], args_f32[1])};
 }
 
+static SelValue fn_vec2_from_ivec2_(void *args)
+{
+    IVec2 *args_iv2 = (IVec2 *) args;
+    return (SelValue) {.val_vec2 = hglm_vec2_make((float)args_iv2[0].x, (float)args_iv2[0].y)};
+}
+
 static SelValue fn_vec2_from_polar_(void *args)
 {
     f32 *args_f32 = (f32 *) args;
@@ -1496,6 +1529,12 @@ static SelValue fn_vec3_(void *args)
     return (SelValue) {.val_vec3 = hglm_vec3_make(args_f32[0], args_f32[1], args_f32[2])};
 }
 
+static SelValue fn_vec3_from_ivec3_(void *args)
+{
+    IVec3 *args_iv3 = (IVec3 *) args;
+    return (SelValue) {.val_vec3 = hglm_vec3_make((float)args_iv3[0].x, (float)args_iv3[0].y, (float)args_iv3[0].z)};
+}
+
 static SelValue fn_vec3_from_spherical_(void *args)
 {
     f32 *args_f32 = (f32 *) args;
@@ -1551,6 +1590,15 @@ static SelValue fn_vec4_(void *args)
 {
     f32 *args_f32 = (f32 *) args;
     return (SelValue) {.val_vec4 = hglm_vec4_make(args_f32[0], args_f32[1], args_f32[2], args_f32[3])};
+}
+
+static SelValue fn_vec4_from_ivec4_(void *args)
+{
+    IVec4 *args_iv4 = (IVec4 *) args;
+    return (SelValue) {.val_vec4 = hglm_vec4_make((float)args_iv4[0].x, 
+                                                  (float)args_iv4[0].y, 
+                                                  (float)args_iv4[0].z, 
+                                                  (float)args_iv4[0].w)};
 }
 
 static SelValue fn_vec4_distance_(void *args)

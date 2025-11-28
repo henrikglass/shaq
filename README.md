@@ -161,17 +161,18 @@ spell compositor, ok?
 
 # Planned features and fixes
 
-* SEL: Replace more type specific built-in functions with overloads
-* SEL: Support for mulscalar with ints (ivec forgotten?)
 * SEL: GLSL-style step function
+* SEL: tests
+* SEL: stdin() -- get one line of text from stdin, remains cached until new line arrives. 
+* SEL: drag\_vecX ?
+* SEL: load\_video()?
+* SEL: boolean arithmetic (&&, ||, !, etc.)
 * Fix continuous reload on GLFW window resize.
 * Rework GUI a bit (e.g. play/pause symbol)
 * Cubemaps (SEL: SamplerCube)
-* SEL - load\_video()?
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
-* SEL - boolean arithmetic (&&, ||, !, etc.)
 * Support arbitrary OpengGL >=4.2 image load/stores, somehow. Maybe not...
 * Fix naughty unaligned data storage in `selvm.c` (Run with -fsantize=undefined) (libffi?)
 
