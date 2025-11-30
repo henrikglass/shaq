@@ -163,7 +163,7 @@ spell compositor, ok?
 
 * SEL: GLSL-style step function
 * SEL: tests
-* SEL: stdin() -- get one line of text from stdin, remains cached until new line arrives. 
+* SEL: socket(udp/unix) -- read from a socket - with similar semantics to `stdin()`. 
 * SEL: drag\_vecX ?
 * SEL: load\_video()?
 * SEL: boolean arithmetic (&&, ||, !, etc.)

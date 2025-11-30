@@ -84,6 +84,7 @@ static struct
 void shaq_begin(const char *project_ini_filepath, bool quiet)
 {
     atexit(shaq_atexit_);
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
 
     alloc_init();
     renderer_init();

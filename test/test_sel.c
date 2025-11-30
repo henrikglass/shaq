@@ -1,11 +1,15 @@
-#include <stdio.h>
 
 #include "sel.h"
 #include "alloc.h"
 #include "log.h"
 
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 int main(int argc, char *argv[])
 {
+    fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
     log_set_mode(LOG_R2R);
     alloc_init();
 

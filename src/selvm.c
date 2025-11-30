@@ -8,6 +8,8 @@
 #include "log.h" // ???
 
 #include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /*--- Private macros --------------------------------------------------------------------*/
 
@@ -268,6 +270,8 @@ static SelValue fn_eval_mat2_(void *args);
 static SelValue fn_eval_mat3_(void *args);
 static SelValue fn_eval_mat4_(void *args);
 
+static SelValue fn_stdin_(void *args);
+
 /*--- Public variables ------------------------------------------------------------------*/
 
 const Func BUILTIN_FUNCTIONS[] = 
@@ -440,6 +444,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("eval_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat2_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat2 eval_mat2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat2", },
     { .id = SV_LIT("eval_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat3", },
     { .id = SV_LIT("eval_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat4", },
+
+    { .id = SV_LIT("stdin"), .type = TYPE_STR, .qualifier = QUALIFIER_NONE, .impl = fn_stdin_, .argtypes = {TYPE_NIL}, .synopsis = "str stdin()", .desc = "Returns the last complete line read from the standard input", },
 };
 const u32 N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -2003,4 +2009,50 @@ static SelValue fn_eval_ivec4_(void *args) { return fn_eval_helper_(args); }
 static SelValue fn_eval_mat2_(void *args)  { return fn_eval_helper_(args); }
 static SelValue fn_eval_mat3_(void *args)  { return fn_eval_helper_(args); }
 static SelValue fn_eval_mat4_(void *args)  { return fn_eval_helper_(args); }
+
+/* --------------------- String functions ------------------ */
+
+static SelValue fn_stdin_(void *args)
+{
+    /*
+     * This function might break for some inputs. Hopefully it won't,
+     * but I haven't tested it that much and this is a pretty non-
+     * canonical way of reading from stdin. Let's cross our fingers.
+     */
+    (void) args;
+    assert(fcntl(STDIN_FILENO, F_GETFL, 0) & O_NONBLOCK); // stdin needs to be non-blocking
+
+    static char scratch[4096] = {0};
+    static char str[1024] = {0};
+    static StringView sv = {.start = &str[0], .length = 0};
+
+    ssize_t n = 4096;
+    ssize_t k = 0;
+
+    /* Read until -EAGAIN/EWOULDBLOCK */
+    while(n > 0) {
+        n = read(STDIN_FILENO, scratch, 4096);
+        k = n > 0 ? n : k;
+    }
+    
+    if (k == 0) {
+        return (SelValue) { .val_str = sv };
+    } 
+    
+    i32 start;
+    i32 end;
+    for (end = k; (end > 0) && (scratch[end - 1] != '\n'); end--);
+    for (start = end - 1; (start > 0) && (scratch[start - 1] != '\n'); start--);
+    i32 len = end - start;
+    if (start != end && len < 1024) {
+        scratch[end - 1] = '\0';
+        memcpy(str, &scratch[start], len + 1);
+        sv.start = str;
+        sv.length = len; 
+    }
+
+    return (SelValue) { .val_str = sv };
+
+}
+
 

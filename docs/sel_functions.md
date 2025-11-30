@@ -230,6 +230,7 @@ mat4 eval_mat4(str expr)                                                        
 ## Returning str:
 ```
 str text_input(str label, str default)                                           Creates a text input widget with the label `label` and default value `default`
+str stdin()                                                                      Returns the last complete line read from the standard input
 ```
 
 ## Returning sampler2D:
