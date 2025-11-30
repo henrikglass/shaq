@@ -325,13 +325,14 @@ void gui_draw_error_log_overlay()
 
 void gui_draw_menu_bar()
 {
+#define KEY(_0, _1, t) t
     b8 open_popup = false;
     if (imgui_begin_main_menu_bar()) {
         if (imgui_begin_menu("Menu")) {
-            if (imgui_menu_item("Open", "Ctrl-O")) {
+            if (imgui_menu_item("Open", SHAQ_KEY_OPEN_FILE_DIALOG)) {
                 imgui_open_file_dialog();
             }
-            if (imgui_menu_item("Quit", "Alt-F4/Ctrl-W")) {
+            if (imgui_menu_item("Quit", SHAQ_KEY_EXIT)) {
                 exit(0);
             }
             imgui_end_menu();
@@ -341,23 +342,32 @@ void gui_draw_menu_bar()
             imgui_checkbox("Enable darkmode", &gui.dark_mode);
             imgui_set_darkmode(gui.dark_mode);
             imgui_separator();
-            if (imgui_menu_item("Force reload", "Ctrl-R")) {
+            if (imgui_menu_item("Force reload", SHAQ_KEY_FORCE_RELOAD)) {
                 gui.should_reload = true;
             }
-            if (imgui_menu_item("Reset time", "Ctrl-T")) {
+            if (imgui_menu_item("Reset time", SHAQ_KEY_RESET_TIME)) {
                 shaq_reset_time(); 
             }
-            if (imgui_menu_item("Pause/Unpause time", "Ctrl-P")) {
+            if (imgui_menu_item("Pause/Unpause time", SHAQ_KEY_PAUSE_TOGGLE)) {
                 shaq_toggle_time_pause(); 
             }
-            if (imgui_menu_item("Toggle darkmode", "Ctrl-D")) {
+            if (imgui_menu_item("Toggle darkmode", SHAQ_KEY_DARKMODE_TOGGLE)) {
                 gui_toggle_darkmode(); 
             }
-            if (imgui_menu_item("Toggle maximized shader view", "Ctrl-F")) {
+            if (imgui_menu_item("Toggle maximized shader view", SHAQ_KEY_MAXIMIZE_SHADER_WINDOW)) {
                 gui_toggle_maximized_shader_window();
             }
-            if (imgui_menu_item("Toggle fullscreen", "Alt-Enter/F11")) {
+            if (imgui_menu_item("Toggle fullscreen", SHAQ_KEY_FULLSCREEN)) {
                 renderer_toggle_fullscreen(); 
+            }
+            if (imgui_menu_item("Increase DPI scale", SHAQ_KEY_DPI_LARGER)) {
+                gui_change_dpi_scale_by_amount(SHAQ_DPI_CHANGE_INCREMENT);
+            }
+            if (imgui_menu_item("Decrease DPI scale", SHAQ_KEY_DPI_SMALLER)) {
+                gui_change_dpi_scale_by_amount(-SHAQ_DPI_CHANGE_INCREMENT);
+            }
+            if (imgui_menu_item("Reset DPI scale", SHAQ_KEY_DPI_RESET)) {
+                gui_set_dpi_scale(SHAQ_DPI_DEFAULT); // TODO set to default value as prescribed by the OS scaling
             }
             imgui_end_menu();
         }
@@ -373,6 +383,7 @@ void gui_draw_menu_bar()
     }
     imgui_show_about_modal(); // TODO FIX
     imgui_end_main_menu_bar();
+#undef KEY
 }
 
 b8 gui_file_dialog_is_open()

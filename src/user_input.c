@@ -166,12 +166,6 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
                 }
             } break;
 
-            case GLFW_KEY_F11: {
-                if (action == GLFW_PRESS) {
-                    renderer_toggle_fullscreen();
-                }
-            } break;
-
             case GLFW_KEY_A ... GLFW_KEY_Z: {
                 u32 bit_pos = key - GLFW_KEY_A;
                 if (action == GLFW_PRESS) {
@@ -184,29 +178,29 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
         }
     }
 
-#define KEY(m, k) (action == GLFW_PRESS && mods == (m) && key == (k))
-    if (SHAQ_KEY_SHORTCUT_FULLSCREEN) {
+#define KEY(m, k, _) (action == GLFW_PRESS && mods == (m) && key == (k))
+    if (SHAQ_KEY_FULLSCREEN) {
         renderer_toggle_fullscreen();
-    } else if (SHAQ_KEY_SHORTCUT_DARKMODE_TOGGLE) {
+    } else if (SHAQ_KEY_DARKMODE_TOGGLE) {
         gui_toggle_darkmode();
-    } else if (SHAQ_KEY_SHORTCUT_MAXIMIZE_SHADER_WINDOW) {
+    } else if (SHAQ_KEY_MAXIMIZE_SHADER_WINDOW) {
         gui_toggle_maximized_shader_window();
-    } else if (SHAQ_KEY_SHORTCUT_FORCE_RELOAD) {
+    } else if (SHAQ_KEY_FORCE_RELOAD) {
         user_input.should_reload = true;
-    } else if (SHAQ_KEY_SHORTCUT_RESET_TIME) {
+    } else if (SHAQ_KEY_RESET_TIME) {
         shaq_reset_time();
-    } else if (SHAQ_KEY_SHORTCUT_PAUSE_TOGGLE) {
+    } else if (SHAQ_KEY_PAUSE_TOGGLE) {
         shaq_toggle_time_pause();
-    } else if (SHAQ_KEY_SHORTCUT_OPEN_FILE_DIALOG) {
+    } else if (SHAQ_KEY_OPEN_FILE_DIALOG) {
         imgui_open_file_dialog();
-    } else if (SHAQ_KEY_SHORTCUT_EXIT) {
+    } else if (SHAQ_KEY_EXIT) {
         glfwSetWindowShouldClose(renderer_get_glfw_window(), true);
-    } else if (SHAQ_KEY_SHORTCUT_DPI_LARGER) {
-        gui_change_dpi_scale_by_amount(0.2f);
-    } else if (SHAQ_KEY_SHORTCUT_DPI_SMALLER) {
-        gui_change_dpi_scale_by_amount(-0.2f);
-    } else if (SHAQ_KEY_SHORTCUT_DPI_RESET) {
-        gui_set_dpi_scale(1.0f); // TODO set to default value as prescribed by the OS scaling
+    } else if (SHAQ_KEY_DPI_LARGER) {
+        gui_change_dpi_scale_by_amount(SHAQ_DPI_CHANGE_INCREMENT);
+    } else if (SHAQ_KEY_DPI_SMALLER) {
+        gui_change_dpi_scale_by_amount(-SHAQ_DPI_CHANGE_INCREMENT);
+    } else if (SHAQ_KEY_DPI_RESET) {
+        gui_set_dpi_scale(SHAQ_DPI_DEFAULT); // TODO set to default value as prescribed by the OS scaling
 #if 0
     } else {
         printf("key = %d\n", key);

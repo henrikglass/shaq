@@ -170,6 +170,7 @@ spell compositor, ok?
 * Fix continuous reload on GLFW window resize.
 * Rework GUI a bit (e.g. play/pause symbol)
 * Cubemaps (SEL: SamplerCube)
+* Export function? (Export project as a standalone C-program - with some restrictions?)
 * Embed a tiny text editor
 * Support uniform arrays
 * Option - toggle inhibit reload
