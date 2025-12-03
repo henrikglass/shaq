@@ -9,6 +9,7 @@ extern "C" {
 }
 
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "ImGuiFileDialog/ImGuiFileDialog.h"
@@ -29,6 +30,8 @@ extern "C" {
 /*--- Public variables ------------------------------------------------------------------*/
 
 /*--- Private variables -----------------------------------------------------------------*/
+
+static const char *curr_window_name = NULL;
 
 /*--- Public functions ------------------------------------------------------------------*/
 
@@ -53,9 +56,6 @@ void imgui_init(GLFWwindow *window, GLFWmonitor *monitor)
     style.ScrollbarRounding = 10.0f;
     style.TabRounding = 10.0f;
     style.GrabRounding = 10.0f;
-
-    /* colors */
-    imgui_set_darkmode(true);
 
     /* DPI/Scaling */
     float scale = ImGui_ImplGlfw_GetContentScaleForMonitor(monitor);
@@ -119,6 +119,7 @@ b8 imgui_is_any_item_active()
 
 b8 imgui_begin(const char *str)
 {
+    curr_window_name = str;
     return ImGui::Begin(str);
 }
 
@@ -146,6 +147,28 @@ b8 imgui_begin_overlay_bottom_left(const char *str)
     return ImGui::Begin(str, NULL, flags);
 }
 
+b8 imgui_begin_overlay_top_left(const char *str)
+{
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration       | 
+                             ImGuiWindowFlags_NoDocking          | 
+                             ImGuiWindowFlags_AlwaysAutoResize   | 
+                             ImGuiWindowFlags_NoSavedSettings    | 
+                             ImGuiWindowFlags_NoFocusOnAppearing | 
+                             ImGuiWindowFlags_NoMove             |
+                             ImGuiWindowFlags_NoNav;
+    const float pad = 10.0f;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImVec2 window_pos, window_pos_pivot;
+    window_pos.x = pad;
+    window_pos.y = pad;
+    window_pos_pivot.x = 0.0f;
+    window_pos_pivot.y = 0.0f;
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::SetNextWindowViewport(viewport->ID);
+    ImGui::SetNextWindowBgAlpha(0.80f);
+    return ImGui::Begin(str, NULL, flags);
+}
+
 b8 imgui_current_window_is_hovered()
 {
     return ImGui::IsWindowHovered();
@@ -159,6 +182,21 @@ b8 imgui_any_window_is_hovered()
 b8 imgui_any_item_is_hovered()
 {
     return 0 != ImGui::IsAnyItemHovered();
+}
+
+b8 imgui_is_item_hovered(void)
+{
+    return ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled);
+}
+
+void imgui_set_tooltip_cstr(const char *cstr)
+{
+    ImGui::SetTooltip("%s", cstr);
+}
+
+void imgui_set_tooltip(const char *str, int length)
+{
+    ImGui::SetTooltip("%.*s", length, str);
 }
 
 void imgui_set_dpi_scale(float scale)
@@ -179,11 +217,16 @@ void imgui_change_dpi_scale_by_amount(float amount)
 
 void imgui_begin_child(const char *label, u32 color)
 {
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32((color >> 24) & 0xFF,
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32((color >> 24) & 0xFF,
                                                      (color >> 16) & 0xFF,
                                                      (color >>  8) & 0xFF,
                                                      (color >>  0) & 0xFF));
-    ImGui::BeginChild(label);
+    ImGui::BeginChild(label, ImVec2(0, 0), ImGuiChildFlags_FrameStyle, 0);
+    //ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32((color >> 24) & 0xFF,
+    //                                                 (color >> 16) & 0xFF,
+    //                                                 (color >>  8) & 0xFF,
+    //                                                 (color >>  0) & 0xFF));
+    //ImGui::BeginChild(label);
 }
 
 void imgui_begin_table(const char *label, i32 n_cols)
@@ -312,6 +355,11 @@ void imgui_text_unformatted(const char *str, size_t len)
     ImGui::TextUnformatted(str, str + len);
 }
 
+void imgui_text(const char *cstr)
+{
+    ImGui::Text(cstr);
+}
+
 void imgui_textf(const char *fmt, ...)
 { 
     va_list args;
@@ -320,6 +368,14 @@ void imgui_textf(const char *fmt, ...)
     ImGui::SameLine();
     va_end(args);
 } 
+
+void imgui_text_wrapped(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    ImGui::TextWrappedV(fmt, args);
+    va_end(args);
+}
 
 void imgui_text_color(const char *str, u32 color)
 {
@@ -434,8 +490,13 @@ void imgui_get_current_window_dimensions(int *x, int *y, int *w, int *h)
 {
     ImVec2 pos = ImGui::GetWindowPos();
     ImVec2 size = ImGui::GetContentRegionAvail();
+
+    ImGuiWindow *wnd = (ImGui::IsWindowDocked()) ? ImGui::GetCurrentWindow() : nullptr; 
+    ImGuiDockNode *node = (wnd != nullptr) ? wnd->DockNode : nullptr;
+    float y_offset = (node != NULL && node->IsHiddenTabBar()) ? 0.0f : ImGui::GetFrameHeight();
+
     *x = pos.x;
-    *y = pos.y;
+    *y = pos.y + y_offset;
     *w = size.x;
     *h = size.y;
 }

@@ -87,6 +87,13 @@ typedef union
 typedef struct
 {
     StringView id;
+    Type type;
+    SelValue value;
+} Const;
+
+typedef struct
+{
+    StringView id;
     TypeQualifier qualifier;
     Type type;
     SelValue (*impl)(void *args);
@@ -152,6 +159,8 @@ typedef struct
 
 /*--- Public variables ------------------------------------------------------------------*/
 
+extern const Const BUILTIN_CONSTANTS[];
+extern const u32 N_BUILTIN_CONSTANTS;
 extern const Func BUILTIN_FUNCTIONS[];
 extern const u32 N_BUILTIN_FUNCTIONS;
 

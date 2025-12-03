@@ -51,11 +51,11 @@ void alloc_init()
     assert(r2r_fs_allocator_internal_.memory != NULL);
     assert(p2p_fs_allocator_internal_.memory != NULL);
 
-    g_temp_allocator       = &temp_allocator_internal_;
-    g_frame_arena          = &frame_arena_internal_;
+    g_temp_allocator   = &temp_allocator_internal_;
+    g_frame_arena      = &frame_arena_internal_;
     g_r2r_arena        = &r2r_arena_internal_;
     g_r2r_fs_allocator = &r2r_fs_allocator_internal_;
-    g_p2p_fs_allocator      = &p2p_fs_allocator_internal_;
+    g_p2p_fs_allocator = &p2p_fs_allocator_internal_;
 }
 
 void alloc_final()

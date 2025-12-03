@@ -30,6 +30,7 @@ void shaq_toggle_time_pause(void);
 b8 shaq_reloaded_this_frame(void);
 b8 shaq_reloaded_last_frame(void);
 
+void shaq_toggle_widgets_overlay(void);
 b8 shaq_has_loaded_project(void);
 Shader *shaq_find_shader_by_name(StringView name);
 i32 shaq_find_shader_id_by_name(StringView name);

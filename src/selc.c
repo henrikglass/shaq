@@ -112,13 +112,6 @@ static_assert(N_EXPR_KINDS <= 256, "");
 
 typedef struct
 {
-    StringView id;
-    Type type;
-    SelValue value;
-} Const;
-
-typedef struct
-{
     Type type;
     TypeQualifier qualifier;
 } TypeAndQualifier;
@@ -260,7 +253,7 @@ const Const BUILTIN_CONSTANTS[] =
     {.id = SV_LIT("GL_SRGB8"),           .type = TYPE_INT,  .value.val_i32  = GL_SRGB8 },
     {.id = SV_LIT("GL_SRGB8_ALPHA8"),    .type = TYPE_INT,  .value.val_i32  = GL_SRGB8_ALPHA8 },
 };
-static const u32 N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
+const u32 N_BUILTIN_CONSTANTS = sizeof(BUILTIN_CONSTANTS) / sizeof(BUILTIN_CONSTANTS[0]);
 
 /*--- Public functions ------------------------------------------------------------------*/
 

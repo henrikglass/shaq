@@ -70,6 +70,7 @@ static struct
     b8 should_reload;
     b8 reloaded_this_frame;
     b8 reloaded_last_frame;
+    b8 show_widgets_overlay;
 
     i32 frame_count;
     b8 time_paused;
@@ -94,6 +95,7 @@ void shaq_begin(const char *project_ini_filepath, bool quiet)
         shaq.project_ini_loaded = true;
     }
 
+    shaq.show_widgets_overlay = true;
     shaq.time_ns = 0;
     shaq.frame_count = 0;
     shaq.timestamp_ns = util_get_time_nanos();
@@ -164,9 +166,12 @@ void shaq_new_frame()
             renderer_draw_fullscreen_shader(&shaq.shaders.arr[shaq.visible_shader_idx]);
         }
 
-        /* Draw error log overlay if there are errors */
+        /* Maybe draw overlays */
         if (log_has_error()) {
             gui_draw_error_log_overlay();
+        }
+        if (shaq.show_widgets_overlay) {
+            gui_draw_widgets_overlay();
         }
     } else {
 
@@ -178,24 +183,25 @@ void shaq_new_frame()
         }
         gui_end_shader_window();
 
-        /* Draw main window */
-        if (gui_begin_main_window()) {
+        /* Draw GUI */
+        if (gui_begin_project_window(shaq.project_ini_filepath)) {
             shaq.visible_shader_idx = gui_draw_shader_display_selector(shaq.visible_shader_idx, 
                                                                        shaq.shaders.arr, 
                                                                        shaq.shaders.count);
-            gui_draw_widgets();
-            for (u32 i = 0; i < shaq.render_order.count; i++) {
-                Shader *s  = &shaq.shaders.arr[i];
-                assert(s != NULL);
-                gui_draw_shader_info(s);
-            }
+            gui_draw_project_info(shaq.project_info.name,
+                                  shaq.project_info.desc);
         }
-        gui_end_main_window();
-
-        /* Draw log window */
+        gui_end_window();
+        gui_begin_debug_window();
+        for (u32 i = 0; i < shaq.render_order.count; i++) {
+            Shader *s  = &shaq.shaders.arr[i];
+            assert(s != NULL);
+            gui_draw_shader_info(s);
+        }
+        gui_end_window();
+        gui_draw_widgets_window();
         gui_draw_log_window();
-
-        /* Draw menu bar */
+        gui_draw_sel_docs_window();
         gui_draw_menu_bar();
     }
 
@@ -258,6 +264,11 @@ b8 shaq_reloaded_this_frame()
 b8 shaq_reloaded_last_frame()
 {
     return shaq.reloaded_last_frame;
+}
+
+void shaq_toggle_widgets_overlay()
+{
+    shaq.show_widgets_overlay = !shaq.show_widgets_overlay;
 }
 
 b8 shaq_has_loaded_project()
@@ -462,8 +473,10 @@ static i32 reload_session()
     hgl_profile_end();
     hgl_profile_report(HGL_PROFILE_TIME_ALL);
 #endif
+#if 0
     log_info("name = \"%s\"", shaq.project_info.name);
     log_info("desc = \"%s\"", shaq.project_info.desc);
+#endif
     log_info("Session reloaded successfully (%s)", io_get_timestamp_str());
     return 0;
 

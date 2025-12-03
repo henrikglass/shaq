@@ -10,6 +10,8 @@
 #include "log.h"
 #include "uniform.h"
 
+#include "hgl_da.h"
+
 /*--- Private macros --------------------------------------------------------------------*/
 
 /*--- Private type definitions ----------------------------------------------------------*/
@@ -23,6 +25,14 @@ typedef struct
     u8 secondary_args[64];
     b8 touched_this_frame;
 } Widget;
+
+typedef struct
+{
+    StringView synopsis;
+    StringView description;
+} DocEntry;
+
+typedef HglDynamicArray(DocEntry) Docs;
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
@@ -43,6 +53,7 @@ static struct
     IVec2 shader_window_position;
     IVec2 shader_window_size;
     f32 smoothed_deltatime;
+    Docs docs[N_TYPES];
 } gui;
 
 /*--- Public functions ------------------------------------------------------------------*/
@@ -50,10 +61,28 @@ static struct
 void gui_init(GLFWwindow *window, GLFWmonitor *monitor)
 {
     imgui_init(window, monitor);
-    gui.dark_mode = true;
+    gui.dark_mode = SHAQ_START_IN_DARKMODE;
     gui.shader_window_is_maximized = false;
     gui.shader_window_is_active = false;
     imgui_set_darkmode(gui.dark_mode);
+
+    /* generate docs table */
+    for (u32 i = 0; i < N_BUILTIN_CONSTANTS; i++) {
+        const Const *c = &BUILTIN_CONSTANTS[i];
+        DocEntry d = {
+            .synopsis = c->id,
+            .description = sv_from_cstr("built-in constant"),
+        };
+        hgl_da_push(&gui.docs[c->type], d);
+    }
+    for (u32 i = 0; i < N_BUILTIN_FUNCTIONS; i++) {
+        const Func *f = &BUILTIN_FUNCTIONS[i];
+        DocEntry d = {
+            .synopsis = sv_from_cstr(f->synopsis),
+            .description = sv_from_cstr(f->desc),
+        };
+        hgl_da_push(&gui.docs[f->type], d);
+    }
 }
 
 void gui_final()
@@ -108,17 +137,35 @@ IVec2 gui_shader_window_size()
     return gui.shader_window_size;
 }
 
-b8 gui_begin_main_window()
+b8 gui_begin_project_window(const char *proj_path)
 {
     gui.smoothed_deltatime = 0.90f*gui.smoothed_deltatime +
                              0.10f*shaq_deltatime();
-    b8 ret = imgui_begin("Main Window");
+    b8 ret = imgui_begin("Project##window");
     if (ret) {
         imgui_textf("Frame time: %3.1f ms", (f64)(1000.0f*gui.smoothed_deltatime)); imgui_newline();
         imgui_textf("FPS: %d", (i32)(1.0f/gui.smoothed_deltatime + 0.5f)); imgui_newline();
+        imgui_textf("Current project: `%s`", proj_path ? proj_path : "-"); imgui_newline();
         imgui_separator();
     }
     return ret;
+}
+
+void gui_draw_project_info(const char *proj_name, 
+                           const char *proj_desc)
+{
+#define RGBA(r,g,b,a) (((r) << 24) + ((g) << 16) + ((b) << 8) + (a))
+    imgui_separator();
+    if (proj_name != NULL) {
+        imgui_text(proj_name);
+    }
+    if (proj_desc != NULL) {
+        imgui_begin_child("Description##child", gui.dark_mode ? SHAQ_COLOR_DARKMODE_FRAME_BG 
+                                                              : SHAQ_COLOR_LIGHTMODE_FRAME_BG);
+        imgui_text_wrapped(proj_desc);
+        imgui_end_child();
+    }
+#undef RGBA
 }
 
 b8 gui_begin_shader_window()
@@ -152,6 +199,11 @@ b8 gui_begin_shader_window()
     return ret;
 }
 
+b8 gui_begin_debug_window()
+{
+    return imgui_begin("Debug");
+}
+
 i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_shaders)
 {
     Shader *current = &shaders[current_idx];
@@ -175,7 +227,9 @@ i32 gui_draw_shader_display_selector(i32 current_idx, Shader *shaders, u32 n_sha
         }
         imgui_end_combo();
     }
-    imgui_separator();
+    if (imgui_is_item_hovered()) {
+        imgui_set_tooltip_cstr("Select which shader to view the output of");
+    }
     return current_idx;
 }
 
@@ -244,14 +298,14 @@ void gui_draw_shader(const Shader *s)
                        gui.shader_window_size.y);
 }
 
-void gui_draw_widgets()
+void gui_draw_widgets_window()
 {
-    imgui_textf("Widgets:"); imgui_newline();
+    imgui_begin("Widgets##window");
     for (u32 i = 0; i < gui.widgets.count; i++) {
         Widget *w = &gui.widgets.arr[i];
         draw_and_update_widget(w);
     }
-    imgui_separator();
+    imgui_end();
 }
 
 void gui_end_shader_window()
@@ -260,7 +314,7 @@ void gui_end_shader_window()
     imgui_pop_style_shader_window();
 }
 
-void gui_end_main_window()
+void gui_end_window()
 {
     imgui_end();
 }
@@ -280,12 +334,14 @@ void gui_end_frame()
 
 void gui_draw_log_window()
 {
+#define RGBA(r,g,b,a) (((r) << 24) + ((g) << 16) + ((b) << 8) + (a))
     b8 ret = imgui_begin("Log##window");
     if (!ret) {
         imgui_end();
         return;
     }
-    imgui_begin_child("Log", gui.dark_mode ? 0x282828FF : 0xD1D1D1FF);
+    imgui_begin_child("Log", gui.dark_mode ? SHAQ_COLOR_DARKMODE_FRAME_BG 
+                                           : SHAQ_COLOR_LIGHTMODE_FRAME_BG);
     while (true) {
         u32 msg_len;
         LogEntryKind msg_kind;
@@ -294,14 +350,63 @@ void gui_draw_log_window()
             break;
         }
         if (msg_kind == LOG_INFO) {
-            imgui_text_color("Info: ", gui.dark_mode ? 0xE1E1E1FF : 0x1E1E1EFF);
+            imgui_text_color("Info: ", gui.dark_mode ? SHAQ_COLOR_DARKMODE_TEXT_INFO 
+                                                     : SHAQ_COLOR_LIGHTMODE_TEXT_INFO);
         } else if (msg_kind == LOG_ERROR) {
-            imgui_text_color("Error: ", 0xE04050FF);
+            imgui_text_color("Error: ", SHAQ_COLOR_TEXT_ERROR);
         }
         imgui_text_unformatted(msg, msg_len); 
     }
     imgui_end_child();
     imgui_end();
+#undef RGBA
+}
+
+void gui_draw_sel_docs_window()
+{
+#define RGBA(r,g,b,a) (((r) << 24) + ((g) << 16) + ((b) << 8) + (a))
+    static char filter[64];
+    bool filter_active = strlen(filter) > 0;
+
+    b8 ret = imgui_begin("Docs##window");
+    if (!ret) {
+        imgui_end();
+        return;
+    }
+
+    imgui_input_text("search", filter, 64);
+    imgui_begin_child("Docs##child", gui.dark_mode ? SHAQ_COLOR_DARKMODE_FRAME_BG 
+                                                   : SHAQ_COLOR_LIGHTMODE_FRAME_BG);
+    if (filter_active) {
+        for (u32 i = 0; i < N_TYPES; i++) {
+            for (u32 j = 0; j < gui.docs[i].length; j++) {
+                DocEntry *d = &gui.docs[i].arr[j];
+                if (filter_active && sv_contains(&d->synopsis, filter)) {
+                    imgui_text_unformatted(d->synopsis.start, d->synopsis.length);
+                    if (imgui_is_item_hovered()) {
+                        imgui_set_tooltip(d->description.start, d->description.length);
+                    }
+                }
+            }
+        }
+    } else {
+        for (u32 i = 0; i < N_TYPES; i++) {
+            if (imgui_tree_node(TYPE_TO_STR[i])) {
+                for (u32 j = 0; j < gui.docs[i].length; j++) {
+                    DocEntry *d = &gui.docs[i].arr[j];
+                    imgui_text_unformatted(d->synopsis.start, d->synopsis.length);
+                    if (imgui_is_item_hovered()) {
+                        imgui_set_tooltip(d->description.start, d->description.length);
+                    }
+                }
+                imgui_tree_pop();
+            }
+        }
+    }
+    imgui_end_child();
+
+    imgui_end();
+#undef RGBA
 }
 
 void gui_draw_error_log_overlay()
@@ -319,6 +424,23 @@ void gui_draw_error_log_overlay()
         }
         imgui_text_color("Error: ", 0xE04050FF); // TODO add to config
         imgui_text_unformatted(msg, msg_len); 
+    }
+    imgui_end();
+}
+
+void gui_draw_widgets_overlay()
+{
+    if (gui.widgets.count == 0) {
+        return;
+    }
+    b8 ret = imgui_begin_overlay_top_left("Widgets##overlay");
+    if (!ret) {
+        imgui_end();
+        return;
+    }
+    for (u32 i = 0; i < gui.widgets.count; i++) {
+        Widget *w = &gui.widgets.arr[i];
+        draw_and_update_widget(w);
     }
     imgui_end();
 }
@@ -348,13 +470,19 @@ void gui_draw_menu_bar()
             if (imgui_menu_item("Reset time", SHAQ_KEY_RESET_TIME)) {
                 shaq_reset_time(); 
             }
-            if (imgui_menu_item("Pause/Unpause time", SHAQ_KEY_PAUSE_TOGGLE)) {
+            if (imgui_menu_item("Pause/Unpause time", SHAQ_KEY_TOGGLE_PAUSE)) {
                 shaq_toggle_time_pause(); 
             }
-            if (imgui_menu_item("Toggle darkmode", SHAQ_KEY_DARKMODE_TOGGLE)) {
+            if (imgui_menu_item("Toggle darkmode", SHAQ_KEY_TOGGLE_DARKMODE)) {
                 gui_toggle_darkmode(); 
             }
-            if (imgui_menu_item("Toggle maximized shader view", SHAQ_KEY_MAXIMIZE_SHADER_WINDOW)) {
+            if (imgui_menu_item("Toggle widgets overlay", SHAQ_KEY_TOGGLE_WIDGETS_OVERLAY)) {
+                shaq_toggle_widgets_overlay();
+            }
+            if (imgui_is_item_hovered()) {
+                imgui_set_tooltip_cstr("The widgets overlay is only shown when the shader window is maximized");
+            }
+            if (imgui_menu_item("Toggle maximized shader window", SHAQ_KEY_MAXIMIZE_SHADER_WINDOW)) {
                 gui_toggle_maximized_shader_window();
             }
             if (imgui_menu_item("Toggle fullscreen", SHAQ_KEY_FULLSCREEN)) {

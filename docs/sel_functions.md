@@ -109,7 +109,7 @@ float smoothstep(float t)                                                       
 float radians(float degrees)                                                     Converts degrees into radians
 float perlin3D(float x, float y, float z)                                        Perlin noise at (x,y,z)
 float aspect_ratio()                                                             Returns the current window aspect ratio (width/height)
-float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
+float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
 float distance(vec2 a, vec2 b)                                                   Returns the absolute distance between `a` and `b`
 float length(vec2 v)                                                             Returns the absolute length of `v`
 float dot(vec2 a, vec2 b)                                                        Returns the dot product of `a` and `b`
@@ -133,7 +133,7 @@ vec2 vec2(float x, float y)                                                     
 vec2 vec2(ivec2 v)                                                               Creates a 2D vector from components of the 2D int vector `v`
 vec2 vec2_from_polar(float r, float phi)                                         Creates a 2D vector from the polar coordinates `r` and `phi`
 vec2 normalize(vec2 v)                                                           Returns the normalized vector of `v`
-vec2 lerp(vec2 a, vec2 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
+vec2 lerp(vec2 a, vec2 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
 vec2 slerp(vec2 a, vec2 b, float t)                                              Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.
 vec2 mouse_position()                                                            Returns the current mouse position, in pixel coordinates.
 vec2 mouse_position_last()                                                       Returns the mouse position from the last frame, in pixel coordinates.
@@ -149,7 +149,7 @@ vec3 vec3(float x, float y, float z)                                            
 vec3 vec3(ivec3 v)                                                               Creates a 3D vector from components of the 3D int vector `v`
 vec3 vec3_from_spherical(float r, float phi, float theta)                        Creates a 3D vector from the spherical coordinates `r`, `phi`, and `theta`
 vec3 normalize(vec3 v)                                                           Returns the normalized vector of `v`
-vec3 lerp(vec3 a, vec3 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
+vec3 lerp(vec3 a, vec3 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
 vec3 slerp(vec3 a, vec3 b, float t)                                              Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.
 vec3 cross(vec3 a, vec3 b)                                                       Returns the cross product of `a` and `b`
 vec3 input_vec3(str label, vec3 default)                                         Creates an input widget for 3D vectors with the label `label` and default value `default`
@@ -162,7 +162,7 @@ vec3 eval_vec3(str expr)                                                        
 vec4 vec4(float x, float y, float z, float w)                                    Creates a 4D vector with components `x`, `y`, `z`, and `w`
 vec4 vec4(ivec4 v)                                                               Creates a 4D vector from components of the 4D int vector `v`
 vec4 normalize(vec4 v)                                                           Returns the normalized vector of `v`
-vec4 lerp(vec4 a, vec4 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t
+vec4 lerp(vec4 a, vec4 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
 vec4 rgba(int hexcode)                                                           Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode
 vec4 background_color()                                                          Returns the current background color, with components normalized to 0.0 - 1.0
 vec4 input_vec4(str label, vec4 default)                                         Creates an input widget for 4D vectors with the label `label` and default value `default`

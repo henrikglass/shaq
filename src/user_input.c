@@ -61,6 +61,9 @@ void user_input_poll()
     if (gui_shader_window_is_active()) {
         user_input.lmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         user_input.rmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    } else if (gui_shader_window_is_maximized() && !imgui_any_window_is_hovered() && !imgui_is_any_item_active()) {
+        user_input.lmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        user_input.rmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     }
 
     /* 
@@ -181,7 +184,7 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
 #define KEY(m, k, _) (action == GLFW_PRESS && mods == (m) && key == (k))
     if (SHAQ_KEY_FULLSCREEN) {
         renderer_toggle_fullscreen();
-    } else if (SHAQ_KEY_DARKMODE_TOGGLE) {
+    } else if (SHAQ_KEY_TOGGLE_DARKMODE) {
         gui_toggle_darkmode();
     } else if (SHAQ_KEY_MAXIMIZE_SHADER_WINDOW) {
         gui_toggle_maximized_shader_window();
@@ -189,12 +192,14 @@ void user_input_glfw_key_callback(GLFWwindow *window, i32 key, i32 scancode, i32
         user_input.should_reload = true;
     } else if (SHAQ_KEY_RESET_TIME) {
         shaq_reset_time();
-    } else if (SHAQ_KEY_PAUSE_TOGGLE) {
+    } else if (SHAQ_KEY_TOGGLE_PAUSE) {
         shaq_toggle_time_pause();
     } else if (SHAQ_KEY_OPEN_FILE_DIALOG) {
         imgui_open_file_dialog();
     } else if (SHAQ_KEY_EXIT) {
         glfwSetWindowShouldClose(renderer_get_glfw_window(), true);
+    } else if (SHAQ_KEY_TOGGLE_WIDGETS_OVERLAY) {
+        shaq_toggle_widgets_overlay();
     } else if (SHAQ_KEY_DPI_LARGER) {
         gui_change_dpi_scale_by_amount(SHAQ_DPI_CHANGE_INCREMENT);
     } else if (SHAQ_KEY_DPI_SMALLER) {

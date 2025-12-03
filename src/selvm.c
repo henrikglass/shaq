@@ -342,7 +342,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("radians"),      .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_radians_,      .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float radians(float degrees)", .desc = "Converts degrees into radians", },
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
-    { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_ivec2_,     .argtypes = {TYPE_IVEC2, TYPE_NIL},                       .synopsis = "vec2 vec2(ivec2 v)", .desc = "Creates a 2D vector from components of the 2D int vector `v`", },
@@ -351,7 +351,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_length_,         .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "float length(vec2 v)", .desc = "Returns the absolute length of `v`", },
     { .id = SV_LIT("normalize"),           .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_normalize_,      .argtypes = {TYPE_VEC2, TYPE_NIL},                        .synopsis = "vec2 normalize(vec2 v)", .desc = "Returns the normalized vector of `v`", },
     { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_dot_,            .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float dot(vec2 a, vec2 b)", .desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("lerp"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("lerp"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
     { .id = SV_LIT("slerp"),               .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,          .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 slerp(vec2 a, vec2 b, float t)", .desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.", },
     { .id = SV_LIT("mouse_position"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,      .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = "Returns the current mouse position, in pixel coordinates.", },
     { .id = SV_LIT("mouse_position_last"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_last_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position_last()", .desc = "Returns the mouse position from the last frame, in pixel coordinates.", },
@@ -364,7 +364,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "float length(vec3 v)",                                      . desc = "Returns the absolute length of `v`", },
     { .id = SV_LIT("normalize"),           .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 normalize(vec3 v)",                                    . desc = "Returns the normalized vector of `v`", },
     { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_dot_,            .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float dot(vec3 a, vec3 b)",                                 . desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("lerp"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 lerp(vec3 a, vec3 b, float t)",                        . desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("lerp"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 lerp(vec3 a, vec3 b, float t)",                        . desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
     { .id = SV_LIT("slerp"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 slerp(vec3 a, vec3 b, float t)",                       . desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.", },
     { .id = SV_LIT("cross"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 cross(vec3 a, vec3 b)",                                . desc = "Returns the cross product of `a` and `b`", },
 
@@ -374,7 +374,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("length"),           .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_length_,      .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "float length(vec4 v)",                          .desc = "Returns the absolute length of `v`", },
     { .id = SV_LIT("normalize"),        .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,   .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 normalize(vec4 v)",                        .desc = "Returns the normalized vector of `v`", },
     { .id = SV_LIT("dot"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,         .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float dot(vec4 a, vec4 b)",                     .desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("lerp"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 lerp(vec4 a, vec4 b, float t)",            .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t", },
+    { .id = SV_LIT("lerp"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 lerp(vec4 a, vec4 b, float t)",            .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
     { .id = SV_LIT("rgba"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,             .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
     { .id = SV_LIT("background_color"), .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_background_color_, .argtypes = {TYPE_NIL},                                                 .synopsis = "vec4 background_color()",                       .desc = "Returns the current background color, with components normalized to 0.0 - 1.0", },
 
@@ -1926,28 +1926,22 @@ static SelValue fn_copy_helper_(void *args, Type t)
     i32 sid = shaq_find_shader_id_by_name(shader_name);
     Shader *s = shaq_get_shader_by_id(sid);
     if (s == NULL) {
-        if (shaq_reloaded_this_frame()) {
-            log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
-                      "No such shader:\"" SV_FMT "\" ", SV_ARG(shader_name), 
-                      SV_ARG(var_name), SV_ARG(shader_name));
-        }
+        log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
+                  "No such shader:\"" SV_FMT "\" ", SV_ARG(shader_name), 
+                  SV_ARG(var_name), SV_ARG(shader_name));
         return error_value;
     }
     Uniform *u = shader_find_uniform_by_name(s, var_name);
     if (u == NULL) {
-        if (shaq_reloaded_this_frame()) {
-            log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
-                      "No such uniform variable in shader :\"" SV_FMT "\" ", SV_ARG(shader_name), 
-                      SV_ARG(var_name), SV_ARG(var_name));
-        }
+        log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
+                  "No such uniform variable in shader :\"" SV_FMT "\" ", SV_ARG(shader_name), 
+                  SV_ARG(var_name), SV_ARG(var_name));
         return error_value;
     }
     if (u->type != t) {
-        if (shaq_reloaded_this_frame()) {
-            log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
-                      "Variable \"" SV_FMT "\" has incorrect type ", SV_ARG(shader_name), 
-                      SV_ARG(var_name), SV_ARG(var_name));
-        }
+        log_error("SEL: In call to copy_*(\"" SV_FMT "\", \"" SV_FMT "\") - "
+                  "Variable \"" SV_FMT "\" has incorrect type ", SV_ARG(shader_name), 
+                  SV_ARG(var_name), SV_ARG(var_name));
         return error_value;
     }
     if (!u->exe->has_been_computed_once) {
