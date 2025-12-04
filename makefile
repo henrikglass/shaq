@@ -20,6 +20,9 @@ ifeq ($(BUILD_TYPE), debug)
 else ifeq ($(BUILD_TYPE), release)
 	C_FLAGS   += -O2 -g -march=native -DNDEBUG
 	CPP_FLAGS += -O2 -g -march=native -DNDEBUG
+else ifeq ($(BUILD_TYPE), test)
+	C_FLAGS   += -O0 -g -DDEBUG -DTESTING
+	CPP_FLAGS += -O0 -g -DDEBUG -DTESTING
 endif
 
 ifneq ($(DISABLE_FREETYPE), yes)
@@ -33,7 +36,7 @@ CPP_COMPILE = @parallel -t --tty -j$(shell nproc) g++ -c $(CPP_FLAGS) {1} -o {2}
 C_COMPILE = @parallel -t --tty -j$(shell nproc) gcc -c $(C_FLAGS) {1} -o {2}{1/.}.o ::: $(1) ::: $(2)
 C_LINK = gcc $(C_FLAGS) $(1) -o $(2) $(L_FLAGS)
 
-.PHONY: shaq_objects imgui_objects font debug release build docs test
+.PHONY: shaq_objects imgui_objects font debug release build_shaq docs seldbg build_seldebug test build_tests
 
 all: debug
 
@@ -41,27 +44,36 @@ all: debug
 # You probable want to invoke make with one of these targets
 #
 debug: prep
-	@$(MAKE) --no-print-directory BUILD_TYPE=debug build
+	@$(MAKE) --no-print-directory BUILD_TYPE=debug build_shaq
 
 release: prep
-	@$(MAKE) --no-print-directory BUILD_TYPE=release build
+	@$(MAKE) --no-print-directory BUILD_TYPE=release build_shaq
+
+seldbg: prep
+	@$(MAKE) --no-print-directory BUILD_TYPE=debug build_seldebug
 
 test: prep
-	@$(MAKE) --no-print-directory BUILD_TYPE=debug seldbg
+	@$(MAKE) --no-print-directory BUILD_TYPE=test build_tests
+	./runtests
 
 
 #
 # These are just helper targets which are invoked indirectly by
 # the targets above
 #
-build: shaq_objects imgui_objects font
+build_shaq: shaq_objects imgui_objects font
 	$(call C_LINK, build/*.o build/imgui/*.o, $(TARGET))
 	@$(MAKE) docs
 
-seldbg: shaq_objects imgui_objects font
+build_seldebug: shaq_objects imgui_objects font
+	rm build/main.o
+	$(call C_COMPILE, extras/seldbg/*.c, build/)
+	$(call C_LINK, build/*.o build/imgui/*.o, seldbg)
+
+build_tests: shaq_objects imgui_objects font
 	rm build/main.o
 	$(call C_COMPILE, test/*.c, build/)
-	$(call C_LINK, build/*.o build/imgui/*.o, seldbg)
+	$(call C_LINK, build/*.o build/imgui/*.o, runtests)
 
 #
 # Basically ignore these
@@ -98,4 +110,5 @@ cleaner:
 	-@rm -r build/ 2> /dev/null ||:
 	-@rm $(TARGET) 2> /dev/null ||:
 	-@rm seldbg
+	-@rm runtests
 

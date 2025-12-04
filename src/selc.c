@@ -54,108 +54,13 @@
         };                                                 \
     }
 
+#ifdef TESTING
+#  define INTERNAL
+#else
+#  define INTERNAL static
+#endif
 
 /*--- Private type definitions ----------------------------------------------------------*/
-
-typedef enum
-{
-    TOK_LPAREN,
-    TOK_RPAREN,
-    TOK_PLUS,
-    TOK_MINUS,
-    TOK_STAR,
-    TOK_FSLASH,
-    TOK_PERCENT,
-    TOK_COMMA,
-    TOK_DOT,
-    TOK_BOOL_LITERAL,
-    TOK_INT_LITERAL,
-    TOK_UINT_LITERAL,
-    TOK_FLOAT_LITERAL,
-    TOK_STR_LITERAL,
-    TOK_IDENTIFIER,
-    EOF_TOKEN_,
-    LEXER_ERROR_,
-    N_TOKENS_,
-} TokenKind;
-
-typedef struct
-{
-    TokenKind kind;
-    StringView text; 
-    u32 length;
-} Token;
-
-typedef struct
-{
-    StringView buf; 
-} Lexer;
-
-typedef enum
-{
-    EXPR_ADD,
-    EXPR_SUB,
-    EXPR_MUL,
-    EXPR_DIV,
-    EXPR_REM,
-    EXPR_NEG,
-    EXPR_SWIZZLE,
-    EXPR_PAREN,
-    EXPR_FUNC,
-    EXPR_ARGLIST,
-    EXPR_LIT,
-    EXPR_ID,
-    N_EXPR_KINDS,
-} ExprKind;
-
-static_assert(N_EXPR_KINDS <= 256, "");
-
-typedef struct
-{
-    Type type;
-    TypeQualifier qualifier;
-} TypeAndQualifier;
-
-/**
- * An expression may be either binary, and have two children `lhs` and `rhs`, unary, 
- * and have a single child `child`, or atomic, and have no children. 
- *
- * Whether an expression is unary, binary, or atomic is determined by its `kind`. E.g. 
- * `ADD`, `MUL`, and `REM` are binary operations, and thus binary expressions; `FUNC` 
- * and `PAREN` are unary expressions; `LIT` is atomic.
- */
-typedef struct ExprTree
-{
-    ExprKind kind;
-    Token token;
-    Type type; 
-    TypeQualifier qualifier;
-    union {
-        struct ExprTree *child;
-        struct ExprTree *lhs;
-    };
-    struct ExprTree *rhs;
-    Type convert_to; // If this value is != TYPE_NIL, The result of the computation
-                     // of this expression tree must be converted from type `type`
-                     // to type `convert_to`
-    u32 func_id;     // If this tree node is a function call then this value will be
-                     // assigned the ID of the built-in function in the type- and
-                     // namechecker pass. If no matching built-in function is found
-                     // the type- and namechecker pass will not succeed, and the root
-                     // of the tree will have sentinel type TYPE_OR_NAME_ERR_.
-    //b8 asymmetric;   // true iff all of the following are true:
-    //                 //     - this tree node is a binary expression 
-    //                 //     - lhs and rhs are of different types
-    //                 //     - neither lhs or rhs must be implicitly type converted
-    //                 //
-    //                 // This is used to mark binary operations such as matrix-vector-, 
-    //                 // matrix-scalar-, and vector-scalar multiplications. Conversely,
-    //                 // regular bool-float-, float-int, and uint-int, multiplications
-    //                 // are not marked as asymmetric, meaning one of the operands will
-    //                 // be implicitly type converted into the type of the other operand,
-    //                 // according to the type promotion rules, before being operated upon.
-} ExprTree;
-
 
 /*--- Private function prototypes -------------------------------------------------------*/
 
@@ -169,7 +74,7 @@ static ExprTree *new_unary_expr(ExprKind kind, Token token, ExprTree *child);
 static ExprTree *new_atom_expr(ExprKind kind, Token token);
 
 /* parser */
-static ExprTree *parse_expr(const char *str);
+INTERNAL ExprTree *parse_expr(const char *str);
 static i32 parse_add_expr(ExprTree **e, Lexer *l);
 static i32 parse_mul_expr(ExprTree **e, Lexer *l);
 static i32 parse_dot_expr(ExprTree **e, Lexer *l);
@@ -177,7 +82,7 @@ static i32 parse_unary_or_atom_expr(ExprTree **e, Lexer *l);
 static i32 parse_arglist_expr(ExprTree **e, Lexer *l);
 
 /* Type-/namechecker */
-static TypeAndQualifier type_and_namecheck(ExprTree *e);
+INTERNAL TypeAndQualifier type_and_namecheck(ExprTree *e);
 static TypeAndQualifier type_and_namecheck_function(ExprTree *e, const Func *f, const Type *argtypes, b8 const_args);
 static TypeAndQualifier type_and_namecheck_add_expr(ExprTree *e);
 static TypeAndQualifier type_and_namecheck_mul_expr(ExprTree *e);
@@ -497,7 +402,7 @@ static Token lexer_peek(Lexer *l)
 
 /*--- PARSER ----------------------------------------------------------------------------*/
 
-static ExprTree *parse_expr(const char *str)
+INTERNAL ExprTree *parse_expr(const char *str)
 {
     i32 err;
     Lexer l = lexer_begin(str);
@@ -699,7 +604,7 @@ static ExprTree *new_atom_expr(ExprKind kind, Token token)
 
 /*--- TYPE-/NAMECHECKER -----------------------------------------------------------------*/
 
-static TypeAndQualifier type_and_namecheck(ExprTree *e)
+INTERNAL TypeAndQualifier type_and_namecheck(ExprTree *e)
 {
     TypeAndQualifier t0 = {TYPE_NIL, QUALIFIER_NONE};
     TypeAndQualifier t1;

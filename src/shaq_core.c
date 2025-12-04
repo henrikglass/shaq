@@ -85,6 +85,9 @@ static struct
 void shaq_begin(const char *project_ini_filepath, bool quiet)
 {
     atexit(shaq_atexit_);
+ 
+    // TODO: Add this to "sel_init()" to make it obvious why and
+    //       where we need a non-blocking stdin.
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
 
     alloc_init();
