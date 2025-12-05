@@ -208,12 +208,28 @@
 #define GLOBAL_TEARDOWN void hgl_test_global_teardown(void)
 
 /**
- * TODO description
+ * The `ON_ASSERT_FAIL` macro is used to register a user-defined function that is 
+ * to be run if an assertion fails.
+ *
+ * Example:
+ *
+ *     ON_ASSERT_FAIL {
+ *         log_print();
+ *     }
+ *
  */
-#define ON_ASSERT_FAILURE void hgl_on_assert_failure(void)
+#define ON_ASSERT_FAIL void hgl_on_assert_fail(void)
 
 /**
- * TODO description
+ * The `ON_ASSERT_PASS` macro is used to register a user-defined function that is 
+ * to be run if an assertion passes.
+ *
+ * Example:
+ *
+ *     ON_ASSERT_PASS {
+ *         log_clear();
+ *     }
+ *
  */
 #define ON_ASSERT_PASS void hgl_on_assert_pass(void)
 
@@ -273,8 +289,8 @@
                         ANSI_NC ANSI_NS ": `%s` <%s:%d>\n", #cond_,      \
                         __FILE__, __LINE__);                             \
             }                                                            \
-            if (hgl_on_assert_failure != NULL) {                         \
-                hgl_on_assert_failure();                                 \
+            if (hgl_on_assert_fail != NULL) {                            \
+                hgl_on_assert_fail();                                    \
             }                                                            \
             exit(EXIT_CODE_ASSERT_FAIL);                                 \
         } else if (hgl_on_assert_pass != NULL) {                         \
@@ -294,8 +310,8 @@
                         ANSI_NC ANSI_NS ": `%s` == `%s` <%s:%d>\n",      \
                         #a_, #b_, __FILE__, __LINE__);                   \
             }                                                            \
-            if (hgl_on_assert_failure != NULL) {                         \
-                hgl_on_assert_failure();                                 \
+            if (hgl_on_assert_fail != NULL) {                            \
+                hgl_on_assert_fail();                                    \
             }                                                            \
             exit(EXIT_CODE_ASSERT_FAIL);                                 \
         } else if (hgl_on_assert_pass != NULL) {                         \
@@ -315,8 +331,8 @@
                         ANSI_NC ANSI_NS ": `%s` != `%s` <%s:%d>\n",      \
                         #a_, #b_, __FILE__, __LINE__);                   \
             }                                                            \
-            if (hgl_on_assert_failure != NULL) {                         \
-                hgl_on_assert_failure();                                 \
+            if (hgl_on_assert_fail != NULL) {                            \
+                hgl_on_assert_fail();                                    \
             }                                                            \
             exit(EXIT_CODE_ASSERT_FAIL);                                 \
         } else if (hgl_on_assert_pass != NULL) {                         \
@@ -405,12 +421,12 @@ void hgl_test_global_setup(void) __attribute__((weak));
 void hgl_test_global_teardown(void) __attribute__((weak));
 
 /**
- * TODO description
+ * See description for macro ON_ASSERT_FAIL.
  */
-void hgl_on_assert_failure(void) __attribute__((weak));
+void hgl_on_assert_fail(void) __attribute__((weak));
 
 /**
- * TODO description
+ * See description for macro ON_ASSERT_PASS.
  */
 void hgl_on_assert_pass(void) __attribute__((weak));
 

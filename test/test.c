@@ -21,7 +21,7 @@ ON_ASSERT_PASS {
     log_clear();
 }
 
-ON_ASSERT_FAILURE {
+ON_ASSERT_FAIL {
     log_print();
 }
 
