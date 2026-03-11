@@ -161,9 +161,10 @@ spell compositor, ok?
 
 # Planned features and fixes
 
-* SEL: GLSL-style step function
+* SEL: GLSL-style step function (exists for floats)
+* SEL: abs function (exists for floats)
 * SEL: tests
-* SEL: socket(udp/unix) -- read from a socket - with similar semantics to `stdin()`. 
+* SEL: Unix sockets?
 * SEL: drag\_vecX ?
 * SEL: load\_video()?
 * SEL: boolean arithmetic (&&, ||, !, etc.)
