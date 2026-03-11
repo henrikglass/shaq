@@ -9,7 +9,6 @@
 #include "uniform.h"
 #include "texture.h"
 #include "user_input.h"
-#include "util.h"
 #include "io.h"
 #include "renderer.h"
 #include "gui.h"
@@ -45,6 +44,7 @@ static i32 reload_session(void);
 static i32 satisfy_dependencies_for_shader(u32 index, u32 depth);
 static void determine_render_order(void);
 static i32 load_state_from_project_ini(HglIni *project_ini); // TODO better name
+static inline u64 get_time_nanos(void);
 static void shaq_atexit_(void);
 
 /*--- Public variables ------------------------------------------------------------------*/
@@ -102,7 +102,7 @@ void shaq_begin(const char *project_ini_filepath, bool quiet)
     shaq.show_widgets_overlay = true;
     shaq.time_ns = 0;
     shaq.frame_count = 0;
-    shaq.timestamp_ns = util_get_time_nanos();
+    shaq.timestamp_ns = get_time_nanos();
     shaq.visible_shader_idx = (u32) -1;
     shaq.quiet = quiet;
 
@@ -128,7 +128,7 @@ void shaq_new_frame()
     log_set_mode(LOG_FRAME);
 
     /* compute time */
-    u64 now_ns = util_get_time_nanos();
+    u64 now_ns = get_time_nanos();
     u64 dt_ns = now_ns - shaq.timestamp_ns;
     shaq.deltatime_s = (f32)((f64)dt_ns / 1000000000.0);
     shaq.timestamp_ns = now_ns;
@@ -155,7 +155,6 @@ void shaq_new_frame()
         shader_update_uniforms(s);
         renderer_do_shader_pass(s);
     }
-
 
     /* Do final pass (render to framebuffer) */
     renderer_begin_final_pass();
@@ -241,6 +240,11 @@ f32 shaq_time()
 f32 shaq_deltatime()
 {
     return shaq.deltatime_s;
+}
+
+u64 shaq_timestamp_ns(void)
+{
+    return shaq.timestamp_ns;
 }
 
 i32 shaq_frame_count()
@@ -405,6 +409,7 @@ static i32 reload_session()
         shaq.visible_shader_idx = -1;
         shaq.project_info.name = NULL;
         shaq.project_info.desc = NULL;
+        socket_close_all();
         fflush(stdout);
     }
 
@@ -417,11 +422,8 @@ static i32 reload_session()
     renderer_reload();
     gui_reload();
 
-    /* Close all open sockets */
-    // TODO (Henrik A. Glass 2026-03-11): Don't do this. Instead, automatically reuse
-    // sockets that haven't been used for a while; say, 1 second. Only fully close all
-    // sockets on a major reload.
-    socket_close_all();
+    /* Close unused open sockets */
+    socket_close_unused();
 
     /* collect garbage */
     hgl_free_all(g_r2r_arena);
@@ -577,6 +579,14 @@ static i32 load_state_from_project_ini(HglIni *project_ini)
     }
     shaq.shaders.count = shader_count;
     return (shaq.shaders.count != 0) ? 0 : -1;
+}
+
+static inline u64 get_time_nanos(void)
+{
+    struct timespec t_temp;
+    clock_gettime(CLOCK_MONOTONIC, &t_temp);
+    u64 ns = t_temp.tv_sec * 1000000000ll + t_temp.tv_nsec;
+    return ns;
 }
 
 static void shaq_atexit_()

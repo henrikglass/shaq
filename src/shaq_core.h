@@ -22,13 +22,15 @@ b8 shaq_should_close(void);
 void shaq_new_frame(void);
 void shaq_end(void);
 
-void shaq_reset_time(void);
-f32 shaq_time(void);
-f32 shaq_deltatime(void);
-i32 shaq_frame_count(void);
-void shaq_toggle_time_pause(void);
-b8 shaq_reloaded_this_frame(void);
-b8 shaq_reloaded_last_frame(void);
+void shaq_reset_time(void);        // Reset all internal timekeeping (except wall time)
+f32 shaq_time(void);               // Returns the time in seconds since the last reset
+f32 shaq_deltatime(void);          // Returns the last frame deltatime in seconds
+u64 shaq_timestamp_ns(void);       // Returns the current wall time in nanoseconds
+i32 shaq_frame_count(void);        // Returns the current frame count since the last reset
+void shaq_toggle_time_pause(void); // pauses/unpauses timekeeping functions, except for wall time
+
+b8 shaq_reloaded_this_frame(void); // Returns true iff a reload occured this frame
+b8 shaq_reloaded_last_frame(void); // Returns true iff a reload occured in the previous frame
 
 void shaq_toggle_widgets_overlay(void);
 b8 shaq_has_loaded_project(void);

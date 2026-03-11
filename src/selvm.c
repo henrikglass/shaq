@@ -169,6 +169,8 @@ static SelValue fn_radians_(void *args);
 static SelValue fn_perlin3D_(void *args);
 static SelValue fn_aspect_ratio_(void *args);
 static SelValue fn_lerp_(void *args);
+static SelValue fn_step_(void *args); // @Henrik TODO 2026-03-11 22:43:39: Add function for other types
+static SelValue fn_abs_(void *args); // @Henrik TODO 2026-03-11 22:43:09: Add function for other types
 
 static SelValue fn_vec2_(void *args);
 static SelValue fn_vec2_from_ivec2_(void *args);
@@ -359,6 +361,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
     { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
+    { .id = SV_LIT("step"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_step_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float step(float edge, float x)", .desc = "Returns 1.0 if `x` > edge, otherwise 0.0", },
+    { .id = SV_LIT("abs"),          .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_abs_,          .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float abs(float x)", .desc = "Returns the absolute value of `x`", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_from_ivec2_,     .argtypes = {TYPE_IVEC2, TYPE_NIL},                       .synopsis = "vec2 vec2(ivec2 v)", .desc = "Creates a 2D vector from components of the 2D int vector `v`", },
@@ -1481,6 +1485,18 @@ static SelValue fn_lerp_(void *args)
     return (SelValue) {.val_f32 = hglm_lerp(args_f32[0], args_f32[1], args_f32[2])}; 
 }
 
+static SelValue fn_step_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = (args_f32[1] > args_f32[0]) ? 1.0 : 0.0}; 
+}
+
+static SelValue fn_abs_(void *args)
+{
+    f32 *args_f32 = (f32 *) args;
+    return (SelValue) {.val_f32 = fabsf(args_f32[0])};
+}
+
 
 /* ----------------------- VEC2 functions -------------------- */
 
@@ -2131,7 +2147,7 @@ static SelValue fn_read_udp_socket_(void *args)
 
     /* Read until -EAGAIN/EWOULDBLOCK */
     while(n > 0) {
-        n = recvfrom(s->socket_fd, scratch, 4096, 0, NULL, 0);
+        n = recvfrom(s->sockfd, scratch, 4096, 0, NULL, 0);
         k = n > 0 ? n : k;
     }
 

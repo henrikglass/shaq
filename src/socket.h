@@ -22,11 +22,12 @@ typedef enum
 
 typedef struct
 {
+    u64 last_lookup_time_ns;
+    size_t last_line_length;
     StringView service;
-    i32 socket_fd;
+    i32 sockfd;
     SocketKind kind;
     char last_line[SHAQ_SOCKET_LAST_LINE_BUFFER_SIZE];
-    size_t last_line_length;
 } Socket;
 
 /*--- Public variables ------------------------------------------------------------------*/
@@ -35,6 +36,7 @@ typedef struct
 
 Socket *socket_create(StringView service, SocketKind kind);
 Socket *socket_lookup(StringView service);
+void socket_close_unused(void);
 void socket_close_all(void);
 
 #endif /* SOCKET_H */

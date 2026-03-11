@@ -113,6 +113,8 @@ float radians(float degrees)                                                    
 float perlin3D(float x, float y, float z)                                        Perlin noise at (x,y,z)
 float aspect_ratio()                                                             Returns the current window aspect ratio (width/height)
 float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
+float step(float edge, float x)                                                  Returns 1.0 if `x` > edge, otherwise 0.0
+float abs(float x)                                                               Returns the absolute value of `x`
 float distance(vec2 a, vec2 b)                                                   Returns the absolute distance between `a` and `b`
 float length(vec2 v)                                                             Returns the absolute length of `v`
 float dot(vec2 a, vec2 b)                                                        Returns the dot product of `a` and `b`

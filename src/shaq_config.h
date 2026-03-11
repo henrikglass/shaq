@@ -2,19 +2,20 @@
 #define SHAQ_CONFIG_H
 
 /* general */
-#define SHAQ_MAX_N_SHADERS                    64
-#define SHAQ_MAX_N_UNIFORMS                   64
-#define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS          64
-#define SHAQ_MAX_N_LOADED_TEXTURES            32
-#define SHAQ_MAX_N_SOCKETS                     8
-#define SHAQ_SOCKET_LAST_LINE_BUFFER_SIZE   1024
-#define SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE  1024
-#define SHAQ_ENABLE_VSYNC                      1
-#define SHAQ_FILEPATH_MAX_LEN                512
-#define SHAQ_RELOAD_DURING_RESIZE              0
-#define SHAQ_HUGEPAGES                         0
-#define SHAQ_PROFILE                           0
-#define SHAQ_START_IN_DARKMODE              true
+#define SHAQ_MAX_N_SHADERS                       64
+#define SHAQ_MAX_N_UNIFORMS                      64
+#define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS             64
+#define SHAQ_MAX_N_LOADED_TEXTURES               32
+#define SHAQ_MAX_N_SOCKETS                        8
+#define SHAQ_SOCKET_LAST_LINE_BUFFER_SIZE      1024
+#define SHAQ_SOCKET_AUTOCLOSE_THRESHOLD_MS    30000
+#define SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE     1024
+#define SHAQ_ENABLE_VSYNC                         1
+#define SHAQ_FILEPATH_MAX_LEN                   512
+#define SHAQ_RELOAD_DURING_RESIZE                 0
+#define SHAQ_HUGEPAGES                            0
+#define SHAQ_PROFILE                              0
+#define SHAQ_START_IN_DARKMODE                 true
 
 /* font/style */
 #define SHAQ_DPI_CHANGE_INCREMENT   0.2f
