@@ -15,6 +15,7 @@
 #include "gui.h"
 #include "log.h"
 #include "image.h"
+#include "socket.h"
 
 #define HGL_INI_ALLOC r2r_fs_alloc
 #define HGL_INI_REALLOC r2r_fs_realloc
@@ -383,7 +384,6 @@ static i32 reload_session()
     log_clear();
 
     b8 major_reload = shaq.project_ini_changed;
-    //b8 major_reload = true;
     shaq.project_ini_changed = false;
     shaq.should_reload = false;
 
@@ -416,6 +416,12 @@ static i32 reload_session()
     /* "Reload" renderer & GUI */
     renderer_reload();
     gui_reload();
+
+    /* Close all open sockets */
+    // TODO (Henrik A. Glass 2026-03-11): Don't do this. Instead, automatically reuse
+    // sockets that haven't been used for a while; say, 1 second. Only fully close all
+    // sockets on a major reload.
+    socket_close_all();
 
     /* collect garbage */
     hgl_free_all(g_r2r_arena);
@@ -465,7 +471,7 @@ static i32 reload_session()
         log_print();
     }
 
-#if 1
+#if 0
     printf("frame arena      -- "); hgl_alloc_print_usage(g_frame_arena);
     printf("r2r arena        -- "); hgl_alloc_print_usage(g_r2r_arena);
     printf("r2r fs allocator -- "); hgl_alloc_print_usage(g_r2r_fs_allocator);

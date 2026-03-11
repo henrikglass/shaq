@@ -4,6 +4,7 @@
 #include "shaq_core.h"
 #include "renderer.h"
 #include "user_input.h"
+#include "socket.h"
 #include "gui.h"
 #include "log.h" // ???
 
@@ -270,7 +271,22 @@ static SelValue fn_eval_mat2_(void *args);
 static SelValue fn_eval_mat3_(void *args);
 static SelValue fn_eval_mat4_(void *args);
 
-static SelValue fn_stdin_(void *args);
+static SelValue fn_eval_bool_quiet_(void *args);
+static SelValue fn_eval_int_quiet_(void *args);
+static SelValue fn_eval_uint_quiet_(void *args);
+static SelValue fn_eval_float_quiet_(void *args);
+static SelValue fn_eval_vec2_quiet_(void *args);
+static SelValue fn_eval_vec3_quiet_(void *args);
+static SelValue fn_eval_vec4_quiet_(void *args);
+static SelValue fn_eval_ivec2_quiet_(void *args);
+static SelValue fn_eval_ivec3_quiet_(void *args);
+static SelValue fn_eval_ivec4_quiet_(void *args);
+static SelValue fn_eval_mat2_quiet_(void *args);
+static SelValue fn_eval_mat3_quiet_(void *args);
+static SelValue fn_eval_mat4_quiet_(void *args);
+
+static SelValue fn_read_stdin_(void *args);
+static SelValue fn_read_udp_socket_(void *args);
 
 /*--- Public variables ------------------------------------------------------------------*/
 
@@ -444,8 +460,22 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("eval_mat2"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat2_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat2 eval_mat2(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat2", },
     { .id = SV_LIT("eval_mat3"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat3", },
     { .id = SV_LIT("eval_mat4"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4(str expr)", .desc = "Evaluates the expression `expr` and reinterprets it as a mat4", },
+    { .id = SV_LIT("eval_bool_quiet"),  .type = TYPE_BOOL,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_bool_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "bool eval_bool_quiet(str expr)", .desc = "Identical to `eval_bool()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_int_quiet"),   .type = TYPE_INT,   .qualifier = QUALIFIER_NONE, .impl = fn_eval_int_quiet_,   .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "int eval_int_quiet(str expr)", .desc = "Identical to `eval_int()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_uint_quiet"),  .type = TYPE_UINT,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_uint_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "uint eval_uint_quiet(str expr)", .desc = "Identical to `eval_uint()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_float_quiet"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_NONE, .impl = fn_eval_float_quiet_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "float eval_float_quiet(str expr)", .desc = "Identical to `eval_float()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_vec2_quiet"),  .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec2_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec2 eval_vec2_quiet(str expr)", .desc = "Identical to `eval_vec2()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_vec3_quiet"),  .type = TYPE_VEC3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec3_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec3 eval_vec3_quiet(str expr)", .desc = "Identical to `eval_vec3()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_vec4_quiet"),  .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_vec4_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "vec4 eval_vec4_quiet(str expr)", .desc = "Identical to `eval_vec4()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_ivec2_quiet"), .type = TYPE_IVEC2, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec2_quiet_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec2 eval_ivec2_quiet(str expr)", .desc = "Identical to `eval_ivec2()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_ivec3_quiet"), .type = TYPE_IVEC3, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec3_quiet_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec3 eval_ivec3_quiet(str expr)", .desc = "Identical to `eval_ivec3()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_ivec4_quiet"), .type = TYPE_IVEC4, .qualifier = QUALIFIER_NONE, .impl = fn_eval_ivec4_quiet_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "ivec4 eval_ivec4_quiet(str expr)", .desc = "Identical to `eval_ivec4()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_mat2_quiet"),  .type = TYPE_MAT2,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat2_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat2 eval_mat2_quiet(str expr)", .desc = "Identical to `eval_mat2()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_mat3_quiet"),  .type = TYPE_MAT3,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat3_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat3 eval_mat3_quiet(str expr)", .desc = "Identical to `eval_mat3()`, except errors are not logged.", },
+    { .id = SV_LIT("eval_mat4_quiet"),  .type = TYPE_MAT4,  .qualifier = QUALIFIER_NONE, .impl = fn_eval_mat4_quiet_,  .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "mat4 eval_mat4_quiet(str expr)", .desc = "Identical to `eval_mat4()`, except errors are not logged.", },
 
-    { .id = SV_LIT("stdin"), .type = TYPE_STR, .qualifier = QUALIFIER_NONE, .impl = fn_stdin_, .argtypes = {TYPE_NIL}, .synopsis = "str stdin()", .desc = "Returns the last complete line read from the standard input", },
+    { .id = SV_LIT("read_stdin"),      .type = TYPE_STR, .qualifier = QUALIFIER_NONE, .impl = fn_read_stdin_, .argtypes = {TYPE_NIL}, .synopsis = "str read_stdin()", .desc = "Returns the last complete line read from the standard input", },
+    { .id = SV_LIT("read_udp_socket"), .type = TYPE_STR, .qualifier = QUALIFIER_NONE, .impl = fn_read_udp_socket_, .argtypes = {TYPE_STR, TYPE_NIL}, .synopsis = "str read_udp_socket(str service)", .desc = "Returns the last complete line read from a UDP socket on the given port/service", },
 };
 const u32 N_BUILTIN_FUNCTIONS = sizeof(BUILTIN_FUNCTIONS) / sizeof(BUILTIN_FUNCTIONS[0]);
 
@@ -1967,18 +1997,30 @@ static SelValue fn_copy_mat4_(void *args)  { return fn_copy_helper_(args, TYPE_M
 
 /* ---------------------- Eval functions -------------------- */
 
-static SelValue fn_eval_helper_(void *args)
+static SelValue fn_eval_helper_(void *args, b8 quiet)
 {
-    //LogMode logmode = log_get_mode();
-    //log_set_mode(LOG_DISABLE);
+    /* disable logging if quiet */
+    LogMode logmode = log_get_mode();
+    if (quiet) {
+        log_set_mode(LOG_DISABLE);
+    }
+
+    /* compile expression */
     StringView expr = *(StringView *)args;
     char *expr_cstr = sv_make_cstr_copy(expr, frame_arena_alloc);
     ExeExpr *exe = sel_compile(expr_cstr, g_frame_arena);
+
+    /* reenable logging if required */
+    if (quiet) {
+        log_set_mode(logmode);
+    }
+
+    /* compilation failed? Return 0 (or maybe something else in the future) */
     if (exe == NULL) {
         return (SelValue) {0}; // TODO something else
     }
-    //log_set_mode(logmode);
 
+    /* Evaluate expression */
     // TODO Rewrite the SELVM code to accept an SVM as an argument 
     // instead of doing this dumb crap
     struct SVM tmp;
@@ -1990,23 +2032,37 @@ static SelValue fn_eval_helper_(void *args)
     return val;
 }
 
-static SelValue fn_eval_bool_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_int_(void *args)   { return fn_eval_helper_(args); }
-static SelValue fn_eval_uint_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_float_(void *args) { return fn_eval_helper_(args); }
-static SelValue fn_eval_vec2_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_vec3_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_vec4_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_ivec2_(void *args) { return fn_eval_helper_(args); }
-static SelValue fn_eval_ivec3_(void *args) { return fn_eval_helper_(args); }
-static SelValue fn_eval_ivec4_(void *args) { return fn_eval_helper_(args); }
-static SelValue fn_eval_mat2_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_mat3_(void *args)  { return fn_eval_helper_(args); }
-static SelValue fn_eval_mat4_(void *args)  { return fn_eval_helper_(args); }
+static SelValue fn_eval_bool_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_int_(void *args)   { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_uint_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_float_(void *args) { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_vec2_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_vec3_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_vec4_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_ivec2_(void *args) { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_ivec3_(void *args) { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_ivec4_(void *args) { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_mat2_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_mat3_(void *args)  { return fn_eval_helper_(args, false); }
+static SelValue fn_eval_mat4_(void *args)  { return fn_eval_helper_(args, false); }
+
+static SelValue fn_eval_bool_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_int_quiet_(void *args)   { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_uint_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_float_quiet_(void *args) { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_vec2_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_vec3_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_vec4_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_ivec2_quiet_(void *args) { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_ivec3_quiet_(void *args) { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_ivec4_quiet_(void *args) { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_mat2_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_mat3_quiet_(void *args)  { return fn_eval_helper_(args, true); }
+static SelValue fn_eval_mat4_quiet_(void *args)  { return fn_eval_helper_(args, true); }
 
 /* --------------------- String functions ------------------ */
 
-static SelValue fn_stdin_(void *args)
+static SelValue fn_read_stdin_(void *args)
 {
     /*
      * This function might break for some inputs. Hopefully it won't,
@@ -2033,6 +2089,7 @@ static SelValue fn_stdin_(void *args)
         return (SelValue) { .val_str = sv };
     } 
     
+    /* Trim last complete line */
     i32 start;
     i32 end;
     for (end = k; (end > 0) && (scratch[end - 1] != '\n'); end--);
@@ -2040,13 +2097,70 @@ static SelValue fn_stdin_(void *args)
     i32 len = end - start;
     if (start != end && len < 1024) {
         scratch[end - 1] = '\0';
-        memcpy(str, &scratch[start], len + 1);
+        memcpy(str, &scratch[start], len + 1); // Note (Henrik A. Glass 2026-03-11): Off by one?
         sv.start = str;
         sv.length = len; 
     }
 
     return (SelValue) { .val_str = sv };
 
+}
+
+static SelValue fn_read_udp_socket_(void *args)
+{
+    static char scratch[4096] = {0};
+    StringView sv = {.start = NULL, .length = 0};
+
+    ssize_t n = 4096;
+    ssize_t k = 0;
+
+    u8 *args8 = (u8 *) args;
+    StringView service = *(StringView *)args8;
+
+    /* lookup socket */
+    Socket *s = socket_lookup(service);
+
+    /* create socket if necessary */
+    if (s == NULL) {
+        s = socket_create(service, SOCKET_UDP);
+        /* Still NULL? Give up and return an string of length 0 */
+        if (s == NULL) {
+            return (SelValue) { .val_str = sv };
+        }
+    }
+
+    /* Read until -EAGAIN/EWOULDBLOCK */
+    while(n > 0) {
+        n = recvfrom(s->socket_fd, scratch, 4096, 0, NULL, 0);
+        k = n > 0 ? n : k;
+    }
+
+    /* No new data? Return last data */
+    if (k == 0) {
+        sv.start = s->last_line;
+        sv.length = s->last_line_length; 
+        if (sv.length == 0) {
+            log_info("Warning: No data received yet on UDP socket `" SV_FMT "`. This may cause compilation errors "
+                     "if the result of `read_udp_socket()` is used in an expression.", SV_ARG(service));
+        }
+        return (SelValue) { .val_str = sv };
+    } 
+
+    /* Trim last complete line */
+    i32 start;
+    i32 end;
+    for (end = k; (end > 0) && (scratch[end - 1] != '\n'); end--);
+    for (start = end - 1; (start > 0) && (scratch[start - 1] != '\n'); start--);
+    i32 len = end - start;
+    if (start != end && len < SHAQ_SOCKET_LAST_LINE_BUFFER_SIZE) {
+        scratch[end - 1] = '\0';
+        memcpy(s->last_line, &scratch[start], len + 1); // Note (Henrik A. Glass 2026-03-11): Off by one?
+        s->last_line_length = len;
+        sv.start = s->last_line;
+        sv.length = s->last_line_length; 
+    }
+
+    return (SelValue) { .val_str = sv };
 }
 
 

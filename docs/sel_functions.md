@@ -44,6 +44,7 @@ bool is_darkmode()                                                              
 bool checkbox(str label, bool default)                                           Creates a checkbox widget with the label `label` and default value `default`
 bool copy_bool(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 bool eval_bool(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a bool
+bool eval_bool_quiet(str expr)                                                   Identical to `eval_bool()`, except errors are not logged.
 ```
 
 ## Returning int:
@@ -59,6 +60,7 @@ int drag_int(str label, float v, int min, int max, int default)                 
 int input_int(str label, int default)                                            Creates an input widget for integers with the label `label` and default value `default`
 int copy_int(str shader, str var)                                                Copies the value last assigned to the uniform variable `var` in the shader `shader`
 int eval_int(str expr)                                                           Evaluates the expression `expr` and reinterprets it as a int
+int eval_int_quiet(str expr)                                                     Identical to `eval_int()`, except errors are not logged.
 ```
 
 ## Returning uint:
@@ -74,6 +76,7 @@ uint rol(uint x, uint n)                                                        
 uint ror(uint x, uint n)                                                         right rotate of `x` by `n`.
 uint copy_uint(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 uint eval_uint(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a uint
+uint eval_uint_quiet(str expr)                                                   Identical to `eval_uint()`, except errors are not logged.
 ```
 
 ## Returning float:
@@ -125,6 +128,7 @@ float slider_float(str label, float min, float max, float default)              
 float slider_float_log(str label, float min, float max, float default)           Creates a float slider widget, with logarithmic scaling, with the label `label`, minimum and maximum allow values `min` and `max`, and default value `default`
 float copy_float(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
 float eval_float(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a float
+float eval_float_quiet(str expr)                                                 Identical to `eval_float()`, except errors are not logged.
 ```
 
 ## Returning vec2:
@@ -141,6 +145,7 @@ vec2 mouse_drag_position()                                                      
 vec2 input_vec2(str label, vec2 default)                                         Creates an input widget for 2D vectors with the label `label` and default value `default`
 vec2 copy_vec2(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 vec2 eval_vec2(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a vec2
+vec2 eval_vec2_quiet(str expr)                                                   Identical to `eval_vec2()`, except errors are not logged.
 ```
 
 ## Returning vec3:
@@ -155,6 +160,7 @@ vec3 cross(vec3 a, vec3 b)                                                      
 vec3 input_vec3(str label, vec3 default)                                         Creates an input widget for 3D vectors with the label `label` and default value `default`
 vec3 copy_vec3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 vec3 eval_vec3(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a vec3
+vec3 eval_vec3_quiet(str expr)                                                   Identical to `eval_vec3()`, except errors are not logged.
 ```
 
 ## Returning vec4:
@@ -169,6 +175,7 @@ vec4 input_vec4(str label, vec4 default)                                        
 vec4 color_picker(str label, vec4 default)                                       Creates a color picker widget with the label `label` and default value `default`
 vec4 copy_vec4(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 vec4 eval_vec4(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a vec4
+vec4 eval_vec4_quiet(str expr)                                                   Identical to `eval_vec4()`, except errors are not logged.
 ```
 
 ## Returning ivec2:
@@ -179,6 +186,7 @@ ivec2 resolution_of(str shader)                                                 
 ivec2 resolution()                                                               Returns the resolution of the shader to which the current attribute/uniform belongs
 ivec2 copy_ivec2(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ivec2 eval_ivec2(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a ivec2
+ivec2 eval_ivec2_quiet(str expr)                                                 Identical to `eval_ivec2()`, except errors are not logged.
 ```
 
 ## Returning ivec3:
@@ -186,6 +194,7 @@ ivec2 eval_ivec2(str expr)                                                      
 ivec3 ivec3(int x, int y, int z)                                                 Creates a 3D integer vector with components `x`, `y`, and `z`
 ivec3 copy_ivec3(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ivec3 eval_ivec3(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a ivec3
+ivec3 eval_ivec3_quiet(str expr)                                                 Identical to `eval_ivec3()`, except errors are not logged.
 ```
 
 ## Returning ivec4:
@@ -193,6 +202,7 @@ ivec3 eval_ivec3(str expr)                                                      
 ivec4 ivec4(int x, int y, int z, int w)                                          Creates a 4D integer vector with components `x`, `y`, `z`, and `w`
 ivec4 copy_ivec4(str shader, str var)                                            Copies the value last assigned to the uniform variable `var` in the shader `shader`
 ivec4 eval_ivec4(str expr)                                                       Evaluates the expression `expr` and reinterprets it as a ivec4
+ivec4 eval_ivec4_quiet(str expr)                                                 Identical to `eval_ivec4()`, except errors are not logged.
 ```
 
 ## Returning mat2:
@@ -203,6 +213,7 @@ mat2 mat2_scale(vec2 v)                                                         
 mat2 mat2_rotation(float angle)                                                  Creates a 2x2 rotation matrix where the rotation operation is given by `angle`.
 mat2 copy_mat2(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 mat2 eval_mat2(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat2
+mat2 eval_mat2_quiet(str expr)                                                   Identical to `eval_mat2()`, except errors are not logged.
 ```
 
 ## Returning mat3:
@@ -213,6 +224,7 @@ mat3 mat3_scale(vec3 v)                                                         
 mat3 mat3_rotation(float angle, vec3 axis)                                       Creates a 3x3 rotation matrix where the rotation operation is given by `angle` and `axis`.
 mat3 copy_mat3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 mat3 eval_mat3(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat3
+mat3 eval_mat3_quiet(str expr)                                                   Identical to `eval_mat3()`, except errors are not logged.
 ```
 
 ## Returning mat4:
@@ -225,12 +237,14 @@ mat4 mat4_translation(vec3 v)                                                   
 mat4 mat4_look_at(vec3 camera, vec3 target, vec3 up)                             Creates a 4x4 "look-at" view matrix, given a camera position `camera`, a target position `target`, and up-vector `up`.
 mat4 copy_mat4(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
 mat4 eval_mat4(str expr)                                                         Evaluates the expression `expr` and reinterprets it as a mat4
+mat4 eval_mat4_quiet(str expr)                                                   Identical to `eval_mat4()`, except errors are not logged.
 ```
 
 ## Returning str:
 ```
 str text_input(str label, str default)                                           Creates a text input widget with the label `label` and default value `default`
-str stdin()                                                                      Returns the last complete line read from the standard input
+str read_stdin()                                                                 Returns the last complete line read from the standard input
+str read_udp_socket(str service)                                                 Returns the last complete line read from a UDP socket on the given port/service
 ```
 
 ## Returning sampler2D:

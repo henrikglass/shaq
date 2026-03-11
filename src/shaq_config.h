@@ -6,6 +6,8 @@
 #define SHAQ_MAX_N_UNIFORMS                   64
 #define SHAQ_MAX_N_DYNAMIC_GUI_ITEMS          64
 #define SHAQ_MAX_N_LOADED_TEXTURES            32
+#define SHAQ_MAX_N_SOCKETS                     8
+#define SHAQ_SOCKET_LAST_LINE_BUFFER_SIZE   1024
 #define SHAQ_WIDGET_TEXT_INPUT_BUFFER_SIZE  1024
 #define SHAQ_ENABLE_VSYNC                      1
 #define SHAQ_FILEPATH_MAX_LEN                512
