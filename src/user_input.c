@@ -58,7 +58,7 @@ void user_input_poll()
     /* Update mouse button state */
     user_input.lmb_was_down_last_frame = user_input.lmb_is_down;
     user_input.rmb_was_down_last_frame = user_input.rmb_is_down;
-    if (gui_shader_window_is_active()) {
+    if (!gui_shader_window_is_maximized() && gui_shader_window_is_active()) {
         user_input.lmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
         user_input.rmb_is_down = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
     } else if (gui_shader_window_is_maximized() && !imgui_any_window_is_hovered() && !imgui_is_any_item_active()) {

@@ -47,6 +47,7 @@ typedef enum
     QUALIFIER_NONE  =  0,
     QUALIFIER_CONST = (1 << 0), // for constant expression
     QUALIFIER_PURE  = (1 << 1), // for pure functions
+    QUALIFIER_ERR_  = (1 << 2),
 } TypeQualifier;
 
 typedef enum

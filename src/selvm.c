@@ -126,6 +126,8 @@ static SelValue fn_maxi_(void *args);
 static SelValue fn_randi_(void *args);
 static SelValue fn_iota_(void *args);
 static SelValue fn_frame_count_(void *args);
+static SelValue fn_stepi_(void *args);
+static SelValue fn_absi_(void *args);
 
 static SelValue fn_signed_(void *args);
 static SelValue fn_xor_(void *args);
@@ -169,8 +171,8 @@ static SelValue fn_radians_(void *args);
 static SelValue fn_perlin3D_(void *args);
 static SelValue fn_aspect_ratio_(void *args);
 static SelValue fn_lerp_(void *args);
-static SelValue fn_step_(void *args); // @Henrik TODO 2026-03-11 22:43:39: Add function for other types
-static SelValue fn_abs_(void *args); // @Henrik TODO 2026-03-11 22:43:09: Add function for other types
+static SelValue fn_step_(void *args);
+static SelValue fn_abs_(void *args);
 
 static SelValue fn_vec2_(void *args);
 static SelValue fn_vec2_from_ivec2_(void *args);
@@ -181,6 +183,7 @@ static SelValue fn_vec2_normalize_(void *args);
 static SelValue fn_vec2_dot_(void *args);
 static SelValue fn_vec2_lerp_(void *args);
 static SelValue fn_vec2_slerp_(void *args);
+static SelValue fn_vec2_step_(void *args);
 static SelValue fn_mouse_position_(void *args);
 static SelValue fn_mouse_position_last_(void *args);
 static SelValue fn_mouse_drag_position_(void *args);
@@ -194,6 +197,7 @@ static SelValue fn_vec3_normalize_(void *args);
 static SelValue fn_vec3_dot_(void *args);
 static SelValue fn_vec3_lerp_(void *args);
 static SelValue fn_vec3_slerp_(void *args);
+static SelValue fn_vec3_step_(void *args);
 static SelValue fn_vec3_cross_(void *args);
 
 static SelValue fn_vec4_(void *args);
@@ -203,6 +207,7 @@ static SelValue fn_vec4_length_(void *args);
 static SelValue fn_vec4_normalize_(void *args);
 static SelValue fn_vec4_dot_(void *args);
 static SelValue fn_vec4_lerp_(void *args);
+static SelValue fn_vec4_step_(void *args);
 static SelValue fn_rgba_(void *args);
 static SelValue fn_background_color_(void *args);
 
@@ -318,6 +323,8 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("rand"),          .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_randi_,         .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int rand(int min, int max)", .desc = "Returns a random number in [`min`, `max`].", },
     { .id = SV_LIT("iota"),          .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_iota_,          .argtypes = {TYPE_NIL},                      .synopsis = "int iota()", .desc = "Returns the number of times it's been called. See the `iota` in golang.", },
     { .id = SV_LIT("frame_count"),   .type = TYPE_INT,  .qualifier = QUALIFIER_NONE, .impl = fn_frame_count_,   .argtypes = {TYPE_NIL},                      .synopsis = "int frame_count()", .desc = "Returns the frame count.", },
+    { .id = SV_LIT("step"),          .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_stepi_,         .argtypes = {TYPE_INT, TYPE_INT, TYPE_NIL},  .synopsis = "int step(int edge, int x)", .desc = "Returns 0 if `x` < `edge`, otherwise 1", },
+    { .id = SV_LIT("abs"),           .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_absi_,          .argtypes = {TYPE_INT, TYPE_NIL},            .synopsis = "int abs(int x)", .desc = "Returns the absolute value of `x`", },
 
     { .id = SV_LIT("int"),    .type = TYPE_INT,  .qualifier = QUALIFIER_PURE, .impl = fn_signed_, .argtypes = {TYPE_UINT, TYPE_NIL},             .synopsis = "int int(uint x)", .desc = "Typecast uint to int.", },
     { .id = SV_LIT("xor"),    .type = TYPE_UINT, .qualifier = QUALIFIER_PURE, .impl = fn_xor_,    .argtypes = {TYPE_UINT, TYPE_UINT, TYPE_NIL},  .synopsis = "uint xor(uint a, uint b)", .desc = "bitwise XOR of `a` and `b`.", },
@@ -361,7 +368,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("perlin3D"),     .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_perlin3D_,     .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float perlin3D(float x, float y, float z)", .desc = "Perlin noise at (x,y,z)", },
     { .id = SV_LIT("aspect_ratio"), .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_aspect_ratio_, .argtypes = {TYPE_NIL},                                                             .synopsis = "float aspect_ratio()", .desc = "Returns the current window aspect ratio (width/height)", },
     { .id = SV_LIT("lerp"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_lerp_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                         .synopsis = "float lerp(float a, float b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
-    { .id = SV_LIT("step"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_step_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float step(float edge, float x)", .desc = "Returns 1.0 if `x` > edge, otherwise 0.0", },
+    { .id = SV_LIT("step"),         .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_step_,         .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},                                     .synopsis = "float step(float edge, float x)", .desc = "Returns 0.0 if `x` < `edge`, otherwise 1.0", },
     { .id = SV_LIT("abs"),          .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_abs_,          .argtypes = {TYPE_FLOAT, TYPE_NIL},                                                 .synopsis = "float abs(float x)", .desc = "Returns the absolute value of `x`", },
 
     { .id = SV_LIT("vec2"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL},           .synopsis = "vec2 vec2(float x, float y)", .desc = "Creates a 2D vector with components `x` and `y`", },
@@ -373,20 +380,22 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec2_dot_,            .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "float dot(vec2 a, vec2 b)", .desc = "Returns the dot product of `a` and `b`", },
     { .id = SV_LIT("lerp"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_lerp_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 lerp(vec2 a, vec2 b, float t)", .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
     { .id = SV_LIT("slerp"),               .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_slerp_,          .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec2 slerp(vec2 a, vec2 b, float t)", .desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.", },
+    { .id = SV_LIT("step"),                .type = TYPE_VEC2,  .qualifier = QUALIFIER_PURE, .impl = fn_vec2_step_,           .argtypes = {TYPE_VEC2, TYPE_VEC2, TYPE_NIL},             .synopsis = "vec2 step(vec2 edge, vec2 x)", .desc = "For element `i` of the return value, 0.0 is returned if x[i] < edge[i], otherwise 1.0 is returned", },
     { .id = SV_LIT("mouse_position"),      .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_,      .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position()", .desc = "Returns the current mouse position, in pixel coordinates.", },
     { .id = SV_LIT("mouse_position_last"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_position_last_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_position_last()", .desc = "Returns the mouse position from the last frame, in pixel coordinates.", },
     { .id = SV_LIT("mouse_drag_position"), .type = TYPE_VEC2,  .qualifier = QUALIFIER_NONE, .impl = fn_mouse_drag_position_, .argtypes = {TYPE_NIL},                                   .synopsis = "vec2 mouse_drag_position()", .desc = "Returns the mouse position from when the left mouse button was last held, in pixel coordinates.", },
 
-    { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      . desc = "Creates a 3D vector with components `x`, `y`, and `z`", },
-    { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_ivec3_,     .argtypes = {TYPE_IVEC3, TYPE_NIL},                         .synopsis = "vec3 vec3(ivec3 v)",                                        . desc = "Creates a 3D vector from components of the 3D int vector `v`", },
-    { .id = SV_LIT("vec3_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", . desc = "Creates a 3D vector from the spherical coordinates `r`, `phi`, and `theta`", },
-    { .id = SV_LIT("distance"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_distance_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float distance(vec3 a, vec3 b)",                            . desc = "Returns the absolute distance between `a` and `b`", },
-    { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "float length(vec3 v)",                                      . desc = "Returns the absolute length of `v`", },
-    { .id = SV_LIT("normalize"),           .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 normalize(vec3 v)",                                    . desc = "Returns the normalized vector of `v`", },
-    { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_dot_,            .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float dot(vec3 a, vec3 b)",                                 . desc = "Returns the dot product of `a` and `b`", },
-    { .id = SV_LIT("lerp"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 lerp(vec3 a, vec3 b, float t)",                        . desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
-    { .id = SV_LIT("slerp"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 slerp(vec3 a, vec3 b, float t)",                       . desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.", },
-    { .id = SV_LIT("cross"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 cross(vec3 a, vec3 b)",                                . desc = "Returns the cross product of `a` and `b`", },
+    { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_,                .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3(float x, float y, float z)",                      .desc = "Creates a 3D vector with components `x`, `y`, and `z`", },
+    { .id = SV_LIT("vec3"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_ivec3_,     .argtypes = {TYPE_IVEC3, TYPE_NIL},                         .synopsis = "vec3 vec3(ivec3 v)",                                        .desc = "Creates a 3D vector from components of the 3D int vector `v`", },
+    { .id = SV_LIT("vec3_from_spherical"), .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_from_spherical_, .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec3 vec3_from_spherical(float r, float phi, float theta)", .desc = "Creates a 3D vector from the spherical coordinates `r`, `phi`, and `theta`", },
+    { .id = SV_LIT("distance"),            .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_distance_,       .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float distance(vec3 a, vec3 b)",                            .desc = "Returns the absolute distance between `a` and `b`", },
+    { .id = SV_LIT("length"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_length_,         .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "float length(vec3 v)",                                      .desc = "Returns the absolute length of `v`", },
+    { .id = SV_LIT("normalize"),           .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_normalize_,      .argtypes = {TYPE_VEC3, TYPE_NIL},                          .synopsis = "vec3 normalize(vec3 v)",                                    .desc = "Returns the normalized vector of `v`", },
+    { .id = SV_LIT("dot"),                 .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec3_dot_,            .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "float dot(vec3 a, vec3 b)",                                 .desc = "Returns the dot product of `a` and `b`", },
+    { .id = SV_LIT("lerp"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_lerp_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 lerp(vec3 a, vec3 b, float t)",                        .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
+    { .id = SV_LIT("slerp"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_slerp_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_FLOAT, TYPE_NIL},   .synopsis = "vec3 slerp(vec3 a, vec3 b, float t)",                       .desc = "Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.", },
+    { .id = SV_LIT("step"),                .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_step_,           .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 step(vec3 edge, vec3 x)",                              .desc = "For element `i` of the return value, 0.0 is returned if x[i] < edge[i], otherwise 1.0 is returned", },
+    { .id = SV_LIT("cross"),               .type = TYPE_VEC3,  .qualifier = QUALIFIER_PURE, .impl = fn_vec3_cross_,          .argtypes = {TYPE_VEC3, TYPE_VEC3, TYPE_NIL},               .synopsis = "vec3 cross(vec3 a, vec3 b)",                                .desc = "Returns the cross product of `a` and `b`", },
 
     { .id = SV_LIT("vec4"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_,             .argtypes = {TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_FLOAT, TYPE_NIL}, .synopsis = "vec4 vec4(float x, float y, float z, float w)", .desc = "Creates a 4D vector with components `x`, `y`, `z`, and `w`", },
     { .id = SV_LIT("vec4"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_from_ivec4_,  .argtypes = {TYPE_IVEC4, TYPE_NIL},                                     .synopsis = "vec4 vec4(ivec4 v)",                            .desc = "Creates a 4D vector from components of the 4D int vector `v`", },
@@ -395,6 +404,7 @@ const Func BUILTIN_FUNCTIONS[] =
     { .id = SV_LIT("normalize"),        .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_normalize_,   .argtypes = {TYPE_VEC4, TYPE_NIL},                                      .synopsis = "vec4 normalize(vec4 v)",                        .desc = "Returns the normalized vector of `v`", },
     { .id = SV_LIT("dot"),              .type = TYPE_FLOAT, .qualifier = QUALIFIER_PURE, .impl = fn_vec4_dot_,         .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "float dot(vec4 a, vec4 b)",                     .desc = "Returns the dot product of `a` and `b`", },
     { .id = SV_LIT("lerp"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_lerp_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_FLOAT, TYPE_NIL},               .synopsis = "vec4 lerp(vec4 a, vec4 b, float t)",            .desc = "Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].", },
+    { .id = SV_LIT("step"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_vec4_step_,        .argtypes = {TYPE_VEC4, TYPE_VEC4, TYPE_NIL},                           .synopsis = "vec4 step(vec4 edge, vec4 x)",                  .desc = "For element `i` of the return value, 0.0 is returned if x[i] < edge[i], otherwise 1.0 is returned", },
     { .id = SV_LIT("rgba"),             .type = TYPE_VEC4,  .qualifier = QUALIFIER_PURE, .impl = fn_rgba_,             .argtypes = {TYPE_INT, TYPE_NIL},                                       .synopsis = "vec4 rgba(int hexcode)",                        .desc = "Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode", },
     { .id = SV_LIT("background_color"), .type = TYPE_VEC4,  .qualifier = QUALIFIER_NONE, .impl = fn_background_color_, .argtypes = {TYPE_NIL},                                                 .synopsis = "vec4 background_color()",                       .desc = "Returns the current background color, with components normalized to 0.0 - 1.0", },
 
@@ -772,28 +782,52 @@ static void svm_run()
                     f32 res_f32[4];
                     i32 res_i32[4];
                 } u;
-                switch (op->res_type) {
-                    case TYPE_FLOAT: 
-                    case TYPE_VEC2: 
-                    case TYPE_VEC3:
-                    case TYPE_VEC4: {
-                        f32 *lhs_f32 = (f32 *)lhs;
-                        for (u32 i = 0; i < TYPE_TO_SIZE[op->res_type]; i++) {
-                            u32 idx = (*desc >> (8*i)) & 0xFF;
-                            u.res_f32[i] = lhs_f32[idx];
-                        }
-                    } break;
-                    case TYPE_INT: 
-                    case TYPE_IVEC2: 
-                    case TYPE_IVEC3:
-                    case TYPE_IVEC4: {
-                        i32 *lhs_i32 = (i32 *)lhs;
-                        for (u32 i = 0; i < TYPE_TO_SIZE[op->res_type]; i++) {
-                            u32 idx = (*desc >> (8*i)) & 0xFF;
-                            u.res_i32[i] = lhs_i32[idx];
-                        }
-                    } break;
-                    default: assert(false);
+                if (op->lhs_type == TYPE_MAT2 || op->lhs_type == TYPE_MAT3 || op->lhs_type == TYPE_MAT4) {
+                    switch (op->lhs_type) {
+                        case TYPE_MAT2: {
+                            assert(op->res_type == TYPE_VEC2);
+                            Vec2 *lhs_v2 = (Vec2 *)lhs;
+                            u32 idx = (*desc) & 0xFF;
+                            u.res.val_vec2 = lhs_v2[idx];
+                        } break;
+                        case TYPE_MAT3: {
+                            assert(op->res_type == TYPE_VEC3);
+                            Vec3 *lhs_v3 = (Vec3 *)lhs;
+                            u32 idx = (*desc) & 0xFF;
+                            u.res.val_vec3 = lhs_v3[idx];
+                        } break;
+                        case TYPE_MAT4: {
+                            assert(op->res_type == TYPE_VEC4);
+                            Vec4 *lhs_v4 = (Vec4 *)lhs;
+                            u32 idx = (*desc) & 0xFF;
+                            printf("idx = %u\n", idx);
+                            u.res.val_vec4 = lhs_v4[idx];
+                        } break;
+                    }
+                } else {
+                    switch (op->res_type) {
+                        case TYPE_FLOAT: 
+                        case TYPE_VEC2: 
+                        case TYPE_VEC3:
+                        case TYPE_VEC4: {
+                            f32 *lhs_f32 = (f32 *)lhs;
+                            for (u32 i = 0; i < TYPE_TO_SIZE[op->res_type]; i++) {
+                                u32 idx = (*desc >> (8*i)) & 0xFF;
+                                u.res_f32[i] = lhs_f32[idx];
+                            }
+                        } break;
+                        case TYPE_INT: 
+                        case TYPE_IVEC2: 
+                        case TYPE_IVEC3:
+                        case TYPE_IVEC4: {
+                            i32 *lhs_i32 = (i32 *)lhs;
+                            for (u32 i = 0; i < TYPE_TO_SIZE[op->res_type]; i++) {
+                                u32 idx = (*desc >> (8*i)) & 0xFF;
+                                u.res_i32[i] = lhs_i32[idx];
+                            }
+                        } break;
+                        default: assert(false);
+                    }
                 }
                 svm_stack_push_selvalue(u.res, op->res_type);
             } break;
@@ -1219,6 +1253,18 @@ static SelValue fn_frame_count_(void *args)
     return (SelValue) {.val_i32 = shaq_frame_count()};
 }
 
+static SelValue fn_stepi_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_i32 = (args_i32[1] < args_i32[0]) ? 0 : 1}; 
+}
+
+static SelValue fn_absi_(void *args)
+{
+    i32 *args_i32 = (i32 *) args;
+    return (SelValue) {.val_i32 = args_i32[0] >= 0 ? args_i32[0] : -args_i32[0]};
+}
+
 /* ----------------------- UINT functions --------------------- */
 
 static SelValue fn_signed_(void *args)
@@ -1488,7 +1534,7 @@ static SelValue fn_lerp_(void *args)
 static SelValue fn_step_(void *args)
 {
     f32 *args_f32 = (f32 *) args;
-    return (SelValue) {.val_f32 = (args_f32[1] > args_f32[0]) ? 1.0 : 0.0}; 
+    return (SelValue) {.val_f32 = (args_f32[1] < args_f32[0]) ? 0.0 : 1.0}; 
 }
 
 static SelValue fn_abs_(void *args)
@@ -1552,6 +1598,19 @@ static SelValue fn_vec2_slerp_(void *args)
 {
     Vec2 *args_v2 = (Vec2 *) args;
     return (SelValue) {.val_vec2 = hglm_vec2_slerp(args_v2[0], args_v2[1], *(f32*)&args_v2[2])};
+}
+
+static SelValue fn_vec2_step_(void *args)
+{
+    Vec2 *args_v2 = (Vec2 *) args;
+    Vec2 edge = args_v2[0];
+    Vec2 x = args_v2[1];
+    return (SelValue) {
+        .val_vec2 = hglm_vec2_make(
+            x.x < edge.x ? 0.0f : 1.0f,
+            x.y < edge.y ? 0.0f : 1.0f
+        )
+    };
 }
 
 static SelValue fn_mouse_position_(void *args)
@@ -1628,6 +1687,20 @@ static SelValue fn_vec3_slerp_(void *args)
     Vec3 *args_v3 = (Vec3 *) args;
     return (SelValue) {.val_vec3 = hglm_vec3_lerp(args_v3[0], args_v3[1], *(f32*)&args_v3[2])};
 } 
+
+static SelValue fn_vec3_step_(void *args)
+{
+    Vec3 *args_v3 = (Vec3 *) args;
+    Vec3 edge = args_v3[0];
+    Vec3 x = args_v3[1];
+    return (SelValue) {
+        .val_vec3 = hglm_vec3_make(
+            x.x < edge.x ? 0.0f : 1.0f,
+            x.y < edge.y ? 0.0f : 1.0f,
+            x.z < edge.z ? 0.0f : 1.0f
+        )
+    };
+}
   
 static SelValue fn_vec3_cross_(void *args)
 {
@@ -1682,6 +1755,21 @@ static SelValue fn_vec4_lerp_(void *args)
     Vec4 *args_v4 = (Vec4 *) args;
     return (SelValue) {.val_vec4 = hglm_vec4_lerp(args_v4[0], args_v4[1], *(f32*)&args_v4[2])};
 } 
+
+static SelValue fn_vec4_step_(void *args)
+{
+    Vec4 *args_v4 = (Vec4 *) args;
+    Vec4 edge = args_v4[0];
+    Vec4 x = args_v4[1];
+    return (SelValue) {
+        .val_vec4 = hglm_vec4_make(
+            x.x < edge.x ? 0.0f : 1.0f,
+            x.y < edge.y ? 0.0f : 1.0f,
+            x.z < edge.z ? 0.0f : 1.0f,
+            x.w < edge.w ? 0.0f : 1.0f
+        )
+    };
+}
   
 static SelValue fn_rgba_(void *args)
 {

@@ -41,7 +41,7 @@
         log_error("Type-/namecheck error: " __VA_ARGS__);  \
         return (TypeAndQualifier) {                        \
             TYPE_OR_NAME_ERR_,                             \
-            QUALIFIER_NONE                                 \
+            QUALIFIER_ERR_                                 \
         };                                                 \
     } while (0)
 
@@ -50,7 +50,7 @@
         log_error("Type-/namecheck error: " __VA_ARGS__);  \
         return (TypeAndQualifier) {                        \
             TYPE_OR_NAME_ERR_,                             \
-            QUALIFIER_NONE                                 \
+            QUALIFIER_ERR_                                 \
         };                                                 \
     }
 
@@ -658,6 +658,9 @@ INTERNAL TypeAndQualifier type_and_namecheck(ExprTree *e)
                 [TYPE_IVEC2] = TYPE_INT,
                 [TYPE_IVEC3] = TYPE_INT,
                 [TYPE_IVEC4] = TYPE_INT,
+                [TYPE_MAT2]  = TYPE_VEC2,
+                [TYPE_MAT3]  = TYPE_VEC3,
+                [TYPE_MAT4]  = TYPE_VEC4,
             };
             static const i32 n_elements_in_type[N_TYPES] = {
                 [TYPE_FLOAT] = 1,
@@ -668,6 +671,9 @@ INTERNAL TypeAndQualifier type_and_namecheck(ExprTree *e)
                 [TYPE_IVEC2] = 2,
                 [TYPE_IVEC3] = 3,
                 [TYPE_IVEC4] = 4,
+                [TYPE_MAT2]  = 2,
+                [TYPE_MAT3]  = 3,
+                [TYPE_MAT4]  = 4,
             };
 
             t0 = type_and_namecheck(e->lhs); 
@@ -682,6 +688,9 @@ INTERNAL TypeAndQualifier type_and_namecheck(ExprTree *e)
             assert(n_elem_in_rhs > 0); // impossible 
             if (n_elem_in_rhs > 4) {
                 TYPE_AND_NAMECHECK_ERROR("Right-hand side of swizzle operator contains too many elements");
+            }
+            if ((t0.type == TYPE_MAT2 || t0.type == TYPE_MAT3 || t0.type == TYPE_MAT4) && n_elem_in_rhs != 1) {
+                TYPE_AND_NAMECHECK_ERROR("Right-hand side of swizzle operator on matrix type must contain exactly one element");
             }
 
             for (i32 i = 0; i < n_elem_in_rhs; i++) {
@@ -725,6 +734,12 @@ INTERNAL TypeAndQualifier type_and_namecheck(ExprTree *e)
                         case 3: t0.type = TYPE_IVEC3; break;
                         case 4: t0.type = TYPE_IVEC4; break;
                     } 
+                } break;
+
+                case TYPE_VEC2: 
+                case TYPE_VEC3:
+                case TYPE_VEC4: {
+                    t0.type = elem_type;
                 } break;
             }
         } break;

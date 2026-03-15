@@ -107,6 +107,8 @@ TEST(test_type_and_namecheck_simple_expressions)
     ASSERT(TYPE_IVEC4 == type_of("((1).xx).xyxy"));
     ASSERT(TYPE_IVEC4 == type_of("((1).xx).uvuv"));
     ASSERT(TYPE_IVEC4 == type_of("((1).xx).sstt"));
+    ASSERT(TYPE_VEC4 == type_of("mat4_id().x"));
+    ASSERT(TYPE_VEC3 == type_of("mat3_id().z"));
     ASSERT(TYPE_STR == type_of("\"\""));
     ASSERT(TYPE_STR == type_of("\"hejsan\""));
     ASSERT(TYPE_VEC3 == type_of("mat3_id()*vec3(1.0, 2.0, float(3))"));
@@ -116,6 +118,10 @@ TEST(test_type_and_namecheck_simple_expressions)
     ASSERT(TYPE_OR_NAME_ERR_ == type_of("(1).xyxy"));
     ASSERT(TYPE_OR_NAME_ERR_ == type_of("((1).xxxx).mopc"));
     ASSERT(TYPE_OR_NAME_ERR_ == type_of("((1).xxxx).xyzxyz"));
+    ASSERT(TYPE_OR_NAME_ERR_ == type_of("mat4_id().xx"));
+    ASSERT(TYPE_OR_NAME_ERR_ == type_of("mat3_id().xx"));
+    ASSERT(TYPE_OR_NAME_ERR_ == type_of("mat3_id().yx"));
+    ASSERT(TYPE_OR_NAME_ERR_ == type_of("mat2_id().z"));
 
     /* These math ops should fail */
     ASSERT(TYPE_OR_NAME_ERR_ == type_of("vec3(1.0, 2.0, float(3))*mat3_id()"));
@@ -125,7 +131,12 @@ TEST(test_type_and_namecheck_simple_expressions)
 TEST(test_stdin_nonblock, .timeout = 1.0f)
 {
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
-    run("stdin()");
+    run("read_stdin()");
+}
+
+TEST(test_socket_nonblock, .timeout = 1.0f)
+{
+    run("read_udp_socket(\"1337\")");
 }
 
 TEST(test_qualifiers)
@@ -135,7 +146,8 @@ TEST(test_qualifiers)
     ASSERT(QUALIFIER_CONST == qualifier_of("unsigned(01234)"));
     ASSERT(QUALIFIER_CONST == qualifier_of("sin(PI)"));
     ASSERT(QUALIFIER_NONE == qualifier_of("sin(time())"));
-    ASSERT(QUALIFIER_NONE == qualifier_of("stdin()"));
+    ASSERT(QUALIFIER_NONE == qualifier_of("read_stdin()"));
+    ASSERT(QUALIFIER_NONE == qualifier_of("read_udp_socket(\"1337\")"));
     ASSERT(QUALIFIER_NONE == qualifier_of("sin(PI) + time()"));
     ASSERT(QUALIFIER_NONE == qualifier_of("sin(PI) * time()"));
     ASSERT(QUALIFIER_NONE == qualifier_of("sin(PI) - time()"));

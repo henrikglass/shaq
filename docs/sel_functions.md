@@ -55,6 +55,8 @@ int max(int a, int b)                                                           
 int rand(int min, int max)                                                       Returns a random number in [`min`, `max`].
 int iota()                                                                       Returns the number of times it's been called. See the `iota` in golang.
 int frame_count()                                                                Returns the frame count.
+int step(int edge, int x)                                                        Returns 0 if `x` < `edge`, otherwise 1
+int abs(int x)                                                                   Returns the absolute value of `x`
 int int(uint x)                                                                  Typecast uint to int.
 int drag_int(str label, float v, int min, int max, int default)                  Creates an integer slider widget with the label `label`, speed `v`, minimum and maximum allow values `min` and `max`, and default value `default`
 int input_int(str label, int default)                                            Creates an input widget for integers with the label `label` and default value `default`
@@ -113,7 +115,7 @@ float radians(float degrees)                                                    
 float perlin3D(float x, float y, float z)                                        Perlin noise at (x,y,z)
 float aspect_ratio()                                                             Returns the current window aspect ratio (width/height)
 float lerp(float a, float b, float t)                                            Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
-float step(float edge, float x)                                                  Returns 1.0 if `x` > edge, otherwise 0.0
+float step(float edge, float x)                                                  Returns 0.0 if `x` < `edge`, otherwise 1.0
 float abs(float x)                                                               Returns the absolute value of `x`
 float distance(vec2 a, vec2 b)                                                   Returns the absolute distance between `a` and `b`
 float length(vec2 v)                                                             Returns the absolute length of `v`
@@ -141,6 +143,7 @@ vec2 vec2_from_polar(float r, float phi)                                        
 vec2 normalize(vec2 v)                                                           Returns the normalized vector of `v`
 vec2 lerp(vec2 a, vec2 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
 vec2 slerp(vec2 a, vec2 b, float t)                                              Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit circle.
+vec2 step(vec2 edge, vec2 x)                                                     For element `i` of the return value, 0.0 is returned if x[i] < edge[i], otherwise 1.0 is returned
 vec2 mouse_position()                                                            Returns the current mouse position, in pixel coordinates.
 vec2 mouse_position_last()                                                       Returns the mouse position from the last frame, in pixel coordinates.
 vec2 mouse_drag_position()                                                       Returns the mouse position from when the left mouse button was last held, in pixel coordinates.
@@ -158,6 +161,7 @@ vec3 vec3_from_spherical(float r, float phi, float theta)                       
 vec3 normalize(vec3 v)                                                           Returns the normalized vector of `v`
 vec3 lerp(vec3 a, vec3 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
 vec3 slerp(vec3 a, vec3 b, float t)                                              Interpolates between `a` and `b` for values of `t` in [0, 1] with constant speed along an arc on the unit sphere.
+vec3 step(vec3 edge, vec3 x)                                                     For element `i` of the return value, 0.0 is returned if x[i] < edge[i], otherwise 1.0 is returned
 vec3 cross(vec3 a, vec3 b)                                                       Returns the cross product of `a` and `b`
 vec3 input_vec3(str label, vec3 default)                                         Creates an input widget for 3D vectors with the label `label` and default value `default`
 vec3 copy_vec3(str shader, str var)                                              Copies the value last assigned to the uniform variable `var` in the shader `shader`
@@ -171,6 +175,7 @@ vec4 vec4(float x, float y, float z, float w)                                   
 vec4 vec4(ivec4 v)                                                               Creates a 4D vector from components of the 4D int vector `v`
 vec4 normalize(vec4 v)                                                           Returns the normalized vector of `v`
 vec4 lerp(vec4 a, vec4 b, float t)                                               Linearly interpolates between `a` and `b` for values of `t` in [0, 1]. I.e. lerp(a,b,t) = a*(1-t)+b*t. Not clamped to [0, 1].
+vec4 step(vec4 edge, vec4 x)                                                     For element `i` of the return value, 0.0 is returned if x[i] < edge[i], otherwise 1.0 is returned
 vec4 rgba(int hexcode)                                                           Returns a vector with R, G, B, and A components normalized to 0.0 - 1.0 given a color hexcode
 vec4 background_color()                                                          Returns the current background color, with components normalized to 0.0 - 1.0
 vec4 input_vec4(str label, vec4 default)                                         Creates an input widget for 4D vectors with the label `label` and default value `default`
