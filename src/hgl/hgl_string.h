@@ -256,6 +256,18 @@ HglStringView hgl_sv_lchop_until(HglStringView *sv, char delim);
 HglStringView hgl_sv_rchop_until(HglStringView *sv, char delim);
 
 /**
+ * Find the next substring, splitting by any characted which satisifes `predicate`, from 
+ * the left. E.g. `hgl_sv_lchop_until_predicate(&sv, isspace)`.
+ */
+HglStringView hgl_sv_lchop_until_predicate(HglStringView *sv, int (*predicate)(int c));
+
+/**
+ * Find the next substring, splitting by any characted which satisifes `predicate`, from 
+ * the right. E.g. `hgl_sv_rchop_until_predicate(&sv, isspace)`.
+ */
+HglStringView hgl_sv_rchop_until_predicate(HglStringView *sv, int (*predicate)(int c));
+
+/**
  * Chops `n` bytes from the beginning of `sv` where `n` is given by a user supplied
  * function `f` when applied to `sv`. `f` should typcially define a lexer rule for some
  * i user-defined token. If some prefix of `sv` with non-zero length satisfies the lexer
@@ -329,7 +341,7 @@ double hgl_sv_lchop_f64(HglStringView *sv);
  * subsequently lchops `strlen(substr)` off of `sv`. If `sv` does not start
  * with `substr`, false is returned and `sv` is left unmodifed.
  */
-bool hgl_sv_starts_with_lchop(HglStringView *sv, const char *substr);
+bool hgl_sv_lchop_if_starts_with(HglStringView *sv, const char *substr);
 
 /**
  * Returns true if `sv` starts with a prefix that satisfies a user-provided
@@ -765,6 +777,49 @@ HglStringView hgl_sv_rchop_until(HglStringView *sv, char delim)
     return right_part;
 }
 
+HglStringView hgl_sv_lchop_until_predicate(HglStringView *sv, int (*predicate)(int c))
+{
+    size_t i;
+    for (i = 0; i < sv->length; i++) {
+        if (predicate(sv->start[i]) != 0) {
+            break;
+        }
+    }
+
+    HglStringView left_part = (HglStringView) {
+        .start  = sv->start,
+        .length = i,
+        .it_    = 0,
+    };
+
+    sv->start  += i + 1;
+    sv->length -= (i + 1 > sv->length) ? sv->length : i + 1;
+    sv->it_     = 0;
+
+    return left_part;
+}
+
+HglStringView hgl_sv_rchop_until_predicate(HglStringView *sv, int (*predicate)(int c))
+{
+    size_t i;
+    for (i = sv->length - 1; i > 0; i--) {
+        if (predicate(sv->start[i])) {
+            break;
+        }
+    }
+
+    HglStringView right_part = (HglStringView) {
+        .start  = sv->start + i + 1,
+        .length = sv->length - i - 1,
+        .it_    = 0,
+    };
+
+    sv->length = i;
+    sv->it_    = 0;
+
+    return right_part;
+}
+
 HglStringView hgl_sv_lchop_lexeme(HglStringView *sv, size_t (*f)(HglStringView))
 {
     size_t n = f(*sv);
@@ -869,7 +924,7 @@ double hgl_sv_lchop_f64(HglStringView *sv)
     return value;
 }
 
-bool hgl_sv_starts_with_lchop(HglStringView *sv, const char *substr)
+bool hgl_sv_lchop_if_starts_with(HglStringView *sv, const char *substr)
 {
     if (hgl_sv_starts_with(sv, substr)) {
         hgl_sv_lchop(sv, strlen(substr));
@@ -1268,7 +1323,7 @@ typedef HglStringBuilder StringBuilder;
 #define sv_lchop_u64             hgl_sv_lchop_u64
 #define sv_lchop_i64             hgl_sv_lchop_i64
 #define sv_lchop_f64             hgl_sv_lchop_f64
-#define sv_starts_with_lchop     hgl_sv_starts_with_lchop
+#define sv_lchop_if_starts_with  hgl_sv_lchop_if_starts_with
 #define sv_starts_with_lexeme    hgl_sv_starts_with_lexeme
 #define sv_contains              hgl_sv_contains
 #define sv_starts_with           hgl_sv_starts_with

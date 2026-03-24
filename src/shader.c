@@ -399,7 +399,7 @@ static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv)
 {
     StringView k = sv_trim(sv_from_cstr(kv->key));
 
-    if (!sv_starts_with_lchop(&k, "attribute")) {
+    if (!sv_lchop_if_starts_with(&k, "attribute")) {
         log_error("Expected keyword `attribute` in left-hand-side expression: `%s`.", kv->key);
         return;
     }
@@ -424,25 +424,25 @@ static void parse_attribute_from_kv_pair(Shader *s, HglIniKVPair *kv)
 
     /* Parse `source` attribute */
     SVMContext svm_ctx = (SVMContext){ .shader = s};
-    if (sv_starts_with_lchop(&k, "source") && sv_trim(k).length == 0) {
+    if (sv_lchop_if_starts_with(&k, "source") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_STR) {
             log_error("Shader `" SV_FMT "`: Attribute `source` attribute must have type `str`.", SV_ARG(s->name));
             return;
         }
         s->attributes.source = sv_make_copy(sel_eval(exe, svm_ctx, true).val_str, r2r_fs_alloc);
-    } else if (sv_starts_with_lchop(&k, "format") && sv_trim(k).length == 0) {
+    } else if (sv_lchop_if_starts_with(&k, "format") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_INT) {
             log_error("Shader `" SV_FMT "`: Attribute `format` attribute must have type `int`.", SV_ARG(s->name));
             return;
         }
         s->attributes.format = sel_eval(exe, svm_ctx, true).val_i32;
-    } else if (sv_starts_with_lchop(&k, "resolution") && sv_trim(k).length == 0) {
+    } else if (sv_lchop_if_starts_with(&k, "resolution") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_IVEC2) {
             log_error("Shader `" SV_FMT "`: Attribute `resolution` attribute must have type `ivec2`.", SV_ARG(s->name));
             return;
         }
         s->attributes.resolution = sel_eval(exe, svm_ctx, true).val_ivec2;
-    } else if (sv_starts_with_lchop(&k, "render_after") && sv_trim(k).length == 0) {
+    } else if (sv_lchop_if_starts_with(&k, "render_after") && sv_trim(k).length == 0) {
         if (exe->type != TYPE_STR) {
             log_error("Shader `" SV_FMT "`: Attribute `render_after` attribute must have type `str`.", SV_ARG(s->name));
             return;
